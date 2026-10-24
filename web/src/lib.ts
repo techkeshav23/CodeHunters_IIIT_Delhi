@@ -1,5 +1,5 @@
 // Small shared helpers and the app's own data types.
-import type { Lang, ModelOutput, Trace, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
+import type { HistoryItem, Lang, ModelOutput, Trace, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
 import { t, type Key } from "./i18n";
 
 export type View = "check" | "bookings" | "sos" | "how" | "settings";
@@ -254,9 +254,199 @@ export function readJSON<T>(key: string, fallback: T): T {
 }
 
 export function writeJSON(key: string, value: unknown): void {
+  tryWriteJSON(key, value);
+}
+
+// writeJSON that says whether it worked (storage may be blocked or full)
+export function tryWriteJSON(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    /* storage may be blocked */
+    return false;
   }
+}
+
+/* ---------------- saved chats (History) ----------------
+   Same stored shape as the Android app (mobile/lib/state.dart): chats are kept in
+   this browser only (localStorage "cc_chats", newest first), never in incognito. */
+
+export const CHATS_KEY = "cc_chats";
+export const MAX_CHATS = 30;
+
+// A thread message as stored: the user's text, or the request and the response
+// body. A failed request (error message) is not saved.
+export type StoredMsg =
+  | { type: "user"; text: string }
+  | { type: "question" | "decision"; req: TriageRequest; res: TriageResponse }
+  | { type: "emergency"; req: TriageRequest; res: TriageResponse; user_text: string };
+
+// decision | emergency | question (still waiting for an answer) | none (no reply yet)
+export type ChatOutcomeKind = "decision" | "emergency" | "question" | "none";
+
+export interface ChatOutcome {
+  kind: ChatOutcomeKind;
+  // care + urgency for a decision, or the emergency title; null otherwise
+  label: string | null;
+  // 0-2, colours the outcome
+  level: 0 | 1 | 2;
+}
+
+export interface SavedChat {
+  id: string;
+  started_at: string;
+  updated_at: string;
+  title: string;
+  outcome: ChatOutcome;
+  messages: StoredMsg[];
+}
+
+export function encodeMsg(m: Msg): StoredMsg | null {
+  switch (m.kind) {
+    case "user":
+      return { type: "user", text: m.text };
+    case "question":
+    case "decision":
+      return { type: m.kind, req: m.req, res: m.res };
+    case "emergency":
+      return { type: "emergency", req: m.req, res: m.res, user_text: m.userText };
+    default:
+      return null;
+  }
+}
+
+// Rebuilds a message saved with encodeMsg; null if it cannot be read.
+export function decodeMsg(s: StoredMsg, id: number): Msg | null {
+  if (!s || typeof s !== "object") return null;
+  if (s.type === "user") return typeof s.text === "string" ? { id, kind: "user", text: s.text } : null;
+  if (!s.req || typeof s.req !== "object" || !s.res || typeof s.res !== "object" || !s.res.trace) return null;
+  if (s.type === "question" || s.type === "decision") return { id, kind: s.type, req: s.req, res: s.res };
+  if (s.type === "emergency") {
+    return { id, kind: "emergency", req: s.req, res: s.res, userText: typeof s.user_text === "string" ? s.user_text : s.req.user_input };
+  }
+  return null;
+}
+
+// The conversation send() holds after these messages: if the last answer was a
+// question, that request's history, the user's turn and the question (with its
+// question_id); after a decision or an emergency, nothing.
+export function historyAfter(msgs: Msg[]): HistoryItem[] {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.kind === "question") {
+      return [
+        ...(m.req.conversation_history ?? []),
+        { role: "user", content: m.req.user_input },
+        { role: "assistant", content: m.res.follow_up_question as string, question_id: m.res.trace.follow_up?.id },
+      ];
+    }
+    if (m.kind === "decision" || m.kind === "emergency") return [];
+  }
+  return [];
+}
+
+function graphemes(s: string): string[] {
+  const Seg = (Intl as unknown as { Segmenter?: new (l?: string, o?: { granularity: string }) => { segment(s: string): Iterable<{ segment: string }> } }).Segmenter;
+  if (Seg) return Array.from(new Seg(undefined, { granularity: "grapheme" }).segment(s), (x) => x.segment);
+  return Array.from(s);
+}
+
+// History title: the first thing the user said, on one line, ~60 characters.
+export function chatTitle(msgs: Msg[]): string {
+  const first = msgs.find((m) => m.kind === "user") as Extract<Msg, { kind: "user" }> | undefined;
+  if (!first) return "";
+  const line = first.text.replace(/\s+/g, " ").trim();
+  const chars = graphemes(line);
+  return chars.length <= 60 ? line : `${chars.slice(0, 57).join("").trimEnd()}…`;
+}
+
+const URGENCY_FALLBACK: Key[] = ["urgRoutine", "urgSameDay", "urgNow"];
+
+// What a chat came to, for the History list.
+export function chatOutcome(msgs: Msg[], lang: Lang): ChatOutcome {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.kind === "decision") {
+      const d = m.res.trace.decision;
+      const level = urgencyLevel(m.res.urgency ?? d?.urgency ?? null);
+      const fallbackCare = careKey(m.res.care_type ?? d?.care_type);
+      const care = d?.care_label_local || d?.care_label || (fallbackCare ? t(lang, fallbackCare) : "");
+      const urgency = d?.urgency_label_local || d?.urgency_label || (m.res.urgency ? t(lang, URGENCY_FALLBACK[level]) : "");
+      const label = [care, urgency].filter((s) => s && s.trim()).join(" · ");
+      return { kind: "decision", label: label || null, level };
+    }
+    if (m.kind === "emergency") {
+      return { kind: "emergency", label: m.res.trace.emergency?.title_local ?? t(lang, "sosPageTitle"), level: 2 };
+    }
+    if (m.kind === "question") return { kind: "question", label: null, level: 0 };
+  }
+  return { kind: "none", label: null, level: 0 };
+}
+
+function parseChat(j: unknown): SavedChat | null {
+  if (!j || typeof j !== "object") return null;
+  const c = j as Partial<SavedChat>;
+  if (typeof c.id !== "string" || !c.id || !Array.isArray(c.messages)) return null;
+  const o = (c.outcome && typeof c.outcome === "object" ? c.outcome : {}) as Partial<ChatOutcome>;
+  const kinds: ChatOutcomeKind[] = ["decision", "emergency", "question", "none"];
+  const epoch = new Date(0).toISOString();
+  return {
+    id: c.id,
+    started_at: typeof c.started_at === "string" ? c.started_at : epoch,
+    updated_at: typeof c.updated_at === "string" ? c.updated_at : epoch,
+    title: typeof c.title === "string" ? c.title : "",
+    outcome: {
+      kind: o.kind && kinds.includes(o.kind) ? o.kind : "none",
+      label: typeof o.label === "string" ? o.label : null,
+      level: o.level === 1 || o.level === 2 ? o.level : 0,
+    },
+    messages: c.messages.filter((m) => m && typeof m === "object"),
+  };
+}
+
+// Entries that cannot be read are left out.
+export function readChats(): SavedChat[] {
+  const raw = readJSON<unknown>(CHATS_KEY, []);
+  if (!Array.isArray(raw)) return [];
+  return raw.map(parseChat).filter((c): c is SavedChat => c !== null);
+}
+
+// Writes the list; if the browser's storage is full, drops the oldest chats
+// until it fits. Returns the list to keep showing.
+export function writeChats(chats: SavedChat[]): SavedChat[] {
+  if (chats.length === 0) {
+    tryWriteJSON(CHATS_KEY, []);
+    return chats;
+  }
+  for (let n = chats.length; n > 0; n--) {
+    const keep = n === chats.length ? chats : chats.slice(0, n);
+    if (tryWriteJSON(CHATS_KEY, keep)) return keep;
+  }
+  return chats; // storage blocked: History still works until the tab is closed
+}
+
+export function newChatId(): string {
+  return `c${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_HI = ["जन", "फ़र", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अग", "सित", "अक्टू", "नव", "दिस"];
+
+// When a saved chat was last used: "Abhi", "5 min pehle", "Aaj 3:42 PM",
+// "Kal 9:10 PM", else "12 Oct, 9:10 PM" (same as the Android app).
+export function chatTime(iso: string, lang: Lang, now: Date = new Date()): string {
+  const w = new Date(iso);
+  if (Number.isNaN(w.getTime())) return "";
+  const mins = Math.floor((now.getTime() - w.getTime()) / 60000);
+  if (mins < 1) return t(lang, "timeNow");
+  if (mins < 60) return t(lang, "timeMins", { n: mins });
+  const h = w.getHours() % 12 === 0 ? 12 : w.getHours() % 12;
+  const clock = `${h}:${String(w.getMinutes()).padStart(2, "0")} ${w.getHours() < 12 ? "AM" : "PM"}`;
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((day(now) - day(w)) / 86400000);
+  if (days === 0) return t(lang, "timeToday", { t: clock });
+  if (days === 1) return t(lang, "timeYesterday", { t: clock });
+  const month = (lang === "hi" ? MONTHS_HI : MONTHS)[w.getMonth()];
+  const year = w.getFullYear() === now.getFullYear() ? "" : ` ${w.getFullYear()}`;
+  return `${w.getDate()} ${month}${year}, ${clock}`;
 }

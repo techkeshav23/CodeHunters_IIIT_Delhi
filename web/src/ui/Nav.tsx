@@ -3,6 +3,7 @@ import type { Lang } from "../types";
 import { LANG_LABEL, LANG_SHORT, t, type Key } from "../i18n";
 import type { View } from "../lib";
 import { Brand, BrandMark } from "./Brand";
+import { useHeightVar } from "../useHeightVar";
 
 export type Backend = "ok" | "bad" | "wait" | "mock";
 
@@ -73,8 +74,10 @@ export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount }: 
 
 export function TopBar({ lang, onLang, onView }: Pick<NavProps, "lang" | "onLang" | "onView">) {
   const next = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+  // the chat bar sticks just under this bar on phones (0 when hidden on desktop)
+  const heightRef = useHeightVar("--topbar-h");
   return (
-    <header className="topbar">
+    <header className="topbar" ref={heightRef}>
       <button type="button" className="brand" onClick={() => onView("check")} style={{ border: 0, background: "none", padding: 0 }}>
         <BrandMark size={32} />
         <span className="brand__name">

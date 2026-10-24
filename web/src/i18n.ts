@@ -262,6 +262,46 @@ const S = {
   response: { hinglish: "Jawab", hi: "जवाब", en: "Response" },
   answeredIn: { hinglish: "{ms} ms mein jawab", hi: "{ms} ms में जवाब", en: "Answered in {ms} ms" },
 
+  // chats: new, incognito, history saved in this browser (same words as the Android app)
+  newChat: { hinglish: "Nayi chat", hi: "नई चैट", en: "New chat" },
+  history: { hinglish: "History", hi: "हिस्ट्री", en: "History" },
+  historyTitle: { hinglish: "Pichhli chats", hi: "पिछली चैट", en: "Chat history" },
+  historySub: { hinglish: "Sirf is browser mein save hain.", hi: "सिर्फ़ इस ब्राउज़र में सेव हैं।", en: "Saved in this browser only." },
+  historyEmpty: {
+    hinglish: "Abhi koi chat save nahi hai. Har jaanch yahan apne aap save hogi.",
+    hi: "अभी कोई चैट सेव नहीं है। हर जाँच यहाँ अपने-आप सेव होगी।",
+    en: "No saved chats yet. Every check is saved here on its own.",
+  },
+  incognito: { hinglish: "Incognito chat", hi: "इनकॉग्निटो चैट", en: "Incognito chat" },
+  incognitoShort: { hinglish: "Incognito", hi: "इनकॉग्निटो", en: "Incognito" },
+  incognitoBanner: {
+    hinglish: "Incognito: yeh baatcheet save nahi hogi",
+    hi: "इनकॉग्निटो: यह बातचीत सेव नहीं होगी",
+    en: "Incognito: this chat won't be saved",
+  },
+  incognitoOff: { hinglish: "Incognito band karein", hi: "इनकॉग्निटो बंद करें", en: "Turn off incognito" },
+  incognitoRemoved: { hinglish: "Yeh chat history se hata di gayi", hi: "यह चैट हिस्ट्री से हटा दी गई", en: "This chat was removed from history" },
+  chatPending: { hinglish: "Sawaal baaki hai", hi: "सवाल बाकी है", en: "Question pending" },
+  chatNoReply: { hinglish: "Jawab nahi aaya", hi: "जवाब नहीं आया", en: "No reply yet" },
+  chatDelete: { hinglish: "Chat hatayein", hi: "चैट हटाएँ", en: "Delete chat" },
+  deleteAll: { hinglish: "Saari history mitayein", hi: "सारी हिस्ट्री मिटाएँ", en: "Delete all history" },
+  deleteAllTitle: { hinglish: "Saari history mitayein?", hi: "सारी हिस्ट्री मिटाएँ?", en: "Delete all history?" },
+  deleteAllText: {
+    hinglish: "{n} chats is browser se hat jayengi. Bookings nahi hatengi.",
+    hi: "{n} चैट इस ब्राउज़र से हट जाएँगी। बुकिंग नहीं हटेंगी।",
+    en: "{n} chats will be removed from this browser. Your bookings stay.",
+  },
+  deleteAllTextOne: {
+    hinglish: "1 chat is browser se hat jayegi. Bookings nahi hatengi.",
+    hi: "1 चैट इस ब्राउज़र से हट जाएगी। बुकिंग नहीं हटेंगी।",
+    en: "1 chat will be removed from this browser. Your bookings stay.",
+  },
+  deleteYes: { hinglish: "Haan, mitayein", hi: "हाँ, मिटाएँ", en: "Yes, delete" },
+  timeNow: { hinglish: "Abhi", hi: "अभी", en: "Just now" },
+  timeMins: { hinglish: "{n} min pehle", hi: "{n} मिनट पहले", en: "{n} min ago" },
+  timeToday: { hinglish: "Aaj {t}", hi: "आज {t}", en: "Today {t}" },
+  timeYesterday: { hinglish: "Kal {t}", hi: "कल {t}", en: "Yesterday {t}" },
+
   // settings
   settingsTitle: { hinglish: "Settings", hi: "सेटिंग्स", en: "Settings" },
   setLang: { hinglish: "Bhasha", hi: "भाषा", en: "Language" },

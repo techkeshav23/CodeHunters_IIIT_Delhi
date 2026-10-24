@@ -3,13 +3,35 @@ import type { HistoryItem, Lang, LatLng, TraceCaregiver, TriageRequest, TriageRe
 import { t } from "./i18n";
 import { triage, health, USE_MOCKS } from "./api";
 import { speak, speechFor, stopSpeaking, voiceSupported } from "./voice";
-import { isEmergency, readJSON, writeJSON, type BookingTarget, type Msg, type SavedBooking, type View } from "./lib";
+import {
+  chatOutcome,
+  chatTitle,
+  decodeMsg,
+  encodeMsg,
+  historyAfter,
+  isEmergency,
+  MAX_CHATS,
+  newChatId,
+  readChats,
+  readJSON,
+  writeChats,
+  writeJSON,
+  type BookingTarget,
+  type Msg,
+  type SavedBooking,
+  type SavedChat,
+  type StoredMsg,
+  type View,
+} from "./lib";
 import { Sidebar, TopBar, BottomNav, type Backend } from "./ui/Nav";
 import Composer from "./ui/Composer";
 import Thread from "./ui/Thread";
 import CaseDetails from "./ui/CaseDetails";
 import BookingSheet from "./ui/BookingSheet";
 import EmergencyTakeover from "./ui/EmergencyTakeover";
+import { ChatBar, IncognitoBanner } from "./ui/ChatBar";
+import HistorySheet from "./ui/HistorySheet";
+import { useHeightVar } from "./useHeightVar";
 import { Start, BookingsView, SosView, HowView, SettingsView, type Theme } from "./views/Views";
 
 const DEMO_LOCATION: LatLng = { lat: 28.5459, lng: 77.2732 };
@@ -81,9 +103,24 @@ export default function App() {
     };
   }, []);
 
+  // ---- toast ----
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number>();
+  const showToast = (text: string) => {
+    setToast(text);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+  };
+
   // ---- consult ----
   const [view, setView] = useState<View>("check");
   const [messages, setMessages] = useState<Msg[]>([]);
+  // the thread as of now, for code that runs after an await (a reply arriving)
+  const msgsRef = useRef<Msg[]>([]);
+  const setThread = (next: Msg[]) => {
+    msgsRef.current = next;
+    setMessages(next);
+  };
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState("");
@@ -95,6 +132,69 @@ export default function App() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  // ---- saved chats (History) and incognito; same behaviour as the Android app ----
+  const [chats, setChats] = useState<SavedChat[]>(() => readChats());
+  const chatsRef = useRef(chats);
+  // id of the open thread in chats; null until it is first saved, always null in incognito
+  const [chatId, setChatIdState] = useState<string | null>(null);
+  const chatIdRef = useRef<string | null>(null);
+  // incognito: the open thread is never written to this browser
+  const [incognito, setIncognitoState] = useState(false);
+  const incognitoRef = useRef(false);
+  const startedRef = useRef<string | null>(null);
+  // bumped whenever the thread is swapped (new chat, opened chat, deleted), so a
+  // reply still loading for the old thread is dropped
+  const threadRef = useRef(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyBtnRef = useRef<HTMLButtonElement>(null);
+  const chatHeadRef = useHeightVar("--chathead-h");
+
+  const commitChats = (next: SavedChat[]) => {
+    const kept = writeChats(next);
+    chatsRef.current = kept;
+    setChats(kept);
+  };
+  const setChatId = (id: string | null) => {
+    chatIdRef.current = id;
+    setChatIdState(id);
+  };
+  const setIncognito = (on: boolean) => {
+    incognitoRef.current = on;
+    setIncognitoState(on);
+  };
+
+  // Puts the open thread at the top of History (at most MAX_CHATS). Called every
+  // time a message is added; never in incognito.
+  const saveChat = (msgs: Msg[]) => {
+    if (incognitoRef.current) return;
+    const stored = msgs.map(encodeMsg).filter((s): s is StoredMsg => s !== null);
+    if (stored.length === 0) return;
+    const now = new Date().toISOString();
+    const id = chatIdRef.current ?? newChatId();
+    if (chatIdRef.current !== id) setChatId(id);
+    const chat: SavedChat = {
+      id,
+      started_at: startedRef.current ?? now,
+      updated_at: now,
+      title: chatTitle(msgs),
+      outcome: chatOutcome(msgs, lang),
+      messages: stored,
+    };
+    commitChats([chat, ...chatsRef.current.filter((c) => c.id !== id)].slice(0, MAX_CHATS));
+  };
+
+  const pushMsg = (m: Msg) => {
+    const next = [...msgsRef.current, m];
+    setThread(next);
+    saveChat(next);
+  };
+
+  const dropChat = (id: string): boolean => {
+    if (!chatsRef.current.some((c) => c.id === id)) return false;
+    commitChats(chatsRef.current.filter((c) => c.id !== id));
+    return true;
+  };
+
   const send = useCallback(
     async (text: string, usedVoice: boolean, retry = false) => {
       const clean = text.trim();
@@ -102,22 +202,28 @@ export default function App() {
       stopSpeaking();
       setView("check");
       setAdding(false);
-      if (!retry) setMessages((m) => [...m, { id: nid(), kind: "user", text: clean }]);
+      const thread = threadRef.current;
+      if (!retry) {
+        if (msgsRef.current.length === 0) startedRef.current = new Date().toISOString();
+        pushMsg({ id: nid(), kind: "user", text: clean });
+      }
       setDraft("");
       setBusy(true);
       const req: TriageRequest = { user_input: clean, language: "auto", location, conversation_history: history };
       try {
         const res = await triage(req);
+        // the user moved to another chat meanwhile: this reply is not for the open thread
+        if (thread !== threadRef.current) return;
         setLast({ req, res });
         const voiceLang = res.trace?.language ?? lang;
         if (isEmergency(res)) {
           const msg = { id: nid(), kind: "emergency" as const, req, res, userText: clean };
-          setMessages((m) => [...m, msg]);
+          pushMsg(msg);
           setHistory([]);
           setSos(msg);
           if (usedVoice && autoRead) speak(speechFor(res.trace.speech, `${res.trace.emergency?.title_local ?? ""}. ${t(lang, "sosNow")}`, voiceLang));
         } else if (res.follow_up_question) {
-          setMessages((m) => [...m, { id: nid(), kind: "question", req, res }]);
+          pushMsg({ id: nid(), kind: "question", req, res });
           setHistory((h) => [
             ...h,
             { role: "user", content: clean },
@@ -125,7 +231,7 @@ export default function App() {
           ]);
           if (usedVoice && autoRead) speak(speechFor(res.trace.speech, res.follow_up_question, voiceLang));
         } else {
-          setMessages((m) => [...m, { id: nid(), kind: "decision", req, res }]);
+          pushMsg({ id: nid(), kind: "decision", req, res });
           setHistory([]);
           if (usedVoice && autoRead) {
             const d = res.trace.decision;
@@ -133,28 +239,98 @@ export default function App() {
           }
         }
       } catch {
-        setMessages((m) => [...m, { id: nid(), kind: "error", text: clean, usedVoice }]);
+        if (thread !== threadRef.current) return;
+        pushMsg({ id: nid(), kind: "error", text: clean, usedVoice });
       } finally {
-        setBusy(false);
+        if (thread === threadRef.current) setBusy(false);
       }
     },
+    // pushMsg reads refs only (and lang, listed here)
     [busy, location, history, lang, autoRead],
   );
 
   const retry = (msg: Extract<Msg, { kind: "error" }>) => {
-    setMessages((m) => m.filter((x) => x.id !== msg.id));
+    setThread(msgsRef.current.filter((x) => x.id !== msg.id));
     void send(msg.text, msg.usedVoice, true);
   };
 
-  const newCheck = () => {
+  // An empty thread; a reply still on its way for the old one is dropped.
+  const clearThread = () => {
     stopSpeaking();
-    setMessages([]);
+    if (incognitoRef.current) setLast(null); // nothing of an incognito chat stays behind
+    threadRef.current++;
+    setThread([]);
     setHistory([]);
     setAdding(false);
+    setBusy(false);
     setSos(null);
+    setChatId(null);
+    startedRef.current = null;
+  };
+
+  // "+ Nayi chat", the banner's cross, and every "Nayi jaanch" button. The open
+  // chat is already in History (each message saves it); an incognito one is
+  // dropped. Always leaves incognito.
+  const newChat = () => {
+    clearThread();
+    setIncognito(false);
     setDraft("");
     setView("check");
     window.setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  // "Incognito chat": nothing in this thread is saved from now on. From the start
+  // screen this is a new chat; on an open saved chat it also takes that chat out
+  // of History.
+  const goIncognito = () => {
+    if (incognitoRef.current) return;
+    const id = chatIdRef.current;
+    setIncognito(true);
+    setChatId(null);
+    setView("check");
+    if (id && dropChat(id)) showToast(t(lang, "incognitoRemoved"));
+  };
+
+  const closeHistory = useCallback(() => {
+    setHistoryOpen(false);
+    window.setTimeout(() => historyBtnRef.current?.focus({ preventScroll: true }), 0);
+  }, []);
+
+  // Opens a chat from History in the thread. If it ends on a question, history is
+  // rebuilt exactly as send() left it, so the next message answers it; otherwise
+  // the next message starts a new case.
+  const openChat = (c: SavedChat) => {
+    closeHistory();
+    setView("check");
+    if (!incognitoRef.current && c.id === chatIdRef.current) return;
+    clearThread();
+    setIncognito(false);
+    const msgs: Msg[] = [];
+    for (const s of c.messages) {
+      const m = decodeMsg(s, nid());
+      if (m) msgs.push(m);
+    }
+    // a last message with no reply (tab closed, or the request failed): offer the retry
+    const tail = msgs[msgs.length - 1];
+    if (tail?.kind === "user") msgs.push({ id: nid(), kind: "error", text: tail.text, usedVoice: false });
+    setThread(msgs);
+    setHistory(historyAfter(msgs));
+    setChatId(c.id);
+    startedRef.current = c.started_at;
+  };
+
+  // Deletes one saved chat; if it is the open one, the thread is cleared too, so
+  // the next message does not save it again.
+  const deleteChat = (id: string) => {
+    if (!dropChat(id)) return;
+    if (id === chatIdRef.current) clearThread();
+  };
+
+  // "Saari history mitayein", after the confirm step. Bookings stay.
+  const deleteAllChats = () => {
+    const wasOpen = chatIdRef.current !== null;
+    commitChats([]);
+    if (wasOpen) clearThread();
   };
 
   // the decision's own request holds the conversation before it (questions with
@@ -183,15 +359,13 @@ export default function App() {
   // ---- bookings ----
   const [bookings, setBookings] = useState<SavedBooking[]>(() => readJSON<SavedBooking[]>("cc_bookings", []));
   const [target, setTarget] = useState<BookingTarget | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const onBooked = (b: SavedBooking) => {
     setBookings((all) => {
       const next = [b, ...all];
       writeJSON("cc_bookings", next);
       return next;
     });
-    setToast(t(lang, "toastBooked"));
-    window.setTimeout(() => setToast(null), 2200);
+    showToast(t(lang, "toastBooked"));
   };
 
   // ---- layout ----
@@ -209,7 +383,20 @@ export default function App() {
           <TopBar lang={lang} onLang={setLang} onView={setView} />
           {view === "check" && (
             <>
-              <main className="view" id="main">
+              <main className="view view--check" id="main">
+                <div className="chathead" ref={chatHeadRef}>
+                  <ChatBar
+                    lang={lang}
+                    count={chats.length}
+                    threadOpen={messages.length > 0}
+                    incognito={incognito}
+                    onHistory={() => setHistoryOpen(true)}
+                    onIncognito={goIncognito}
+                    onNewChat={newChat}
+                    historyRef={historyBtnRef}
+                  />
+                  {incognito && <IncognitoBanner lang={lang} onClose={newChat} />}
+                </div>
                 {messages.length === 0 ? (
                   <Start
                     lang={lang}
@@ -236,7 +423,7 @@ export default function App() {
                     onBook={(cg: TraceCaregiver, res: TriageResponse) => setTarget({ caregiver: cg, res })}
                     onRetry={retry}
                     onOpenEmergency={(m) => setSos(m)}
-                    onNewCheck={newCheck}
+                    onNewCheck={newChat}
                     onAddMore={addMore}
                     adding={adding}
                   />
@@ -258,7 +445,7 @@ export default function App() {
               />
             </>
           )}
-          {view === "bookings" && <BookingsView lang={lang} bookings={bookings} onStart={newCheck} />}
+          {view === "bookings" && <BookingsView lang={lang} bookings={bookings} onStart={newChat} />}
           {view === "sos" && <SosView lang={lang} />}
           {view === "how" && <HowView lang={lang} last={last} />}
           {view === "settings" && (
@@ -299,8 +486,19 @@ export default function App() {
           }}
         />
       )}
+      {historyOpen && (
+        <HistorySheet
+          lang={lang}
+          chats={chats}
+          openId={incognito ? null : chatId}
+          onOpen={openChat}
+          onDelete={deleteChat}
+          onDeleteAll={deleteAllChats}
+          onClose={closeHistory}
+        />
+      )}
       {sos && (
-        <EmergencyTakeover res={sos.res} userText={sos.userText} lang={lang} onBack={() => setSos(null)} onNewCheck={newCheck} />
+        <EmergencyTakeover res={sos.res} userText={sos.userText} lang={lang} onBack={() => setSos(null)} onNewCheck={newChat} />
       )}
       {toast && (
         <div className="toast" role="status">
