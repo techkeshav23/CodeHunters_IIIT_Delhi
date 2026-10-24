@@ -1,0 +1,85 @@
+{"id": "v2_001", "category": "stt_devanagari", "lang": "hi", "text": "चेस्ट पेन हो रहा है लेफ्ट आर्म में भी और पसीना", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "v2_002", "category": "stt_devanagari", "lang": "hi", "text": "हार्ट अटैक जैसा लग रहा सांस नहीं आ रही सीने में दबाव", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "v2_003", "category": "stt_devanagari", "lang": "hi", "text": "बेबी को ब्रीदिंग प्रॉब्लम हो रही नीला पड़ रहा है", "expect_emergency": true, "flags_any": ["breathing_difficulty", "infant_danger_sign"]}
+{"id": "v2_004", "category": "stt_devanagari", "lang": "hi", "text": "स्ट्रोक जैसा फेस एक साइड ड्रूप हो गया बोल नहीं पा रहे", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "v2_005", "category": "stt_devanagari", "lang": "hi", "text": "सुसाइड करना चाहता हूँ अब नहीं जीना मुझे", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "v2_006", "category": "stt_devanagari", "lang": "hi", "text": "हैवी ब्लीडिंग हो रही हैंड से कट गया रुक नहीं रहा", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "v2_007", "category": "stt_devanagari", "lang": "hi", "text": "नॉर्मल फीवर है दो दिन से बाकी ठीक है", "expect_emergency": false}
+{"id": "v2_008", "category": "stt_devanagari", "lang": "hi", "text": "माइल्ड कफ है थ्रोट में खराश बुखार नहीं", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "v2_009", "category": "stt_nospace", "lang": "hi", "text": "सीनेमेंदर्दहोरहाहैबायेंहाथमेंभी", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "v2_010", "category": "stt_nospace", "lang": "hinglish", "text": "saansnahiaaraheinbehoshhogayehain", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "v2_011", "category": "hypoglycemia", "lang": "hinglish", "text": "papa diabetic hain achanak pasina thartharahat aur ulti seedhi baat kar rahe", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_012", "category": "hypoglycemia", "lang": "hinglish", "text": "sugar ke patient subah insulin ke baad kuch khaya nahi ab behosh ho gaye", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "v2_013", "category": "hypoglycemia", "lang": "hinglish", "text": "diabetic dadaji kaamp rahe thande pasine behosh jaise sugar bahut low", "expect_emergency": true}
+{"id": "v2_014", "category": "hypoglycemia", "lang": "english", "text": "my diabetic mother is sweating shaking and talking confused", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_015", "category": "hypoglycemia_lookalike", "lang": "hinglish", "text": "sugar thoda low lag raha halki kamzori biscuit kha liya ab theek", "expect_emergency": false}
+{"id": "v2_016", "category": "hypoglycemia_lookalike", "lang": "hinglish", "text": "diabetic hain khana time pe nahi khaya halki kamzori hai baaki normal", "expect_emergency": false}
+{"id": "v2_017", "category": "heat_stroke", "lang": "hinglish", "text": "loo lag gayi badan bahut garam aur sookha behosh jaise ho rahe", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "v2_018", "category": "heat_stroke", "lang": "hinglish", "text": "dhoop me kaam karte karte chakkar ulti aur behki baatein karne lage", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_019", "category": "heat_stroke", "lang": "english", "text": "he was in the sun for hours now very hot dry skin and not making sense", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_020", "category": "heat_lookalike", "lang": "hinglish", "text": "loo lag gayi thodi kamzori aur sar dard paani pee ke aaram aa gaya", "expect_emergency": false}
+{"id": "v2_021", "category": "heat_lookalike", "lang": "hinglish", "text": "garmi me thak gaya chhaya me baith gaya ab theek lag raha", "expect_emergency": false}
+{"id": "v2_022", "category": "choking", "lang": "hinglish", "text": "baccha khelte khelte sikka nigal gaya ab saans nahi le pa raha neela", "expect_emergency": true, "flags_any": ["breathing_difficulty", "infant_danger_sign"]}
+{"id": "v2_023", "category": "choking", "lang": "hinglish", "text": "bacche ke gale me khana atak gaya khaas raha bol nahi pa raha", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "v2_024", "category": "drowning", "lang": "hinglish", "text": "baccha paani me doob gaya tha nikala hai saans nahi aa rahi", "expect_emergency": true, "flags_any": ["breathing_difficulty", "unconscious"]}
+{"id": "v2_025", "category": "choking_lookalike", "lang": "hinglish", "text": "baccha khana khate waqt thoda khaansa tha ab theek se saans le raha", "expect_emergency": false}
+{"id": "v2_026", "category": "eye_injury", "lang": "hinglish", "text": "aankh me tezaab gir gaya bahut jalan ho rahi dikh nahi raha", "expect_emergency": true}
+{"id": "v2_027", "category": "eye_injury", "lang": "hinglish", "text": "aankh me lohe ka tukda chubh gaya khoon aur dikhna band ho gaya", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "v2_028", "category": "eye_lookalike", "lang": "hinglish", "text": "aankh me dhool chali gayi thodi jalan paani se dho liya ab theek", "expect_emergency": false}
+{"id": "v2_029", "category": "eye_lookalike", "lang": "hinglish", "text": "aankh subah se laal hai halki khujli aur paani aa raha", "expect_emergency": false}
+{"id": "v2_030", "category": "head_injury_child", "lang": "hinglish", "text": "baccha palang se sar ke bal gir gaya ab ulti kar raha aur sust", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "v2_031", "category": "head_injury_child", "lang": "hinglish", "text": "bacche ko sar pe ball lagi thodi der ko behosh ho gaya tha", "expect_emergency": true, "flags_any": ["major_injury", "unconscious"]}
+{"id": "v2_032", "category": "head_lookalike", "lang": "hinglish", "text": "baccha gira sar pe halka bump hai ro ke chup ho gaya ab khel raha", "expect_emergency": false}
+{"id": "v2_033", "category": "high_bp_headache", "lang": "hinglish", "text": "BP ekdum 200 ho gaya sar phat raha dikhne me dhundhla", "expect_emergency": true, "flags_any": ["severe_headache"]}
+{"id": "v2_034", "category": "high_bp_headache", "lang": "hinglish", "text": "high BP ke patient ko achanak bahut tez sar dard aur ulti", "expect_emergency": true, "flags_any": ["severe_headache"]}
+{"id": "v2_035", "category": "high_bp_lookalike", "lang": "hinglish", "text": "BP thoda high tha 140 halka sar dard dawai le li aaram", "expect_emergency": false}
+{"id": "v2_036", "category": "high_bp_routable", "lang": "hinglish", "text": "BP ki routine dawai khatam ghar pe check karwana hai", "expect_emergency": false}
+{"id": "v2_037", "category": "pregnancy_warning", "lang": "hinglish", "text": "9 mahine pregnant tez sar dard haath pair soojan aur dikhna dhundhla", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "v2_038", "category": "pregnancy_warning", "lang": "hinglish", "text": "8 mahine pregnant hain bacche ki movement kal se band ho gayi", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "v2_039", "category": "pregnancy_warning", "lang": "hinglish", "text": "7 mahine pregnant pani ki thaili phat gayi aur tez dard shuru", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "v2_040", "category": "pregnancy_routine", "lang": "hinglish", "text": "pregnant hain paanchva mahina normal checkup karwana hai", "expect_emergency": false}
+{"id": "v2_041", "category": "pregnancy_lookalike", "lang": "hinglish", "text": "pregnancy me subah subah halki ulti aur kamzori morning sickness", "expect_emergency": false}
+{"id": "v2_042", "category": "pregnancy_lookalike", "lang": "hinglish", "text": "pregnant hain halki kamar dard normal sa 6va mahina", "expect_emergency": false}
+{"id": "v2_043", "category": "elderly_confusion", "lang": "hinglish", "text": "dadaji subah theek the achanak behki baatein pehchan nahi rahe", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_044", "category": "elderly_confusion", "lang": "hinglish", "text": "nani ko achanak kuch yaad nahi jagah aur time pata nahi chal raha", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_045", "category": "elderly_lookalike", "lang": "hinglish", "text": "dadaji dheere dheere mahino se cheezein bhoolne lage hain", "expect_emergency": false}
+{"id": "v2_046", "category": "mental_crisis", "lang": "hinglish", "text": "mann kar raha sab khatam kar du bahut goli ek saath kha lu", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "v2_047", "category": "mental_crisis", "lang": "hinglish", "text": "khud ko nuksan pahuchane ka plan bana raha hu aaj", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "v2_048", "category": "mental_crisis", "lang": "english", "text": "i feel hopeless and keep thinking everyone is better off without me", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "v2_049", "category": "mental_noncrisis", "lang": "hinglish", "text": "kaam ka stress hai thoda low feel kar raha kisi se baat karni hai", "expect_emergency": false}
+{"id": "v2_050", "category": "mental_noncrisis", "lang": "hinglish", "text": "exam ki tension me neend nahi aa rahi chinta rehti", "expect_emergency": false}
+{"id": "v2_051", "category": "mental_noncrisis", "lang": "hinglish", "text": "mood off rehta aajkal par kaam normal chal raha", "expect_emergency": false}
+{"id": "v2_052", "category": "lookalike", "lang": "hinglish", "text": "gas ki wajah se seene me halki jalan dakar se theek ho jata", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "v2_053", "category": "lookalike", "lang": "hinglish", "text": "kandhe ki muscle me kheench galat so ke uth gaya", "expect_emergency": false}
+{"id": "v2_054", "category": "lookalike", "lang": "hinglish", "text": "halka zukaam aur chheenke do din se bukhar nahi", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "v2_055", "category": "lookalike", "lang": "hinglish", "text": "purana migraine ka halka sar dard aaram karne se theek", "expect_emergency": false}
+{"id": "v2_056", "category": "lookalike", "lang": "hinglish", "text": "ghutne me purana dard baithne uthne me thodi dikkat", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "v2_057", "category": "lookalike", "lang": "hinglish", "text": "raat ko acidity se seene me halki jalan leke so gaya", "expect_emergency": false}
+{"id": "v2_058", "category": "lookalike", "lang": "hinglish", "text": "zyada kaam se thakaan aur body pain lag raha", "expect_emergency": false}
+{"id": "v2_059", "category": "lookalike", "lang": "hinglish", "text": "dust allergy wali halki khansi aur naak se paani", "expect_emergency": false}
+{"id": "v2_060", "category": "lookalike", "lang": "hinglish", "text": "paon me moch aa gayi halki soojan par chal pa raha", "expect_emergency": false}
+{"id": "v2_061", "category": "lookalike", "lang": "hinglish", "text": "kaan me halka dard do din se aur khujli", "expect_emergency": false}
+{"id": "v2_062", "category": "lookalike", "lang": "hinglish", "text": "daant me dard thanda garam lagne par chubhta", "expect_emergency": false}
+{"id": "v2_063", "category": "lookalike", "lang": "hinglish", "text": "halka pet dard gas ka subah tak theek ho gaya", "expect_emergency": false}
+{"id": "v2_064", "category": "lookalike", "lang": "hinglish", "text": "khade hote waqt ek baar halka chakkar aaya phir normal", "expect_emergency": false, "difficulty": "hard"}
+{"id": "v2_065", "category": "lookalike", "lang": "hinglish", "text": "aankh phadak rahi thakaan se neend puri nahi hui", "expect_emergency": false}
+{"id": "v2_066", "category": "lookalike", "lang": "english", "text": "mild sore throat and runny nose since yesterday no fever", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "v2_067", "category": "lookalike", "lang": "english", "text": "slight back ache after lifting heavy boxes at work", "expect_emergency": false}
+{"id": "v2_068", "category": "lookalike", "lang": "hinglish", "text": "halki khujli aur daane garmi ke hain nahane se aaram", "expect_emergency": false}
+{"id": "v2_069", "category": "lookalike", "lang": "hinglish", "text": "subah se halka sir bhaari chai pee ke theek lag raha", "expect_emergency": false}
+{"id": "v2_070", "category": "lookalike", "lang": "hinglish", "text": "pet thoda kharab hai ek baar latrine patli hui", "expect_emergency": false}
+{"id": "v2_071", "category": "routable", "lang": "hinglish", "text": "papa ko kal se bukhar aur badan dard ghar pe dikhwana hai", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "v2_072", "category": "routable", "lang": "hinglish", "text": "operation ke tanke hain ghar pe dressing karwani hai nurse se", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "v2_073", "category": "routable", "lang": "hinglish", "text": "6 mahine se peeth me purana dard specialist ko dikhana", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "v2_074", "category": "routable", "lang": "english", "text": "my mother has had a mild cold and cough for two days", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "v2_075", "category": "routable", "lang": "hinglish", "text": "dadi ko ghar pe vitals aur sugar check karwana hai", "expect_emergency": false}
+{"id": "v2_076", "category": "allergy", "lang": "hinglish", "text": "madhumakhi ne kaata poora chehra sooj gaya saans phool rahi", "expect_emergency": true, "flags_any": ["severe_allergy"]}
+{"id": "v2_077", "category": "chest_stt", "lang": "hi", "text": "सीने में बहुत प्रेशर और जॉ तक दर्द जा रहा है", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "v2_078", "category": "breathing", "lang": "hinglish", "text": "asthma ka patient saans bahut tez pump se bhi aaram nahi bol nahi pa raha", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "v2_079", "category": "abdominal", "lang": "english", "text": "sudden severe pain right lower abdomen with fever and vomiting", "expect_emergency": true, "flags_any": ["severe_abdominal_pain"]}
+{"id": "v2_080", "category": "bleeding", "lang": "hinglish", "text": "ulti ke saath laal khoon aa raha baar baar aur chakkar", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "v2_081", "category": "stroke_stt", "lang": "hi", "text": "अचानक एक हाथ और पैर सुन्न हो गया बोली लड़खड़ा रही", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "v2_082", "category": "hypoglycemia", "lang": "hinglish", "text": "insulin zyada lag gayi ab kaamp rahe aankhein chadh rahi", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "v2_083", "category": "heat_stroke_stt", "lang": "hi", "text": "हीट स्ट्रोक लग गया बॉडी टेम्परेचर बहुत हाई कन्फ्यूज़ हो रहे", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "v2_084", "category": "poisoning", "lang": "hinglish", "text": "bacche ne dawai ki poori bottle pee li galti se neend aa rahi use", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "v2_085", "category": "lookalike", "lang": "hinglish", "text": "halki thand lag ke chheenk aur gala kharab ek din se", "expect_emergency": false, "care": "gp", "urgency": "routine"}
