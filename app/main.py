@@ -12,6 +12,7 @@ from .matching.caregivers import IST, load
 from .nlp.lexicon import get_lexicon
 from .pipeline import run
 from .schemas import Booking, BookingRequest, TriageRequest, TriageResponse, TriageResponseWithTrace
+from .triage.model import get_model
 
 app = FastAPI(
     title="CareCompass API",
@@ -28,13 +29,18 @@ _BOOKINGS: dict[str, Booking] = {}
 def _warm() -> None:
     get_lexicon()
     load()
+    get_model()
 
 
 @app.get("/health")
 def health() -> dict:
     caregivers, source = load()
+    model = get_model()
     return {"status": "ok", "version": config.VERSION, "caregivers_source": source,
-            "caregivers": len(caregivers), "model": "rules"}
+            "caregivers": len(caregivers),
+            "model": "rules+model" if model else "rules",
+            "model_trained_at": model.meta.get("trained_at") if model else None,
+            "model_test_accuracy": (model.meta.get("scores", {}).get("test") or {}).get("accuracy") if model else None}
 
 
 @app.post("/v1/triage", response_model=TriageResponseWithTrace | TriageResponse, response_model_exclude_none=False)
