@@ -591,7 +591,9 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         trace["model"] = _student_trace(student, so)
     who = _who(ex, so)
     items = _intake_items(ex, so)
-    trace["structured"] = _structured(items, ex, who, language)
+    # nothing understood: no "Samjha" chips from the model's guesses next to "samajh nahi aaya"
+    said = _said_anything(ex)
+    trace["structured"] = _structured(items if said else [], ex, who if said else "unknown", language)
     trace["safety_net_local"] = None
     fired: set[str] = set()  # guardrails that changed or decided something (trace.guardrails)
 
