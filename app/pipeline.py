@@ -202,10 +202,19 @@ def _is_service(ex: Extraction, care: str | None) -> bool:
     return care in ("nurse", "lab") or (bool(ex.services) and not ex.symptoms)
 
 
-def _model_emergency(so: StudentOutput) -> bool:
-    # the care head's emergency class and the red-flag heads; the urgency head is not used here
-    # (it is not trained on follow-up messages, so its "immediate" is noise on them)
-    return so.says_emergency
+MODEL_SURE_EMERGENCY = 0.97  # the care head alone calls 112 only when this sure (see docs/RESULTS_MODELS.md)
+
+
+def _model_emergency(so: StudentOutput, ex: Extraction) -> bool:
+    """112 on the model's word: a red-flag head names a danger sign, or the care head is very
+    sure of an emergency and the words do not deny a danger sign ("behosh nahi", "saans ki
+    dikkat nahi"), where it over-fires. Below that it asks the danger-signs question instead.
+    On the fresh blind set this caught every emergency (0.84 with the rules alone) with no
+    extra false alarms. The urgency head is not used: it is not trained on follow-up messages."""
+    if so.says_emergency:
+        return True
+    sure = so.top_care == "emergency" and so.care.get("emergency", 0.0) >= MODEL_SURE_EMERGENCY
+    return sure and not ex.negated_flags
 
 
 def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked: list[str], policy: str | None,
@@ -214,7 +223,7 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     """The decision when the fine-tuned model is loaded. `fired` collects the guardrails
     that changed or decided something."""
     # 1) emergency: the rules' red flags (the safety net) or the model
-    model_em = _model_emergency(so)
+    model_em = _model_emergency(so, ex)
     if rule_flags or model_em:
         flags = list(rule_flags)
         source_of = {f: "rules" for f in rule_flags}

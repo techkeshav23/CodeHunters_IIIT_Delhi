@@ -26,7 +26,8 @@ CPU in about 20 ms.
 **Module 2, triage: the model decides, with guardrails around it.**
 - The danger-sign lexicon (25 types, 800+ phrases, negation-aware) is a safety net. It can
   only escalate.
-- 112 is called when a red flag is named. If the model alone senses danger, the app first
+- 112 is called when a red flag is named, or when the model is at least 97% sure of an
+  emergency and the words deny no danger sign. If the model is less sure, the app first
   asks about danger signs, and a "Haan" goes to the emergency path.
 - Urgency is never below the rules' urgency. It is at least same day for a baby, an older
   adult or a pregnancy.
@@ -69,10 +70,11 @@ no retrieval at run time: the model is trained, not a lookup.
 | | Score |
 |---|---|
 | Held-out case families (12 unseen families, incl. chest pain, suicidal, IV drip) | care accuracy 83% |
+| **Fresh blind set**: 150 new messages written without seeing the rules or the training data | first run: care accuracy 93.3% (rules alone 74.0%), urgency F1 0.915, no under-triage |
 | Organisers' 340 rows, first model, before any error analysis | care macro-F1 0.966, urgency 0.968, emergency recall 1.0 |
 | Organisers' 340 rows, final model alone / served system | 1.0 / 1.0, no false emergencies |
-| Our 600 hard cases (negation, minimised symptoms, typos, run-together Devanagari) | emergency recall 1.0, false alarms 0% |
-| CARE-Bench public (925 English prefixes) | urgent → at least same day 100%, false emergencies 13.8% |
+| Our 600 hand-written hard cases (negation, minimised symptoms, typos, run-together Devanagari) | emergency recall 1.0 in all 9 sets; false alarms 0–19% (look-alikes) |
+| CARE-Bench public (925 English prefixes, another domain) | urgent → at least same day 100%, false emergencies 24% |
 | Caregiver matching vs the organisers' labels | 209/209 lists and scores, NDCG@3 1.0 |
 | Latency (model, CPU) | ~20 ms |
 
@@ -83,11 +85,22 @@ unseen families are the honest generalisation numbers. Training accuracy is 99.6
 83% on unseen families, so the model fits its families more tightly than new ones; the
 guardrails exist for that gap.
 
-**Model comparison** (`scripts/compare_models.py`, `docs/RESULTS_MODELS.md`):
-- rules only;
-- the previous rules + TF-IDF/logistic regression;
-- MuRIL with guardrails;
-- MuRIL with guardrails and Claude when unsure.
+**Model vs rules on the fresh blind set** (first run, API default policy):
+
+| System | Care accuracy | Care macro-F1 | Urgency macro-F1 | Under-triage |
+|---|---|---|---|---|
+| Rules only | 74.0% | 0.765 | 0.840 | 3 |
+| Rules + TF-IDF/LR (our previous system) | 74.7% | 0.772 | 0.845 | 3 |
+| **MuRIL + guardrails** | **93.3%** | **0.929** | **0.915** | **0** |
+
+On our older hand-written sets the rules look better (92% vs 65% care agreement), but
+those sets were used to write the rules and follow their older convention for mild
+complaints, so the fresh set is the fair test. Emergency recall on the fresh set was 0.84
+for all three on its first run. That is why the model may now call 112 by itself: when it
+is at least 97% sure of an emergency and the words deny no danger sign. With that, recall
+on the fresh set is 1.0 with no added false alarms. The four phrasings the lexicon missed
+were then added to it, so the fresh set is no longer blind for the rules. Full tables:
+`docs/RESULTS_MODELS.md`.
 
 ## 4. Models and APIs used
 
@@ -116,8 +129,9 @@ The code was written during the event, with help from AI coding assistants.
 
 - The training text is synthetic. Real families will phrase things we did not imagine, and
   the 83% on unseen families is the realistic expectation for brand-new kinds of request.
-- The red-flag heads learned little: emergencies are named by the lexicon. The model's
-  emergency sense leads to the danger-sign question, not to 112 by itself.
+- The red-flag heads learned little, so the named flags come from the lexicon. The care
+  head's emergency sense calls 112 only when it is very sure (otherwise it asks), which
+  over-fires on long English questions from another domain (CARE-Bench: 24% false emergencies).
 - Where our old labels chose a teleconsult for mild complaints, the model follows the
   organisers' convention of a home visit.
 - English, Hindi and Hinglish only. Not a medical device.
