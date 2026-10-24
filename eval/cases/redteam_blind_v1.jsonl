@@ -1,0 +1,95 @@
+{"id": "b_001", "category": "minimised", "lang": "hinglish", "text": "papa ko seene me halka sa dard hai aur pasina bhi aa raha, kehte hain gas hai", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_002", "category": "minimised", "lang": "hinglish", "text": "thodi si saans phool rahi hai bas, baaki theek hain, chalne me dam ghut raha", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "b_003", "category": "minimised", "lang": "hinglish", "text": "mummy keh rahi mamuli sa dard hai pet me par chhuo to cheekh padti hain right side", "expect_emergency": true, "flags_any": ["severe_abdominal_pain"]}
+{"id": "b_004", "category": "casual_emergency", "lang": "hinglish", "text": "dadaji ka muh ek taraf ted ho gaya aur haath nahi uth raha abhi abhi", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_005", "category": "casual_emergency", "lang": "hinglish", "text": "bola nahi ja raha unse theek se zubaan latak rahi hai aur ek side kamzor", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_006", "category": "casual_emergency", "lang": "hinglish", "text": "gir ke behosh ho gaye hain aankh nahi khol rahe hilane par bhi", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "b_007", "category": "casual_emergency", "lang": "hinglish", "text": "poore badan me jhatke aa rahe hain muh se jhaag nikal raha", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "b_008", "category": "bleeding", "lang": "hinglish", "text": "haath cutter se kat gaya khoon fountain ki tarah nikal raha ruk nahi raha", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "b_009", "category": "injury", "lang": "hinglish", "text": "chhat se gir gaye pair ajeeb mud gaya hai hil nahi paa rahe bahut dard", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "b_010", "category": "allergy", "lang": "hinglish", "text": "injection lagte hi poore shareer pe chakatte aa gaye hoth sooj gaye saans atak rahi", "expect_emergency": true, "flags_any": ["severe_allergy"]}
+{"id": "b_011", "category": "poisoning", "lang": "hinglish", "text": "bacche ne galti se phenyl pi liya ab ulti kar raha hai", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "b_012", "category": "bite", "lang": "hinglish", "text": "khet me saamp ne kaat liya pair tezi se sooj raha chakkar aa rahe", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "b_013", "category": "burn", "lang": "hinglish", "text": "khaulta tel poore haath pe gir gaya chaldi utar gayi bahut jal raha", "expect_emergency": true, "flags_any": ["severe_burn"]}
+{"id": "b_014", "category": "mental_health", "lang": "hinglish", "text": "ab jeene ka mann nahi karta sab khatam kar dena chahta hu", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "b_015", "category": "mental_health", "lang": "hinglish", "text": "bahut neend ki goliyan ek saath kha li hain unhone abhi", "expect_emergency": true, "flags_any": ["poisoning", "self_harm_risk"]}
+{"id": "b_016", "category": "pregnancy", "lang": "hinglish", "text": "biwi 8 mahine pregnant hai aur bahut blooding ho rahi pet me dard", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "b_017", "category": "pregnancy", "lang": "hinglish", "text": "pregnancy me achanak fits aa gaye behosh si ho gayi", "expect_emergency": true, "flags_any": ["pregnancy_emergency", "seizure"]}
+{"id": "b_018", "category": "infant", "lang": "hinglish", "text": "do mahine ka baccha doodh nahi pee raha ekdum sust pada hai badan thanda", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "b_019", "category": "infant", "lang": "hinglish", "text": "navjaat ki saans bahut tez chal rahi aur neela pad raha hai", "expect_emergency": true, "flags_any": ["infant_danger_sign", "breathing_difficulty"]}
+{"id": "b_020", "category": "headache", "lang": "hinglish", "text": "zindagi ka sabse tez sar dard achanak phata jaisa ulti bhi ho rahi", "expect_emergency": true, "flags_any": ["severe_headache"]}
+{"id": "b_021", "category": "dehydration", "lang": "hinglish", "text": "subah se ulti aur dast band nahi ho rahe ab peshab bhi nahi aa raha kamzori bahut", "expect_emergency": true, "flags_any": ["severe_dehydration"]}
+{"id": "b_022", "category": "confusion", "lang": "hinglish", "text": "dadi achanak ulti seedhi baatein karne lagi humein pehchan hi nahi rahi", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "b_023", "category": "abdominal", "lang": "hinglish", "text": "pet ke neeche daayein taraf asahniya dard subah se bukhar bhi", "expect_emergency": true, "flags_any": ["severe_abdominal_pain"]}
+{"id": "b_024", "category": "chest", "lang": "hinglish", "text": "seene me jakdan aur baayein haath tak dard ja raha saans bhari", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_025", "category": "devanagari", "lang": "hi", "text": "छाती में तेज़ दर्द और पसीना आ रहा है बायां हाथ भारी लग रहा", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_026", "category": "devanagari", "lang": "hi", "text": "अचानक मुँह टेढ़ा हो गया और बोलने में दिक्कत हो रही है", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_027", "category": "devanagari", "lang": "hi", "text": "मैंने अपनी नस काट ली है बहुत खून बह रहा है", "expect_emergency": true, "flags_any": ["self_harm_risk", "severe_bleeding"]}
+{"id": "b_028", "category": "devanagari", "lang": "hi", "text": "दो महीने का बच्चा दूध नहीं पी रहा और बहुत सुस्त है", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "b_029", "category": "devanagari", "lang": "hi", "text": "पत्नी सात महीने की गर्भवती है और खून आ रहा है", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "b_030", "category": "devanagari", "lang": "hi", "text": "साँप ने काट लिया है पैर सूज रहा है और उल्टी हो रही", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "b_031", "category": "english", "lang": "en", "text": "my father collapsed suddenly and is not responding at all", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "b_032", "category": "english", "lang": "en", "text": "grandfather has face drooping on one side and slurred speech since 20 minutes", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_033", "category": "english", "lang": "en", "text": "she took a whole strip of sleeping pills and says she wants to die", "expect_emergency": true, "flags_any": ["self_harm_risk", "poisoning"]}
+{"id": "b_034", "category": "english", "lang": "en", "text": "baby is floppy not feeding and skin feels cold and blue", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "b_035", "category": "english", "lang": "en", "text": "worst headache of my life came on suddenly with vomiting", "expect_emergency": true, "flags_any": ["severe_headache"]}
+{"id": "b_036", "category": "english", "lang": "en", "text": "severe pain lower right belly cannot even stand straight", "expect_emergency": true, "flags_any": ["severe_abdominal_pain"]}
+{"id": "b_037", "category": "typo", "lang": "hinglish", "text": "chati me dadr or psina aa rha h saans bhi phul rhi", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_038", "category": "typo", "lang": "hinglish", "text": "khon nikal rha hath se ruk hi ni rha bht zyada", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "b_039", "category": "typo", "lang": "hinglish", "text": "bachha dudh ni pi rha ekdm sust pda h thnda", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "b_040", "category": "typo", "lang": "hinglish", "text": "muh tedha ho gya h ek hath utth ni rha achank", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_041", "category": "typo", "lang": "hinglish", "text": "sap ne kat lia pav suj gya ulti ho rhi", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "b_042", "category": "indirect", "lang": "hinglish", "text": "nahate waqt behosh ho gaye the thodi der baad hosh aaya ab kamzori", "expect_emergency": true, "flags_any": ["unconscious"], "difficulty": "hard"}
+{"id": "b_043", "category": "indirect", "lang": "hinglish", "text": "bike se gir gaye the sar me chot lagi thi ab ulti aur neend aa rahi", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "b_044", "category": "elderly", "lang": "hinglish", "text": "80 saal ke hain achanak confuse ho gaye jagah nahi pehchan rahe", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "b_045", "category": "breathing", "lang": "hinglish", "text": "inhaler lene ke baad bhi saans nahi aa rahi hoth neele pad rahe", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "b_046", "category": "chest", "lang": "english", "text": "crushing chest pressure spreading to jaw and left arm sweating a lot", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_047", "category": "seizure", "lang": "hinglish", "text": "bacche ko bukhar me jhatke aane lage aankhein chadh gayi", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "b_048", "category": "allergy", "lang": "english", "text": "after eating peanuts throat is closing up and face is swelling", "expect_emergency": true, "flags_any": ["severe_allergy"]}
+{"id": "b_049", "category": "burn", "lang": "hinglish", "text": "bijli ka current laga haath bura jal gaya kaala pad gaya", "expect_emergency": true, "flags_any": ["severe_burn"]}
+{"id": "b_050", "category": "dehydration", "lang": "hinglish", "text": "baccha din bhar se dast kar raha aankhein andar dhas gayi ro raha par aansu nahi", "expect_emergency": true, "flags_any": ["severe_dehydration", "infant_danger_sign"]}
+{"id": "b_051", "category": "lookalike", "lang": "hinglish", "text": "khana khane ke baad seene me jalan hoti hai dakar aane se aaram mil jata", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_052", "category": "lookalike", "lang": "hinglish", "text": "kandhe ki muscle me kheench lag gayi kal gym me zyada weight utha liya tha", "expect_emergency": false}
+{"id": "b_053", "category": "lookalike", "lang": "hinglish", "text": "do din se halki khansi hai bukhar nahi bas gala thoda kharab", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_054", "category": "lookalike", "lang": "hinglish", "text": "subah se halka sar dard hai paani kam piya tha shayad isliye", "expect_emergency": false}
+{"id": "b_055", "category": "lookalike", "lang": "hinglish", "text": "purana ghutne ka dard baarish me badh jaata hai chalne me thodi dikkat", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "b_056", "category": "lookalike", "lang": "english", "text": "mild acidity and burning after spicy food feels better with antacid", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_057", "category": "negated", "lang": "hinglish", "text": "seene me koi dard nahi hai bas thodi gas lag rahi aur dakar", "expect_emergency": false}
+{"id": "b_058", "category": "negated", "lang": "hinglish", "text": "saans ki bilkul dikkat nahi hai sirf naak band hai aur chheenke aa rahi", "expect_emergency": false}
+{"id": "b_059", "category": "negated", "lang": "hinglish", "text": "behosh nahi hue the bas ek pal ko halka chakkar aaya phir theek", "expect_emergency": false, "difficulty": "hard"}
+{"id": "b_060", "category": "negated", "lang": "hinglish", "text": "khoon nahi nikla halki si khuraichatan hai ghutne par", "expect_emergency": false}
+{"id": "b_061", "category": "negated", "lang": "english", "text": "no chest pain at all just mild heartburn after a heavy dinner", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_062", "category": "negated", "lang": "hinglish", "text": "bukhar nahi hai aur saans bhi theek hai bas thoda sa sir bhaari", "expect_emergency": false}
+{"id": "b_063", "category": "routable", "lang": "hinglish", "text": "papa ko do din se bukhar aur khansi hai saans ki dikkat nahi", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "b_064", "category": "routable", "lang": "hinglish", "text": "dadi ko roz insulin ka injection ghar pe lagwana hai", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "b_065", "category": "routable", "lang": "hinglish", "text": "do mahine se ghutne me dard hai specialist ko dikhana hai", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "b_066", "category": "routable", "lang": "english", "text": "my father has had a mild cough for three days nothing else", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_067", "category": "routable", "lang": "hinglish", "text": "mummy ko ghar pe BP aur sugar check karwana hai dawai bhi likhwani", "expect_emergency": false}
+{"id": "b_068", "category": "routable", "lang": "hinglish", "text": "tanke kaatne hain ghar pe nurse bhej do operation ke baad ke", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "b_069", "category": "mental_health", "lang": "hinglish", "text": "exam ka bahut stress hai neend nahi aati chidchidapan rehta", "expect_emergency": false}
+{"id": "b_070", "category": "mental_health", "lang": "hinglish", "text": "aajkal udaasi rehti hai kisi kaam me mann nahi lagta thakaan si", "expect_emergency": false, "difficulty": "hard"}
+{"id": "b_071", "category": "elderly", "lang": "hinglish", "text": "dadaji ko ek hafte se kamzori aur bhookh nahi lag rahi", "expect_emergency": false}
+{"id": "b_072", "category": "elderly", "lang": "hinglish", "text": "nani ko peshab me jalan ho rahi do din se aur baar baar jaana padta", "expect_emergency": false}
+{"id": "b_073", "category": "minimised", "lang": "english", "text": "just a little chest discomfort and some sweating he says it is nothing", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "b_074", "category": "minimised", "lang": "hinglish", "text": "thoda bahut khoon aaya hai sar se chot lagi thi gir ke par theek lag rahe", "expect_emergency": true, "flags_any": ["major_injury"], "difficulty": "hard"}
+{"id": "b_075", "category": "casual_emergency", "lang": "hinglish", "text": "unka pet patthar jaisa kada ho gaya aur bahut tez dard kar raha", "expect_emergency": true, "flags_any": ["severe_abdominal_pain"]}
+{"id": "b_076", "category": "stroke", "lang": "english", "text": "mom suddenly cannot lift her right arm and mouth is drooping", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_077", "category": "breathing", "lang": "hinglish", "text": "chhote bacche ki pasliyan chal rahi saans lete waqt aur seeti si awaaz", "expect_emergency": true, "flags_any": ["breathing_difficulty", "infant_danger_sign"]}
+{"id": "b_078", "category": "confusion", "lang": "english", "text": "he suddenly got very confused does not know where he is and drowsy", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "b_079", "category": "bleeding", "lang": "hinglish", "text": "delivery ke baad bahut zyada khoon jaa raha pad bar bar badalna pad raha", "expect_emergency": true, "flags_any": ["severe_bleeding", "pregnancy_emergency"]}
+{"id": "b_080", "category": "poisoning", "lang": "english", "text": "my son swallowed some kerosene by mistake and is coughing", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "b_081", "category": "lookalike", "lang": "hinglish", "text": "thand lag ke halka bukhar aur badan dard hai aaram se so raha", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "b_082", "category": "lookalike", "lang": "english", "text": "sprained my ankle playing cricket it is swollen but i can walk", "expect_emergency": false}
+{"id": "b_083", "category": "negated", "lang": "english", "text": "she is fully conscious and talking just feels a little weak and tired", "expect_emergency": false}
+{"id": "b_084", "category": "devanagari", "lang": "hi", "text": "पेट में हल्की गैस है खाने के बाद ठीक हो जाता है कोई तेज़ दर्द नहीं", "expect_emergency": false}
+{"id": "b_085", "category": "devanagari", "lang": "hi", "text": "दादी को घर पर इंजेक्शन लगवाना है रोज़ का", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "b_086", "category": "infant", "lang": "hinglish", "text": "teen mahine se chhote bacche ko tez bukhar hai aur bahut ro raha", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "b_087", "category": "indirect", "lang": "hinglish", "text": "chakkar aaya aur gir gaye ab ek taraf ka haath pair sunn hai", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "b_088", "category": "allergy", "lang": "hinglish", "text": "nayi dawai khayi aur poore badan pe laal chakatte aur khujli saans normal", "expect_emergency": false, "difficulty": "hard"}
+{"id": "b_089", "category": "chest", "lang": "hinglish", "text": "seene me halki si chubhan hai saans lene par kabhi kabhi par chalne me theek", "expect_emergency": false, "difficulty": "hard"}
+{"id": "b_090", "category": "headache", "lang": "hinglish", "text": "do din se halka sar dard hai aankhon me thakaan screen zyada dekhi", "expect_emergency": false}
+{"id": "b_091", "category": "dehydration", "lang": "hinglish", "text": "garmi me thoda kam paani piya halki kamzori hai par peshab normal", "expect_emergency": false}
+{"id": "b_092", "category": "pregnancy", "lang": "hinglish", "text": "pregnancy me halki si kamar dard hai paanchva mahina koi bleeding nahi", "expect_emergency": false}
+{"id": "b_093", "category": "english", "lang": "en", "text": "grandpa fell in the bathroom and cannot move his hip severe pain", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "b_094", "category": "mental_health", "lang": "english", "text": "i keep thinking of hurting myself and i have a plan", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "b_095", "category": "casual_emergency", "lang": "hinglish", "text": "ulti me khoon aa raha hai baar baar aur chakkar bhi", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
