@@ -1,37 +1,93 @@
 {
   "request": {
-    "user_input": "papa ko do din se bukhar hai aur khansi bhi",
+    "user_input": "Nahi",
     "language": "auto",
-    "location": { "lat": 28.54, "lng": 77.27 },
-    "conversation_history": []
+    "location": {
+      "lat": 28.5459,
+      "lng": 77.2732
+    },
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "papa ko do din se bukhar hai aur khansi bhi"
+      },
+      {
+        "role": "assistant",
+        "content": "Kya saans lene mein dikkat ho rahi hai?",
+        "question_id": "q_breathing"
+      }
+    ]
   },
   "response": {
     "follow_up_question": null,
     "care_type": "paramedic_home_visit",
     "urgency": "same_day",
     "red_flags": [],
-    "reasoning": "Fever with cough for 2 days; no breathing difficulty reported, so a same-day paramedic home visit fits.",
+    "reasoning": "Fever with cough for 2 days; no breathing difficulty, so a same-day paramedic home visit fits.",
     "matched_caregivers": [
-      { "caregiver_id": "DEV_CG_003", "score": 0.91, "reason": "Hindi-speaking, 2.1 km away, free at 4 pm" },
-      { "caregiver_id": "DEV_CG_001", "score": 0.84, "reason": "Hindi-speaking, 4.0 km away, free at 5:30 pm" },
-      { "caregiver_id": "DEV_CG_006", "score": 0.77, "reason": "Hindi-speaking, 6.2 km away, free at 6 pm" }
+      {
+        "caregiver_id": "CG_033",
+        "score": 0.83,
+        "reason": "Hindi-speaking, 1.3 km away, free 08:00–13:00"
+      },
+      {
+        "caregiver_id": "CG_032",
+        "score": 0.8,
+        "reason": "Hindi-speaking, 3.0 km away, free 15:00–21:00"
+      },
+      {
+        "caregiver_id": "CG_024",
+        "score": 0.65,
+        "reason": "Hindi-speaking, 9.3 km away, free 13:00–19:00"
+      }
     ],
     "trace": {
       "version": "0.1.0",
       "language": "hinglish",
+      "mode": "interactive",
       "understood": {
-        "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
+        "patient": {
+          "relation": "father",
+          "relation_label": "Papa",
+          "age_years": null,
+          "age_group": null,
+          "pregnant": null
+        },
         "symptoms": [
-          { "id": "fever", "label": "Fever", "label_local": "Bukhar" },
-          { "id": "cough", "label": "Cough", "label_local": "Khansi" }
+          {
+            "id": "fever",
+            "label": "Fever",
+            "label_local": "Bukhar"
+          },
+          {
+            "id": "cough",
+            "label": "Cough",
+            "label_local": "Khansi"
+          }
         ],
         "duration_days": 2,
         "duration_label": "2 days",
         "services": [],
         "severity": []
       },
+      "model": {
+        "probabilities": {
+          "emergency": 0.114,
+          "followup": 0.083,
+          "gp": 0.095,
+          "lab": 0.086,
+          "nurse": 0.116,
+          "paramedic": 0.506
+        },
+        "version": "2026-10-24T15:56:36"
+      },
       "checks": [
-        { "id": "breathing_difficulty", "label": "Breathing difficulty", "label_local": "Saans lene mein dikkat", "status": "not_reported" }
+        {
+          "id": "breathing_difficulty",
+          "label": "Breathing difficulty",
+          "label_local": "Saans lene mein dikkat",
+          "status": "absent"
+        }
       ],
       "red_flags": [],
       "decision": {
@@ -41,61 +97,110 @@
         "care_label_local": "Paramedic ghar aakar check karenge",
         "urgency_label": "Today",
         "urgency_label_local": "Aaj hi",
-        "confidence": 0.74,
-        "source": "rules",
-        "rule": "acute_fever"
+        "confidence": 0.7,
+        "source": "model",
+        "rule": "acute_fever+model",
+        "specialty": null
       },
-      "reasoning_local": "2 din se bukhar aur khansi, saans ki dikkat nahi batayi. Aaj ek paramedic ghar aakar check karenge.",
+      "reasoning_local": "2 din se bukhar aur khansi, saans ki dikkat nahi hai. Aaj ek paramedic ghar aakar check karenge.",
       "follow_up": null,
       "emergency": null,
       "caregivers": [
         {
-          "caregiver_id": "DEV_CG_003",
-          "name": "Ravi Kumar",
-          "role": "paramedic",
-          "languages": ["Hindi", "English"],
-          "skills": ["vitals check", "fever care"],
-          "distance_km": 2.1,
-          "next_slot": "2026-10-24T16:00:00+05:30",
-          "next_slot_label": "today 4 pm",
-          "next_slot_label_local": "aaj 4 baje",
-          "rating": 4.8,
-          "score": 0.91,
-          "reason": "Hindi-speaking, 2.1 km away, free at 4 pm",
-          "reason_local": "Hindi bolte hain, 2.1 km door, aaj 4 baje free"
+          "caregiver_id": "CG_033",
+          "name": "Sunita Chauhan",
+          "role": "medic",
+          "languages": [
+            "Hindi",
+            "Bhojpuri",
+            "Punjabi"
+          ],
+          "skills": [
+            "injection_iv",
+            "vitals_monitoring",
+            "bp_sugar_check",
+            "post_surgical_care",
+            "nebulization"
+          ],
+          "distance_km": 1.3,
+          "next_slot": null,
+          "next_slot_label": null,
+          "next_slot_label_local": null,
+          "rating": 3.9,
+          "score": 0.83,
+          "reason": "Hindi-speaking, 1.3 km away, free 08:00–13:00",
+          "reason_local": "Hindi bolti hain, 1.3 km door, 08:00–13:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.9,
+            "skill": 1.0,
+            "rating": 0.08
+          }
         },
         {
-          "caregiver_id": "DEV_CG_001",
-          "name": "Sunita Verma",
-          "role": "paramedic",
-          "languages": ["Hindi"],
-          "skills": ["vitals check", "sample collection"],
-          "distance_km": 4.0,
-          "next_slot": "2026-10-24T17:30:00+05:30",
-          "next_slot_label": "today 5:30 pm",
-          "next_slot_label_local": "aaj 5:30 baje",
-          "rating": 4.6,
-          "score": 0.84,
-          "reason": "Hindi-speaking, 4.0 km away, free at 5:30 pm",
-          "reason_local": "Hindi bolti hain, 4.0 km door, aaj 5:30 baje free"
+          "caregiver_id": "CG_032",
+          "name": "Naveen Sharma",
+          "role": "medic",
+          "languages": [
+            "Hindi",
+            "Haryanvi"
+          ],
+          "skills": [
+            "wound_dressing",
+            "sample_collection",
+            "injection_iv",
+            "vitals_monitoring",
+            "nebulization"
+          ],
+          "distance_km": 3.0,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.0,
+          "score": 0.8,
+          "reason": "Hindi-speaking, 3.0 km away, free 15:00–21:00",
+          "reason_local": "Hindi bolte hain, 3.0 km door, 15:00–21:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.75,
+            "skill": 1.0,
+            "rating": 0.17
+          }
         },
         {
-          "caregiver_id": "DEV_CG_006",
-          "name": "Arjun Mehta",
-          "role": "paramedic",
-          "languages": ["Hindi", "Punjabi"],
-          "skills": ["vitals check", "elderly care"],
-          "distance_km": 6.2,
-          "next_slot": "2026-10-24T18:00:00+05:30",
-          "next_slot_label": "today 6 pm",
-          "next_slot_label_local": "aaj 6 baje",
-          "rating": 4.7,
-          "score": 0.77,
-          "reason": "Hindi-speaking, 6.2 km away, free at 6 pm",
-          "reason_local": "Hindi bolte hain, 6.2 km door, aaj 6 baje free"
+          "caregiver_id": "CG_024",
+          "name": "Manoj Das",
+          "role": "medic",
+          "languages": [
+            "Hindi",
+            "Bhojpuri",
+            "Haryanvi"
+          ],
+          "skills": [
+            "vitals_monitoring",
+            "catheter_care",
+            "post_surgical_care",
+            "sample_collection",
+            "bp_sugar_check",
+            "elderly_care"
+          ],
+          "distance_km": 9.3,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.1,
+          "score": 0.65,
+          "reason": "Hindi-speaking, 9.3 km away, free 13:00–19:00",
+          "reason_local": "Hindi bolte hain, 9.3 km door, 13:00–19:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.22,
+            "skill": 1.0,
+            "rating": 0.25
+          }
         }
       ],
-      "timing_ms": 9.4
+      "timing_ms": 2.9
     }
   }
 }

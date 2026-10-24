@@ -1,5 +1,5 @@
 // Small shared helpers and the app's own data types.
-import type { Lang, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
+import type { Lang, ModelOutput, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
 import type { Key } from "./i18n";
 
 export type View = "check" | "bookings" | "sos" | "how" | "settings";
@@ -27,8 +27,15 @@ export interface BookingTarget {
   res: TriageResponse;
 }
 
+// Any one signal is enough: an emergency block, a red flag, an emergency care
+// type or an emergency urgency (old or new values).
 export function isEmergency(res: TriageResponse): boolean {
-  return res.trace?.emergency != null || res.red_flags.length > 0;
+  return (
+    res.trace?.emergency != null ||
+    (res.red_flags?.length ?? 0) > 0 ||
+    careKind(res.care_type) === "emergency" ||
+    urgencyLevel(res.urgency) === 2
+  );
 }
 
 export function initials(name: string): string {
@@ -44,9 +51,11 @@ export function avatarColor(seed: string): string {
   return AVATAR[h % AVATAR.length];
 }
 
-export function roleKey(role: string): Key {
-  const r = role.toLowerCase();
+export function roleKey(role: string | null | undefined): Key {
+  const r = (role ?? "").toLowerCase();
   if (r.includes("physio")) return "rolePhysio";
+  if (r.includes("phlebotom") || r.includes("lab")) return "roleLab";
+  if (r === "medic") return "roleMedic";
   if (r.includes("nurse")) return "roleNurse";
   if (r.includes("paramedic")) return "roleParamedic";
   if (r.includes("special") || r.includes("consult")) return "roleSpecialist";
@@ -54,13 +63,67 @@ export function roleKey(role: string): Key {
 }
 
 export function urgencyLevel(urgency: string | null): 0 | 1 | 2 {
-  if (urgency === "immediate") return 2;
+  if (urgency === "emergency" || urgency === "immediate") return 2;
   if (urgency === "same_day") return 1;
   return 0;
 }
 
 export function isTele(careType: string | null): boolean {
   return !!careType && careType.includes("teleconsult");
+}
+
+// The roster's doctors work by video only, whatever the care type says.
+export function isRemoteCarer(careType: string | null, role: string | null | undefined): boolean {
+  return isTele(careType) || (role ?? "").trim().toLowerCase() === "doctor";
+}
+
+// One name per kind of care, for both the organisers' values
+// (paramedic_home_visit, home_nursing, lab_test_home, teleconsultation,
+// emergency_112) and older ones (nurse, specialist, emergency_referral).
+export type CareKind = "paramedic" | "nurse" | "lab" | "doctor" | "emergency";
+
+export function careKind(careType: string | null | undefined): CareKind | null {
+  if (!careType) return null;
+  const c = careType.toLowerCase();
+  if (c.startsWith("emergency")) return "emergency";
+  if (c.includes("lab") || c.includes("sample")) return "lab";
+  if (c.includes("nurs")) return "nurse";
+  if (c.includes("paramedic")) return "paramedic";
+  if (c.includes("teleconsult") || c.includes("specialist") || c.includes("doctor") || c === "gp") return "doctor";
+  return null;
+}
+
+const CARE_KEY: Record<CareKind, Key> = {
+  paramedic: "careParamedic",
+  nurse: "careNurse",
+  lab: "careLab",
+  doctor: "careDoctor",
+  emergency: "careEmergency",
+};
+
+export function careKey(careType: string | null | undefined): Key | null {
+  const k = careKind(careType);
+  return k ? CARE_KEY[k] : null;
+}
+
+// Model classes: paramedic, nurse, lab, gp, emergency, followup. Unknown
+// classes return null and are shown by their own name.
+export function modelClassKey(cls: string): Key | null {
+  if (cls === "followup" || cls === "follow_up") return "careFollowup";
+  if (cls === "gp") return "careDoctor";
+  return careKey(cls);
+}
+
+export function topModelClass(model: ModelOutput | null | undefined): { cls: string; pct: number } | null {
+  const probs = model?.probabilities;
+  if (!probs || typeof probs !== "object") return null;
+  let best: { cls: string; p: number } | null = null;
+  for (const [cls, p] of Object.entries(probs)) {
+    if (typeof p !== "number" || !Number.isFinite(p)) continue;
+    if (!best || p > best.p) best = { cls, p };
+  }
+  if (!best) return null;
+  return { cls: best.cls, pct: Math.round(best.p <= 1 ? best.p * 100 : best.p) };
 }
 
 export function fmtDays(days: number | null, lang: Lang): string | null {

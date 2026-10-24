@@ -97,10 +97,7 @@ export function BookingsView({ lang, bookings, onStart }: { lang: Lang; bookings
               </div>
               <div className="booking-row__main">
                 <strong>{b.caregiver_name}</strong>
-                <span>
-                  {t(lang, roleKey(b.role))}
-                  {b.care_label ? `, ${b.care_label}` : ""}
-                </span>
+                <span>{[b.role ? t(lang, roleKey(b.role)) : null, b.care_label].filter(Boolean).join(", ")}</span>
                 <span>
                   {b.slot_label ?? ""} | {t(lang, "bookingId")}: {b.booking_id}
                 </span>
@@ -119,6 +116,9 @@ export function BookingsView({ lang, bookings, onStart }: { lang: Lang; bookings
 
 /* ---------------- emergency info ---------------- */
 
+// /v1/labels lists our own flag ids (breathing_difficulty, chest_pain, ...), not the
+// organisers' ids the triage API now returns in red_flags. These two are not
+// signs a family can watch for, so they stay off the list.
 const HIDE_FLAGS = new Set(["possible_emergency", "emergency_requested"]);
 
 export function SosView({ lang }: { lang: Lang }) {
@@ -130,11 +130,12 @@ export function SosView({ lang }: { lang: Lang }) {
       alive = false;
     };
   }, []);
-  const numbers = [
-    ...(data?.emergency_numbers ?? []),
-    ...Object.values(data?.helplines ?? {}),
-  ];
-  const flagLabel = (f: LabelsResponse["red_flags"][number]) => (lang === "hi" ? f.label_hi : lang === "hinglish" ? f.label_hinglish : f.label);
+  // several flags share one helpline (e.g. 14416), so list each number once
+  const numbers = [...(data?.emergency_numbers ?? []), ...Object.values(data?.helplines ?? {})].filter(
+    (n, i, all) => all.findIndex((m) => m.number === n.number) === i,
+  );
+  const flagLabel = (f: LabelsResponse["red_flags"][number]) =>
+    (lang === "hi" ? f.label_hi : lang === "hinglish" ? f.label_hinglish : f.label) || f.label;
   return (
     <div className="view">
       <div className="page-head">
@@ -158,7 +159,7 @@ export function SosView({ lang }: { lang: Lang }) {
           <h2>{t(lang, "sosSignsTitle")}</h2>
           <ul className="signs">
             {data.red_flags
-              .filter((f) => !HIDE_FLAGS.has(f.id))
+              .filter((f) => !HIDE_FLAGS.has(f.id) && !!flagLabel(f))
               .map((f) => (
                 <li key={f.id} lang={lang === "hi" ? "hi" : undefined}>
                   <TriangleAlert size={16} aria-hidden="true" />
@@ -212,15 +213,15 @@ export function HowView({ lang, last }: { lang: Lang; last: { req: TriageRequest
         <h2>{t(lang, "testedTitle")}</h2>
         <div className="stats">
           <div className="stat">
-            <strong>511</strong>
+            <strong>583</strong>
             <span>{t(lang, "stat1")}</span>
           </div>
           <div className="stat">
-            <strong>87.8%</strong>
+            <strong>209/209</strong>
             <span>{t(lang, "stat2")}</span>
           </div>
           <div className="stat">
-            <strong>&lt;1 ms</strong>
+            <strong>~2 ms</strong>
             <span>{t(lang, "stat3")}</span>
           </div>
         </div>

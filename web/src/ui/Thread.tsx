@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, RotateCcw, Siren, Volume2, Square } from "lucide-react";
+import { ChevronDown, FlaskConical, HeartPulse, RotateCcw, Siren, Stethoscope, Syringe, Video, Volume2, Square } from "lucide-react";
 import type { Lang, TraceCaregiver, TriageResponse } from "../types";
-import { specialtyLabel, t } from "../i18n";
-import { isTele, type Msg, urgencyLevel, fmtDays } from "../lib";
+import { specialtyLabel, t, type Key } from "../i18n";
+import { careKey, careKind, isRemoteCarer, type CareKind, type Msg, urgencyLevel, fmtDays } from "../lib";
 import { BrandMark } from "./Brand";
 import Dial from "./Dial";
 import CaseDetails from "./CaseDetails";
@@ -47,7 +47,7 @@ export default function Thread(p: Props) {
               )}
               {m.kind === "emergency" && (
                 <div className="error" style={{ background: "var(--sindoor-soft)" }}>
-                  <strong>{m.res.trace.emergency?.title_local}</strong>
+                  <strong>{m.res.trace.emergency?.title_local ?? t(p.lang, "sosPageTitle")}</strong>
                   <button type="button" className="btn btn--danger" onClick={() => p.onOpenEmergency(m)}>
                     <Siren size={18} aria-hidden="true" />
                     {t(p.lang, "sosNow")}
@@ -144,6 +144,38 @@ function Question({ res, lang, live, onAnswer }: { res: TriageResponse; lang: La
   );
 }
 
+const CARE_ICON: Record<CareKind, typeof Stethoscope> = {
+  paramedic: HeartPulse,
+  nurse: Syringe,
+  lab: FlaskConical,
+  doctor: Video,
+  emergency: Siren,
+};
+const URGENCY_KEY: Key[] = ["urgRoutine", "urgSameDay", "urgNow"];
+
+// trace.caregivers carries the full cards; if it ever comes back empty while the
+// six-field answer still names caregivers, show those rather than nothing.
+function carersOf(res: TriageResponse): TraceCaregiver[] {
+  const full = res.trace?.caregivers;
+  if (Array.isArray(full) && full.length > 0) return full;
+  return (res.matched_caregivers ?? []).map((m) => ({
+    caregiver_id: m.caregiver_id,
+    name: m.caregiver_id,
+    role: "",
+    languages: [],
+    skills: [],
+    distance_km: null,
+    next_slot: null,
+    next_slot_label: null,
+    next_slot_label_local: null,
+    rating: null,
+    score: m.score,
+    reason: m.reason,
+    reason_local: m.reason,
+    features: null,
+  }));
+}
+
 function Decision({
   res,
   lang,
@@ -158,25 +190,38 @@ function Decision({
   const [why, setWhy] = useState(false);
   const d = res.trace.decision;
   const level = urgencyLevel(res.urgency);
-  const tele = isTele(res.care_type);
-  const carers = res.trace.caregivers ?? [];
+  const carers = carersOf(res);
   const voiceLang = res.trace.language;
   const dur = fmtDays(res.trace.understood.duration_days, lang);
-  const summary = [d.care_label_local, d.urgency_label_local, res.trace.reasoning_local].filter(Boolean).join(". ");
+  const kind = careKind(res.care_type ?? d.care_type);
+  const CareIcon = kind ? CARE_ICON[kind] : null;
+  const fallbackCare = careKey(res.care_type ?? d.care_type);
+  const careLabel = d.care_label_local || d.care_label || (fallbackCare ? t(lang, fallbackCare) : "");
+  const urgencyLabel = d.urgency_label_local || d.urgency_label || (res.urgency ? t(lang, URGENCY_KEY[level]) : "");
+  const summary = [careLabel, urgencyLabel, res.trace.reasoning_local].filter(Boolean).join(". ");
 
   return (
     <section className="decision" aria-label={t(lang, "ourAdvice")}>
       <div className="decision__top">
         <Dial level={level} lang={lang} />
         <div className="decision__head">
-          <span className="decision__kicker">{t(lang, "ourAdvice")}</span>
+          <span className="decision__kicker">
+            {CareIcon && (
+              <span className={kind === "emergency" ? "care-ico care-ico--danger" : "care-ico"} data-care={kind} aria-hidden="true">
+                <CareIcon size={16} />
+              </span>
+            )}
+            {t(lang, "ourAdvice")}
+          </span>
           <h2 className="decision__care" lang={voiceLang === "hi" ? "hi" : undefined}>
-            {d.care_label_local}
+            {careLabel}
           </h2>
           <div className="decision__chips">
-            <span className={level === 1 ? "chip chip--haldi" : level === 2 ? "chip chip--danger" : "chip chip--brand"}>
-              {d.urgency_label_local}
-            </span>
+            {urgencyLabel && (
+              <span className={level === 1 ? "chip chip--haldi" : level === 2 ? "chip chip--danger" : "chip chip--brand"}>
+                {urgencyLabel}
+              </span>
+            )}
             {d.specialty && <span className="chip">{t(lang, "specialist", { x: specialtyLabel(lang, d.specialty) })}</span>}
             {dur && <span className="chip">{dur}</span>}
           </div>
@@ -203,7 +248,14 @@ function Decision({
         <h3 className="carers__title">{t(lang, "carersTitle")}</h3>
         {carers.length === 0 && <p className="case-panel__empty">{t(lang, "noCarers")}</p>}
         {carers.map((cg, i) => (
-          <CaregiverCard key={cg.caregiver_id} cg={cg} best={i === 0} tele={tele} lang={lang} onBook={() => onBook(cg, res)} />
+          <CaregiverCard
+            key={cg.caregiver_id}
+            cg={cg}
+            best={i === 0}
+            tele={isRemoteCarer(res.care_type, cg.role)}
+            lang={lang}
+            onBook={() => onBook(cg, res)}
+          />
         ))}
       </div>
     </section>

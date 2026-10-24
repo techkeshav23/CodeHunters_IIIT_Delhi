@@ -20,3 +20,14 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>,
 );
+
+// Installable app: the service worker (public/sw.js) keeps the app shell for
+// offline starts and never caches API calls. Production builds only, so the
+// dev server is never cached.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
+      // Without the worker the app still works online.
+    });
+  });
+}

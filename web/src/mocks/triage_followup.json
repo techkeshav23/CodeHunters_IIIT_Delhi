@@ -3,11 +3,14 @@
     "request": {
       "user_input": "Papa ki tabiyat theek nahi hai",
       "language": "auto",
-      "location": { "lat": 28.54, "lng": 77.27 },
+      "location": {
+        "lat": 28.5459,
+        "lng": 77.2732
+      },
       "conversation_history": []
     },
     "response": {
-      "follow_up_question": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.",
+      "follow_up_question": "Zaroor madad karenge. Kiske liye hai, aur kya chahiye: koi taklif jaise bukhar ya dard, ghar pe nursing (injection, dressing), lab test, ya doctor se baat?",
       "care_type": null,
       "urgency": null,
       "red_flags": [],
@@ -16,13 +19,31 @@
       "trace": {
         "version": "0.1.0",
         "language": "hinglish",
+        "mode": "interactive",
         "understood": {
-          "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
+          "patient": {
+            "relation": "father",
+            "relation_label": "Papa",
+            "age_years": null,
+            "age_group": null,
+            "pregnant": null
+          },
           "symptoms": [],
           "duration_days": null,
           "duration_label": null,
           "services": [],
           "severity": []
+        },
+        "model": {
+          "probabilities": {
+            "emergency": 0.152,
+            "followup": 0.425,
+            "gp": 0.099,
+            "lab": 0.076,
+            "nurse": 0.138,
+            "paramedic": 0.109
+          },
+          "version": "2026-10-24T15:56:36"
         },
         "checks": [],
         "red_flags": [],
@@ -33,28 +54,48 @@
           "care_label_local": null,
           "urgency_label": null,
           "urgency_label_local": null,
-          "confidence": 0.0,
+          "confidence": 0.43,
           "source": "rules",
-          "rule": "no_symptom_understood"
+          "rule": "no_symptom_understood+model",
+          "specialty": null
         },
         "reasoning_local": "Abhi saaf nahi hai ki taklif kya hai, isliye ek sawaal.",
         "follow_up": {
           "id": "q_main_symptom",
-          "text": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.",
+          "text": "Zaroor madad karenge. Kiske liye hai, aur kya chahiye: koi taklif jaise bukhar ya dard, ghar pe nursing (injection, dressing), lab test, ya doctor se baat?",
           "kind": "free_text",
           "options": [
-            { "value": "fever", "label": "Bukhar" },
-            { "value": "pain", "label": "Dard" },
-            { "value": "breathing", "label": "Saans ki dikkat" },
-            { "value": "vomiting", "label": "Ulti / dast" },
-            { "value": "injury", "label": "Chot" }
+            {
+              "value": "fever",
+              "label": "Bukhar"
+            },
+            {
+              "value": "pain",
+              "label": "Dard"
+            },
+            {
+              "value": "breathing",
+              "label": "Saans ki dikkat"
+            },
+            {
+              "value": "nursing",
+              "label": "Injection / dressing"
+            },
+            {
+              "value": "lab",
+              "label": "Ghar pe lab test"
+            },
+            {
+              "value": "doctor",
+              "label": "Doctor se baat"
+            }
           ],
           "asked_so_far": 1,
           "max": 3
         },
         "emergency": null,
         "caregivers": [],
-        "timing_ms": 6.1
+        "timing_ms": 2.2
       }
     }
   },
@@ -62,10 +103,20 @@
     "request": {
       "user_input": "Bukhar",
       "language": "auto",
-      "location": { "lat": 28.54, "lng": 77.27 },
+      "location": {
+        "lat": 28.5459,
+        "lng": 77.2732
+      },
       "conversation_history": [
-        { "role": "user", "content": "Papa ki tabiyat theek nahi hai" },
-        { "role": "assistant", "content": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.", "question_id": "q_main_symptom" }
+        {
+          "role": "user",
+          "content": "Papa ki tabiyat theek nahi hai"
+        },
+        {
+          "role": "assistant",
+          "content": "Zaroor madad karenge. Kiske liye hai, aur kya chahiye: koi taklif jaise bukhar ya dard, ghar pe nursing (injection, dressing), lab test, ya doctor se baat?",
+          "question_id": "q_main_symptom"
+        }
       ]
     },
     "response": {
@@ -78,16 +129,45 @@
       "trace": {
         "version": "0.1.0",
         "language": "hinglish",
+        "mode": "interactive",
         "understood": {
-          "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
-          "symptoms": [{ "id": "fever", "label": "Fever", "label_local": "Bukhar" }],
+          "patient": {
+            "relation": "father",
+            "relation_label": "Papa",
+            "age_years": null,
+            "age_group": null,
+            "pregnant": null
+          },
+          "symptoms": [
+            {
+              "id": "fever",
+              "label": "Fever",
+              "label_local": "Bukhar"
+            }
+          ],
           "duration_days": null,
           "duration_label": null,
           "services": [],
           "severity": []
         },
+        "model": {
+          "probabilities": {
+            "emergency": 0.11,
+            "followup": 0.38,
+            "gp": 0.1,
+            "lab": 0.07,
+            "nurse": 0.1,
+            "paramedic": 0.24
+          },
+          "version": "2026-10-24T15:56:36"
+        },
         "checks": [
-          { "id": "breathing_difficulty", "label": "Breathing difficulty", "label_local": "Saans lene mein dikkat", "status": "not_reported" }
+          {
+            "id": "breathing_difficulty",
+            "label": "Breathing difficulty",
+            "label_local": "Saans lene mein dikkat",
+            "status": "not_reported"
+          }
         ],
         "red_flags": [],
         "decision": {
@@ -107,10 +187,22 @@
           "text": "Kitne din se ho raha hai?",
           "kind": "choice",
           "options": [
-            { "value": "today", "label": "Aaj se" },
-            { "value": "2_3_days", "label": "2-3 din" },
-            { "value": "week", "label": "1 hafte se zyada" },
-            { "value": "month", "label": "1 mahine se zyada" }
+            {
+              "value": "today",
+              "label": "Aaj se"
+            },
+            {
+              "value": "2_3_days",
+              "label": "2-3 din"
+            },
+            {
+              "value": "week",
+              "label": "1 hafte se zyada"
+            },
+            {
+              "value": "month",
+              "label": "1 mahine se zyada"
+            }
           ],
           "asked_so_far": 2,
           "max": 3

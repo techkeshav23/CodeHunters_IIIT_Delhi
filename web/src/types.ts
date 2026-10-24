@@ -49,7 +49,8 @@ export interface Understood {
   duration_days: number | null;
   duration_label: string | null;
   services: Array<{ id: string; label: string; label_local: string }>;
-  severity: Array<{ id: string; label: string; label_local: string }>;
+  // the API now sends plain ids here (e.g. "severe"); older builds sent objects
+  severity: Array<string | { id: string; label: string; label_local: string }>;
 }
 
 export type CheckStatus = "present" | "absent" | "not_reported";
@@ -69,7 +70,10 @@ export interface RedFlag {
 }
 
 export interface Decision {
+  // organisers' values: paramedic_home_visit | home_nursing | lab_test_home |
+  // teleconsultation | emergency_112 (older builds: nurse, specialist, emergency_referral)
   care_type: string | null;
+  // emergency | same_day | scheduled (older builds: immediate, routine)
   urgency: string | null;
   care_label: string | null;
   care_label_local: string | null;
@@ -124,23 +128,26 @@ export interface TraceCaregiver {
   score: number;
   reason: string;
   reason_local: string;
-  // 0-1 sub-scores behind the match (backend agent, documented in API.md):
-  // skill, time, distance, language, rating. Optional for forward-compat.
+  // Named 0-1 sub-scores behind the match. The keys change with the ranker
+  // (today: language, distance, skill, rating), so render whatever arrives.
   features?: MatchFeatures | null;
 }
 
-export interface MatchFeatures {
-  skill?: number;
-  time?: number;
-  distance?: number;
-  language?: number;
-  rating?: number;
+export type MatchFeatures = Record<string, number | null | undefined>;
+
+// The learned model's output (only when the model is loaded). Classes today:
+// paramedic, nurse, lab, gp, emergency, followup.
+export interface ModelOutput {
+  probabilities: Record<string, number>;
+  version?: string;
 }
 
 export interface Trace {
   version: string;
   language: Lang;
+  mode?: string;
   understood: Understood;
+  model?: ModelOutput | null;
   checks: Check[];
   red_flags: RedFlag[];
   decision: Decision;
@@ -155,6 +162,8 @@ export interface TriageResponse {
   follow_up_question: string | null;
   care_type: string | null;
   urgency: string | null;
+  // organisers' flag ids where one exists (chest_pain, breathlessness, ...), else ours.
+  // Never shown to people: the UI uses trace.red_flags[].label_local.
   red_flags: string[];
   reasoning: string;
   matched_caregivers: MatchedCaregiver[];

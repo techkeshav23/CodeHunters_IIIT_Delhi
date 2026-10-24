@@ -10,25 +10,20 @@
   },
   "response": {
     "follow_up_question": null,
-    "care_type": "nurse",
-    "urgency": "routine",
+    "care_type": "home_nursing",
+    "urgency": "same_day",
     "red_flags": [],
-    "reasoning": "Injection at home in an older adult; no danger signs reported, so a nurse home visit at a convenient time fits.",
+    "reasoning": "Injection at home in an older adult; no danger signs reported, so a nurse home visit today fits.",
     "matched_caregivers": [
       {
-        "caregiver_id": "DEV_CG_008",
-        "score": 0.94,
-        "reason": "Hindi-speaking, 1.4 km away, free at 4:30 pm, injection experience"
-      },
-      {
-        "caregiver_id": "DEV_CG_007",
-        "score": 0.84,
-        "reason": "Hindi-speaking, 1.4 km away, free at 2 pm, injection experience"
-      },
-      {
-        "caregiver_id": "DEV_CG_012",
+        "caregiver_id": "CG_016",
         "score": 0.81,
-        "reason": "Hindi-speaking, 1.5 km away, free at 1:30 pm, elderly care experience"
+        "reason": "Hindi-speaking, 7.6 km away, free 10:00–16:00"
+      },
+      {
+        "caregiver_id": "CG_032",
+        "score": 0.8,
+        "reason": "Hindi-speaking, 3.0 km away, free 15:00–21:00"
       }
     ],
     "trace": {
@@ -55,116 +50,98 @@
         ],
         "severity": []
       },
+      "model": {
+        "probabilities": {
+          "emergency": 0.094,
+          "followup": 0.075,
+          "gp": 0.095,
+          "lab": 0.093,
+          "nurse": 0.503,
+          "paramedic": 0.139
+        },
+        "version": "2026-10-24T15:56:36"
+      },
       "checks": [],
       "red_flags": [],
       "decision": {
-        "care_type": "nurse",
-        "urgency": "routine",
-        "care_label": "Nurse home visit",
-        "care_label_local": "Nurse ghar aayengi",
-        "urgency_label": "In the next few days",
-        "urgency_label_local": "Agle kuch dinon mein",
+        "care_type": "home_nursing",
+        "urgency": "same_day",
+        "care_label": "Home nursing",
+        "care_label_local": "Ghar pe nursing (nurse aayengi)",
+        "urgency_label": "Today",
+        "urgency_label_local": "Aaj hi",
         "confidence": 0.7,
-        "source": "rules",
-        "rule": "service_injection",
+        "source": "model",
+        "rule": "service_injection+model",
         "specialty": null
       },
-      "reasoning_local": "Ghar pe injection, koi khatre ka lakshan nahi bataya. Aapke time par ek nurse ghar aayengi.",
+      "reasoning_local": "Ghar pe injection, koi khatre ka lakshan nahi bataya. Aaj ek nurse ghar aayengi.",
       "follow_up": null,
       "emergency": null,
       "caregivers": [
         {
-          "caregiver_id": "DEV_CG_008",
-          "name": "Meena Kumari",
-          "role": "nurse",
+          "caregiver_id": "CG_016",
+          "name": "Ritu Kumar",
+          "role": "medic",
           "languages": [
             "Hindi",
-            "Bhojpuri"
+            "English"
           ],
           "skills": [
-            "injection",
-            "elderly care",
-            "wound care",
-            "bedsore care"
+            "wound_dressing",
+            "elderly_care",
+            "injection_iv",
+            "sample_collection",
+            "bp_sugar_check",
+            "nebulization"
           ],
-          "distance_km": 1.4,
-          "next_slot": "2026-10-24T16:30:00+05:30",
-          "next_slot_label": "4:30 pm",
-          "next_slot_label_local": "aaj shaam 4:30 baje",
-          "rating": 4.6,
-          "score": 0.94,
-          "reason": "Hindi-speaking, 1.4 km away, free at 4:30 pm, injection experience",
-          "reason_local": "Hindi bolti hain, 1.4 km door, aaj shaam 4:30 baje free, injection ka anubhav",
-          "features": {
-            "skill": 1.0,
-            "time": 0.96,
-            "distance": 0.9,
-            "language": 1.0,
-            "rating": 0.72
-          }
-        },
-        {
-          "caregiver_id": "DEV_CG_007",
-          "name": "Anjali Thomas",
-          "role": "nurse",
-          "languages": [
-            "English",
-            "Hindi",
-            "Malayalam"
-          ],
-          "skills": [
-            "injection",
-            "iv",
-            "wound care",
-            "catheter"
-          ],
-          "distance_km": 1.4,
-          "next_slot": "2026-10-24T14:00:00+05:30",
-          "next_slot_label": "2 pm",
-          "next_slot_label_local": "aaj dopahar 2 baje",
-          "rating": 4.9,
-          "score": 0.84,
-          "reason": "Hindi-speaking, 1.4 km away, free at 2 pm, injection experience",
-          "reason_local": "Hindi bolti hain, 1.4 km door, aaj dopahar 2 baje free, injection ka anubhav",
-          "features": {
-            "skill": 0.5,
-            "time": 0.99,
-            "distance": 0.91,
-            "language": 1.0,
-            "rating": 0.92
-          }
-        },
-        {
-          "caregiver_id": "DEV_CG_012",
-          "name": "Kavita Joshi",
-          "role": "nurse",
-          "languages": [
-            "Hindi",
-            "Marathi"
-          ],
-          "skills": [
-            "elderly care",
-            "bedsore care",
-            "catheter"
-          ],
-          "distance_km": 1.5,
-          "next_slot": "2026-10-24T13:30:00+05:30",
-          "next_slot_label": "1:30 pm",
-          "next_slot_label_local": "aaj dopahar 1:30 baje",
-          "rating": 4.4,
+          "distance_km": 7.6,
+          "next_slot": null,
+          "next_slot_label": null,
+          "next_slot_label_local": null,
+          "rating": 5.0,
           "score": 0.81,
-          "reason": "Hindi-speaking, 1.5 km away, free at 1:30 pm, elderly care experience",
-          "reason_local": "Hindi bolti hain, 1.5 km door, aaj dopahar 1:30 baje free, elderly care ka anubhav",
+          "reason": "Hindi-speaking, 7.6 km away, free 10:00–16:00",
+          "reason_local": "Hindi bolti hain, 7.6 km door, 10:00–16:00 free",
           "features": {
-            "skill": 0.5,
-            "time": 1.0,
-            "distance": 0.9,
             "language": 1.0,
-            "rating": 0.58
+            "distance": 0.36,
+            "skill": 1.0,
+            "rating": 1.0
+          }
+        },
+        {
+          "caregiver_id": "CG_032",
+          "name": "Naveen Sharma",
+          "role": "medic",
+          "languages": [
+            "Hindi",
+            "Haryanvi"
+          ],
+          "skills": [
+            "wound_dressing",
+            "sample_collection",
+            "injection_iv",
+            "vitals_monitoring",
+            "nebulization"
+          ],
+          "distance_km": 3.0,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.0,
+          "score": 0.8,
+          "reason": "Hindi-speaking, 3.0 km away, free 15:00–21:00",
+          "reason_local": "Hindi bolte hain, 3.0 km door, 15:00–21:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.75,
+            "skill": 1.0,
+            "rating": 0.17
           }
         }
       ],
-      "timing_ms": 4.0
+      "timing_ms": 6149.3
     }
   }
 }

@@ -12,6 +12,7 @@ import type {
 import emergencyMock from "./mocks/triage_emergency.json";
 import finalMock from "./mocks/triage_final.json";
 import followupMock from "./mocks/triage_followup.json";
+import labMock from "./mocks/triage_lab.json";
 import nurseMock from "./mocks/triage_nurse.json";
 import specialistMock from "./mocks/triage_specialist.json";
 import bookingMock from "./mocks/booking.json";
@@ -76,9 +77,11 @@ const SYMPTOM_WORDS = [
   "चोट",
 ];
 
-// Route a couple of care types in mock mode so the demo can show nurse and
-// specialist (new care_type values: `nurse`, `specialist`) without the backend.
+// Route the other care types in mock mode so the demo can show them without
+// the backend: home_nursing (injections, dressing), lab_test_home (sample
+// collection) and teleconsultation with a specialty (joint pain).
 const NURSE_WORDS = ["injection", "insulin", "inject", "इंजेक्शन", "tanke", "dressing", "drip"];
+const LAB_WORDS = ["lab", "blood test", "sample", "cbc", "thyroid", "लैब", "सैंपल", "ब्लड टेस्ट"];
 const SPECIALIST_WORDS = [
   "ghutne",
   "ghutno",
@@ -110,9 +113,13 @@ function pickMockTriage(req: TriageRequest): TriageResponse {
     return emergencyMock.response as TriageResponse;
   }
 
-  // Direct-care requests (no follow-up): nurse for injections, specialist for joints.
+  // Direct-care requests (no follow-up): nursing for injections, a home lab
+  // test for sample collection, a doctor teleconsult for joint pain.
   if (hasAny(req.user_input, NURSE_WORDS)) {
     return nurseMock.response as TriageResponse;
+  }
+  if (hasAny(req.user_input, LAB_WORDS)) {
+    return labMock.response as TriageResponse;
   }
   if (hasAny(req.user_input, SPECIALIST_WORDS)) {
     return specialistMock.response as TriageResponse;
@@ -161,6 +168,7 @@ function mockBooking(req: BookingRequest): BookingResponse {
   const roster = [
     ...finalMock.response.trace.caregivers,
     ...nurseMock.response.trace.caregivers,
+    ...labMock.response.trace.caregivers,
     ...specialistMock.response.trace.caregivers,
   ] as Array<{ caregiver_id: string; name: string }>;
   const match = roster.find((c) => c.caregiver_id === req.caregiver_id);

@@ -24,7 +24,13 @@ export default function EmergencyTakeover({ res, userText, lang, onBack, onNewCh
     };
   }, []);
   const others = (em?.numbers ?? []).filter((n) => n.number !== "112");
-  const flags = res.trace.red_flags ?? [];
+  // trace.red_flags carries our ids with labels; res.red_flags (the organisers'
+  // ids) is never shown. A flag without a label is skipped, never shown as an id.
+  const flags: Array<{ id: string; text: string; evidence: string }> = [];
+  for (const f of res.trace?.red_flags ?? []) {
+    const text = f.label_local || f.label;
+    if (text && !flags.some((x) => x.id === f.id)) flags.push({ id: f.id, text, evidence: f.evidence });
+  }
 
   return (
     <div className="sos" role="alertdialog" aria-modal="true" aria-labelledby="sos-title">
@@ -73,7 +79,7 @@ export default function EmergencyTakeover({ res, userText, lang, onBack, onNewCh
             <div className="sos__flags">
               {flags.map((f) => (
                 <div key={f.id} className="sos__flag">
-                  <strong>{f.label_local}</strong>
+                  <strong>{f.text}</strong>
                   {f.evidence && <small>"{f.evidence}"</small>}
                 </div>
               ))}

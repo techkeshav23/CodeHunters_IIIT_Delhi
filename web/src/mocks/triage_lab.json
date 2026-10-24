@@ -1,0 +1,173 @@
+{
+  "request": {
+    "user_input": "Ghar pe blood test karwana hai, sample collection chahiye",
+    "language": "auto",
+    "location": {
+      "lat": 28.5459,
+      "lng": 77.2732
+    },
+    "conversation_history": []
+  },
+  "response": {
+    "follow_up_question": null,
+    "care_type": "lab_test_home",
+    "urgency": "scheduled",
+    "red_flags": [],
+    "reasoning": "Lab test at home; no danger signs reported, so a scheduled home sample collection fits.",
+    "matched_caregivers": [
+      {
+        "caregiver_id": "CG_054",
+        "score": 0.87,
+        "reason": "Hindi-speaking, 0.2 km away, free 13:00–21:00"
+      },
+      {
+        "caregiver_id": "CG_011",
+        "score": 0.84,
+        "reason": "Hindi-speaking, 5.3 km away, free 15:00–19:00"
+      },
+      {
+        "caregiver_id": "CG_023",
+        "score": 0.84,
+        "reason": "Hindi-speaking, 4.4 km away, free 12:00–19:00"
+      }
+    ],
+    "trace": {
+      "version": "0.1.0",
+      "language": "hinglish",
+      "mode": "interactive",
+      "understood": {
+        "patient": {
+          "relation": null,
+          "relation_label": null,
+          "age_years": null,
+          "age_group": null,
+          "pregnant": null
+        },
+        "symptoms": [],
+        "duration_days": null,
+        "duration_label": null,
+        "services": [
+          {
+            "id": "sample_collection",
+            "label": "Lab test at home",
+            "label_local": "Ghar se sample / lab test"
+          }
+        ],
+        "severity": []
+      },
+      "model": {
+        "probabilities": {
+          "emergency": 0.097,
+          "followup": 0.1,
+          "gp": 0.109,
+          "lab": 0.42,
+          "nurse": 0.15,
+          "paramedic": 0.124
+        },
+        "version": "2026-10-24T15:56:36"
+      },
+      "checks": [],
+      "red_flags": [],
+      "decision": {
+        "care_type": "lab_test_home",
+        "urgency": "scheduled",
+        "care_label": "Lab test at home",
+        "care_label_local": "Ghar se sample lekar lab test",
+        "urgency_label": "Scheduled",
+        "urgency_label_local": "Time fix karke",
+        "confidence": 0.65,
+        "source": "model",
+        "rule": "service_sample_collection+model",
+        "specialty": null
+      },
+      "reasoning_local": "Ghar se sample / lab test, koi khatre ka lakshan nahi bataya. Time fix karke ghar se sample liya jayega.",
+      "follow_up": null,
+      "emergency": null,
+      "caregivers": [
+        {
+          "caregiver_id": "CG_054",
+          "name": "Deepak Mishra",
+          "role": "phlebotomist",
+          "languages": [
+            "Hindi",
+            "Bengali"
+          ],
+          "skills": [
+            "sample_collection",
+            "home_phlebotomy"
+          ],
+          "distance_km": 0.2,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.0,
+          "score": 0.87,
+          "reason": "Hindi-speaking, 0.2 km away, free 13:00–21:00",
+          "reason_local": "Hindi bolte hain, 0.2 km door, 13:00–21:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.98,
+            "skill": 1.0,
+            "rating": 0.17
+          }
+        },
+        {
+          "caregiver_id": "CG_011",
+          "name": "Sunita Rawat",
+          "role": "phlebotomist",
+          "languages": [
+            "Hindi",
+            "Tamil"
+          ],
+          "skills": [
+            "sample_collection",
+            "home_phlebotomy"
+          ],
+          "distance_km": 5.3,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.8,
+          "score": 0.84,
+          "reason": "Hindi-speaking, 5.3 km away, free 15:00–19:00",
+          "reason_local": "Hindi bolti hain, 5.3 km door, 15:00–19:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.56,
+            "skill": 1.0,
+            "rating": 0.83
+          }
+        },
+        {
+          "caregiver_id": "CG_023",
+          "name": "Vikas Das",
+          "role": "phlebotomist",
+          "languages": [
+            "Hindi",
+            "Tamil",
+            "English"
+          ],
+          "skills": [
+            "sample_collection",
+            "home_phlebotomy"
+          ],
+          "distance_km": 4.4,
+          "next_slot": "2026-10-24T16:15:00+05:30",
+          "next_slot_label": "4:15 pm",
+          "next_slot_label_local": "aaj shaam 4:15 baje",
+          "rating": 4.6,
+          "score": 0.84,
+          "reason": "Hindi-speaking, 4.4 km away, free 12:00–19:00",
+          "reason_local": "Hindi bolte hain, 4.4 km door, 12:00–19:00 free",
+          "features": {
+            "language": 1.0,
+            "distance": 0.63,
+            "skill": 1.0,
+            "rating": 0.67
+          }
+        }
+      ],
+      "timing_ms": 2.5
+    }
+  }
+}

@@ -3,7 +3,7 @@ import { CalendarCheck, CircleCheck, X } from "lucide-react";
 import type { Lang } from "../types";
 import { t } from "../i18n";
 import { createBooking } from "../api";
-import { roleKey, type BookingTarget, type SavedBooking } from "../lib";
+import { careKey, isRemoteCarer, roleKey, type BookingTarget, type SavedBooking } from "../lib";
 
 interface Props {
   target: BookingTarget;
@@ -20,7 +20,10 @@ export default function BookingSheet({ target, lang, locationLabel, onClose, onB
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [saved, setSaved] = useState<SavedBooking | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const tele = res.care_type?.includes("teleconsult");
+  const tele = isRemoteCarer(res.care_type, cg.role);
+  const fallbackCare = careKey(res.care_type);
+  const careLabel =
+    res.trace.decision.care_label_local || res.trace.decision.care_label || (fallbackCare ? t(lang, fallbackCare) : null);
 
   useEffect(() => {
     sheetRef.current?.focus();
@@ -42,10 +45,10 @@ export default function BookingSheet({ target, lang, locationLabel, onClose, onB
       const s: SavedBooking = {
         booking_id: b.booking_id,
         caregiver_id: cg.caregiver_id,
-        caregiver_name: b.caregiver_name || cg.name,
+        caregiver_name: b.caregiver_name || cg.name || cg.caregiver_id,
         role: cg.role,
         slot_label: cg.next_slot_label_local,
-        care_label: res.trace.decision.care_label_local,
+        care_label: careLabel,
         urgency_label: res.trace.decision.urgency_label_local,
         created_at: b.created_at,
       };
@@ -71,14 +74,15 @@ export default function BookingSheet({ target, lang, locationLabel, onClose, onB
             <dl className="kv">
               <dt>{t(lang, "bWho")}</dt>
               <dd>
-                {cg.name}, {t(lang, roleKey(cg.role))}
+                {cg.name || cg.caregiver_id}
+                {cg.role ? `, ${t(lang, roleKey(cg.role))}` : ""}
               </dd>
               <dt>{t(lang, "bWhen")}</dt>
               <dd>{cg.next_slot_label_local ?? "-"}</dd>
               <dt>{t(lang, "bWhere")}</dt>
               <dd>{tele ? t(lang, "videoCall") : locationLabel}</dd>
               <dt>{t(lang, "bWhat")}</dt>
-              <dd>{res.trace.decision.care_label_local}</dd>
+              <dd>{careLabel ?? "-"}</dd>
             </dl>
             <div className="field">
               <label htmlFor="booking-note">{t(lang, "bNote")}</label>

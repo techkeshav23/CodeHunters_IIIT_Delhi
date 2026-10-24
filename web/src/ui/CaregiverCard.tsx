@@ -4,17 +4,36 @@ import type { Lang, TraceCaregiver } from "../types";
 import { t, type Key } from "../i18n";
 import { avatarColor, initials, roleKey } from "../lib";
 
-const FEATURES: Array<[keyof NonNullable<TraceCaregiver["features"]>, Key]> = [
-  ["skill", "fSkill"],
-  ["time", "fTime"],
-  ["distance", "fDistance"],
-  ["language", "fLanguage"],
-  ["rating", "fRating"],
-];
+// Feature keys change with the ranker; known ones get a label, anything else
+// is shown by its own name.
+const FEATURE_LABEL: Record<string, Key> = {
+  language: "fLanguage",
+  languages: "fLanguage",
+  distance: "fDistance",
+  proximity: "fDistance",
+  skill: "fSkill",
+  skills: "fSkill",
+  skill_match: "fSkill",
+  rating: "fRating",
+  time: "fTime",
+  availability: "fTime",
+  slot: "fTime",
+};
+const DISTANCE_KEYS = new Set(["distance", "proximity"]);
+
+function featureLabel(lang: Lang, key: string): string {
+  const k = FEATURE_LABEL[key.toLowerCase()];
+  return k ? t(lang, k) : key.replace(/_/g, " ");
+}
+
+function clampPct(v: number): number {
+  return Math.round(Math.min(1, Math.max(0, v)) * 100);
+}
 
 interface Props {
   cg: TraceCaregiver;
   best: boolean;
+  // video only: a teleconsultation, or a doctor (the roster's doctors are virtual)
   tele: boolean;
   lang: Lang;
   onBook: () => void;
@@ -22,22 +41,28 @@ interface Props {
 
 export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
   const [open, setOpen] = useState(false);
-  const pct = Math.round(cg.score * 100);
-  const feats = FEATURES.filter(([k]) => cg.features?.[k] != null && !(tele && k === "distance"));
+  const name = cg.name || cg.caregiver_id;
+  const score = typeof cg.score === "number" && Number.isFinite(cg.score) ? cg.score : null;
+  const pct = score == null ? null : Math.round(score <= 1 ? score * 100 : score);
+  const feats = Object.entries(cg.features ?? {})
+    .filter((e): e is [string, number] => typeof e[1] === "number" && Number.isFinite(e[1]))
+    .filter(([k]) => !(tele && DISTANCE_KEYS.has(k.toLowerCase())));
+  const languages = Array.isArray(cg.languages) ? cg.languages : [];
+  const reason = cg.reason_local || cg.reason;
 
   return (
-    <article className={best ? "carer carer--best" : "carer"} aria-label={cg.name}>
+    <article className={best ? "carer carer--best" : "carer"} aria-label={name}>
       <div className="avatar" style={{ background: avatarColor(cg.caregiver_id) }} aria-hidden="true">
-        {initials(cg.name)}
+        {initials(name)}
       </div>
       <div className="carer__main">
         <div className="carer__name">
-          <strong>{cg.name}</strong>
-          <span className="carer__role">{t(lang, roleKey(cg.role))}</span>
+          <strong>{name}</strong>
+          {cg.role && <span className="carer__role">{t(lang, roleKey(cg.role))}</span>}
           {best && <span className="best-tag">{t(lang, "bestMatch")}</span>}
         </div>
         <div className="carer__facts">
-          {cg.rating != null && (
+          {typeof cg.rating === "number" && (
             <span>
               <Star size={15} fill="var(--haldi)" stroke="var(--haldi)" aria-hidden="true" />
               {cg.rating.toFixed(1)}
@@ -55,21 +80,21 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
               {t(lang, "videoCall")}
             </span>
           ) : (
-            cg.distance_km != null && (
+            typeof cg.distance_km === "number" && (
               <span>
                 <MapPin size={15} aria-hidden="true" />
                 {t(lang, "kmAway", { d: cg.distance_km.toFixed(1) })}
               </span>
             )
           )}
-          {cg.languages.length > 0 && (
+          {languages.length > 0 && (
             <span>
               <Languages size={15} aria-hidden="true" />
-              {cg.languages.join(", ")}
+              {languages.join(", ")}
             </span>
           )}
         </div>
-        <p className="carer__reason">{cg.reason_local}</p>
+        {reason && <p className="carer__reason">{reason}</p>}
         {feats.length > 0 && (
           <button type="button" className="linkish" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {t(lang, "matchHow")}
@@ -78,19 +103,18 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
         )}
         {open && (
           <div className="bars">
-            {feats.map(([k, label]) => {
-              const v = Math.round((cg.features?.[k] ?? 0) * 100);
-              return (
-                <FeatureRow key={k} label={t(lang, label)} value={v} />
-              );
-            })}
+            {feats.map(([k, v]) => (
+              <FeatureRow key={k} label={featureLabel(lang, k)} value={clampPct(v)} />
+            ))}
           </div>
         )}
       </div>
       <div className="carer__side">
-        <div className="score" aria-label={`${pct}% ${t(lang, "match")}`}>
-          {pct}%<small>{t(lang, "match")}</small>
-        </div>
+        {pct != null && (
+          <div className="score" aria-label={`${pct}% ${t(lang, "match")}`}>
+            {pct}%<small>{t(lang, "match")}</small>
+          </div>
+        )}
         <button type="button" className="btn btn--primary" onClick={onBook}>
           {t(lang, "book")}
         </button>

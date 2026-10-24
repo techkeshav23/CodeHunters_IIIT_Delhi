@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <meta name="theme-color" content="#0d4f4a" />
+    <!-- Status bar matches the app background (--bg in src/styles.css) in each theme. -->
+    <meta name="theme-color" content="#eef4f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a1d1a" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="CareCompass - find the right home health care" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="CareCompass" />
     <title>CareCompass</title>
   </head>
   <body>

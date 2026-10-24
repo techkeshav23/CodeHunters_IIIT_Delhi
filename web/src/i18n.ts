@@ -84,10 +84,18 @@ const S = {
 
   // decision
   ourAdvice: { hinglish: "Humara sujhav", hi: "हमारा सुझाव", en: "Our recommendation" },
-  urgRoutine: { hinglish: "Kuch dinon mein", hi: "कुछ दिनों में", en: "In a few days" },
+  urgRoutine: { hinglish: "Time fix karke", hi: "समय तय करके", en: "Scheduled" },
   urgSameDay: { hinglish: "Aaj hi", hi: "आज ही", en: "Today" },
   urgNow: { hinglish: "Abhi", hi: "अभी", en: "Now" },
   whyThis: { hinglish: "Yeh faisla kyon?", hi: "यह फ़ैसला क्यों?", en: "Why this decision?" },
+  // short care names (model line, and a fallback when the API sends no label)
+  careParamedic: { hinglish: "Paramedic ghar visit", hi: "पैरामेडिक घर विज़िट", en: "Paramedic home visit" },
+  careNurse: { hinglish: "Ghar pe nursing", hi: "घर पर नर्सिंग", en: "Home nursing" },
+  careLab: { hinglish: "Ghar pe lab test", hi: "घर पर लैब टेस्ट", en: "Lab test at home" },
+  careDoctor: { hinglish: "Doctor se baat", hi: "डॉक्टर से बात", en: "Talk to a doctor" },
+  careEmergency: { hinglish: "Emergency", hi: "इमरजेंसी", en: "Emergency" },
+  careFollowup: { hinglish: "Ek aur sawaal", hi: "एक और सवाल", en: "One more question" },
+  modelLine: { hinglish: "Model: {x} · {pct}% bharosa", hi: "मॉडल: {x} · {pct}% भरोसा", en: "Model: {x} · {pct}% confidence" },
   understood: { hinglish: "Humne kya samjha", hi: "हमने क्या समझा", en: "What we understood" },
   checked: { hinglish: "Humne kya jaancha", hi: "हमने क्या जाँचा", en: "What we checked" },
   reasonTitle: { hinglish: "Faisla", hi: "फ़ैसला", en: "The decision" },
@@ -115,6 +123,8 @@ const S = {
   },
   roleParamedic: { hinglish: "Paramedic", hi: "पैरामेडिक", en: "Paramedic" },
   roleNurse: { hinglish: "Nurse", hi: "नर्स", en: "Nurse" },
+  roleMedic: { hinglish: "Medic (nurse)", hi: "मेडिक (नर्स)", en: "Medic (nurse)" },
+  roleLab: { hinglish: "Sample collector", hi: "सैंपल लेने वाले", en: "Sample collector" },
   roleGp: { hinglish: "Doctor (GP)", hi: "डॉक्टर (GP)", en: "Doctor (GP)" },
   roleSpecialist: { hinglish: "Specialist doctor", hi: "विशेषज्ञ डॉक्टर", en: "Specialist doctor" },
   rolePhysio: { hinglish: "Physiotherapist", hi: "फ़िज़ियोथेरेपिस्ट", en: "Physiotherapist" },
@@ -197,7 +207,7 @@ const S = {
   rule4: { hinglish: "Har faisle aur har match ka kaaran dikhta hai.", hi: "हर फ़ैसले और हर मैच का कारण दिखता है।", en: "Every decision and every match shows its reason." },
   testedTitle: { hinglish: "Kitna parkha gaya", hi: "कितना परखा गया", en: "How it was tested" },
   stat1: { hinglish: "mushkil test messages, har emergency pakdi", hi: "मुश्किल टेस्ट संदेश, हर इमरजेंसी पकड़ी", en: "tricky test messages, every emergency caught" },
-  stat2: { hinglish: "public English cases (CARE-Bench) mein urgent ko aaj ya abhi care", hi: "पब्लिक अंग्रेज़ी केस (CARE-Bench) में अर्जेंट को आज या अभी देखभाल", en: "of urgent public cases (CARE-Bench) sent to same-day or immediate care" },
+  stat2: { hinglish: "organisers ke labelled caregiver match hu-ba-hu", hi: "आयोजकों के लेबल वाले केयरगिवर मैच हूबहू", en: "of the organisers' labelled caregiver matches reproduced" },
   stat3: { hinglish: "jawab ka samay, server ke andar", hi: "जवाब का समय, सर्वर के अंदर", en: "to decide, inside the server" },
   apiTitle: { hinglish: "Judges ke liye: API", hi: "जजों के लिए: API", en: "For judges: the API" },
   apiSub: {
