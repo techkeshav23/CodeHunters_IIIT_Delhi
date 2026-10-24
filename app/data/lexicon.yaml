@@ -11,9 +11,9 @@
 
 # canonical word: [other spellings / languages that mean the same thing]
 aliases:
-  saans: [saas, swas, shwas, saanse, saanso, saanson, saansein, breath, breathe, breathing]
-  dikkat: [dikkt, takleef, taklif, pareshani, problem, difficulty, dificulty, trouble]
-  dard: [dardh, drd, pain, pains, painful, ache, aching, hurts, hurting, peeda, dukh]
+  saans: [saas, swas, shwas, saanse, saanso, saanson, saansein, breath, breathe, breathing, briding, brithing]
+  dikkat: [dikkt, takleef, taklif, pareshani, problem, difficulty, dificulty, trouble, problam, prablam]
+  dard: [dardh, drd, pain, pains, painful, ache, aching, hurts, hurting, peeda, dukh, pen, pein]
   seena: [seene, sina, seeney, chhati, chati, chaati, chest]
   sar: [sir, head, matha]
   pet: [stomach, abdomen, abdominal, tummy, belly]
@@ -27,13 +27,13 @@ aliases:
   lakwa: [laqwa, lakva, paralysis, paralysed, paralyzed, falij]
   zeher: [jahar, zahar, jehar, poison, poisoning, poisonous]
   pregnant: [pregnent, pregnancy, garbhvati, garbhavati]
-  bachcha: [bacha, bachha, baccha, bachche, bache, bachchi, bachi, baby, kid, child, shishu]
+  bachcha: [bacha, bachha, baccha, bachche, bache, bacche, bachchi, bachi, baby, bebi, kid, child, shishu]
   navjaat: [navjat, newborn, nawjat]
   saanp: [sanp, saamp, samp, saap, sap, snake]
   bichhu: [bichu, scorpion]
   kaat: [kata, kaata, kati, kaati, kate, bite, bitten]
   sujan: [sooj, suj, sooja, soojan, sujna, swelling, swollen, swell]
-  chehra: [chehre, face]
+  chehra: [chehre, face, fes, phes]
   hont: [honth, hoth, lips, lip]
   jeebh: [jibh, tongue]
   peshab: [pishab, pesab, urine]
@@ -46,7 +46,20 @@ aliases:
   rahe: [rhe]
   bahut: [bht, bhot, bohot, bahot, bahoot, bhut]
   tedha: [teda, ted, tedhi, tedi, terha, tirchha]
-  aankh: [aankhein, aankhen, ankhe, ankhen, eyes]
+  aankh: [aankhein, aankhen, ankhe, ankhen, eyes, eye]
+  baayein: [baayen, baye, bayen, baain, left]
+  baat: [baatein, baaten, baaton]
+  # English words as speech-to-text writes them in Devanagari (सुसाइड, हैवी, प्रेशर)
+  suicide: [susaid, suisaid, susaaid]
+  heavy: [haivi, hevi]
+  pressure: [preshar, presar, preshr]
+  confused: [kanfyuz, kanfyuj, confuse, confuzed, kanfyuzd]
+  stroke: [strok, istrok]
+  side: [saaid, said]
+  temperature: [temprechar, tempreechar, temparechar, tempchar]
+  throat: [throt, throt]
+  mild: [maild, maaild]
+  cough_word: [kaf, kof, coff]
   zyada: [jyada, jyaada, zyaada, jada]
   tez: [tej, high]
   achanak: [achaanak, suddenly, sudden]
@@ -64,9 +77,14 @@ negation:
   # "bardasht nahi", "bukhar utar nahi raha", "khoon ruk nahi raha".
   not_after: [bardasht, ruk, rukta, kam, theek, thik, ja, jaa, utar, utarta, band, sudhar, aaram, rahat, chain, so, sakte]
 
+# Phrases saying the problem has settled. They only cancel flags marked `soft`;
+# chest pain, fainting and the like stay emergencies even if "ab theek hain".
+resolved: [ab theek, ab thik, ab sahi, aaram aa gaya, aaram mil gaya, theek ho gaya, theek ho gayi,
+           feels better, feeling better, better now]
+
 modifiers:
   # checked within 3 words of the symptom, same sentence
-  severe: [bahut tez, bahut zyada, bahut dard, tez dard, tez bukhar, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe"]
+  severe: [bahut tez, bahut zyada, bahut dard, tez dard, tez bukhar, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe", sar phat]
   sudden: [achanak, ekdam, "ek dam se", "all of a sudden", "abhi abhi"]
   mild: [halka, thoda, "thoda sa", mild, slight, "a bit", "little bit"]
 
@@ -110,6 +128,19 @@ red_flags:
       - pasli chal
       - pasliyan andar
       - chest indrawing
+      - neela pad
+      - neeli pad
+      - neele pad
+      - turning blue
+      - khana atak
+      - gale atak
+      - gala atak
+      - kuch atak gaya
+      - sikka atak
+      - saans tez
+      - pump se bhi aaram nahi
+      - inhaler se aaram nahi
+      - inhaler not helping
       - सांस नहीं आ रही
       - सांस लेने में दिक्कत
       - सांस फूल रही
@@ -132,6 +163,8 @@ red_flags:
       - chest pressure
       - chest discomfort
       - seena bechaini
+      - seena pressure
+      - pressure seena
       - baayein haath dard
       - baaye haath dard
       - left arm dard
@@ -147,6 +180,7 @@ red_flags:
     label: Stroke warning signs (face, arm, speech)
     label_hinglish: Lakwe ke lakshan (chehra, haath, bolna)
     label_hi: लकवे के लक्षण (चेहरा, हाथ, बोलना)
+    exclude_if_before: [heat, hit, sun]   # "heat stroke" / "हीट स्ट्रोक" is not a brain stroke
     patterns:
       - munh tedha
       - muh tedha
@@ -168,13 +202,17 @@ red_flags:
       - lakwa
       - zubaan ladkhada
       - jeebh ladkhada
+      - boli ladkhada
+      - awaaz ladkhada
+      - bolne ladkhada
       - slurred speech
       - stroke
       - मुंह टेढ़ा
       - लकवा
     conditional:
       - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak", haath nahi uth, baazu nahi uth,
-                   pair nahi uth, cannot lift, "can't lift", "can not lift", unable to lift]
+                   pair nahi uth, cannot lift, "can't lift", "can not lift", unable to lift,
+                   haath sunn, pair sunn, haath pair sunn, haath aur pair sunn, ladkhada]
         requires: [sudden, older_adult]
   - id: unconscious
     label: Unconscious or not responding
@@ -211,6 +249,9 @@ red_flags:
       - convulsions
       - fits
       - fit aa
+      - aankh chadh
+      - aankh palat
+      - eyes rolling
       - दौरा पड़
       - मिर्गी
   - id: severe_bleeding
@@ -258,6 +299,9 @@ red_flags:
       - chhat se gir
       - unchai se gir
       - fell from height
+      - sar ke bal
+      - sir ke bal
+      - head first
       - सिर पर चोट
       - एक्सीडेंट
     conditional:
@@ -304,6 +348,12 @@ red_flags:
       - sleeping pills
       - battery nigal
       - sikka nigal
+      - poori bottle
+      - dawai ki bottle
+      - bottle pee li
+      - bottle pi li
+      - galti se pee li
+      - galti se pi li
       - nigal liya
       - nigal li
       - swallowed
@@ -374,6 +424,15 @@ red_flags:
       - khud ko khatam
       - jaan de dunga
       - jaan de dungi
+      - suicide karna
+      - sab khatam kar
+      - khatam kar du
+      - khatam kar doon
+      - goli ek saath
+      - saari goli kha
+      - bahut goli kha
+      - better off without me
+      - no point living
       - nas kaat
       - आत्महत्या
       - जीना नहीं चाहता
@@ -390,7 +449,9 @@ red_flags:
       - labor dard
       - delivery dard
     conditional:
-      - patterns: [khoon, spotting, pet dard, dard pet, paani gir, paani nikal, daura]
+      - patterns: [khoon, spotting, pet dard, dard pet, paani gir, paani nikal, daura, sar dard, sujan,
+                   dhundhla, blurred vision, movement band, movement kam, movement nahi, hilna band,
+                   thaili phat, paani ki thaili, water broke, waters broke, dard shuru]
         requires: [pregnant]
   - id: infant_danger_sign
     label: Danger sign in a young baby
@@ -469,9 +530,71 @@ red_flags:
       - pehchaan nahi
       - pehchan nahi
       - kisi ko pehchan
+      - ulti seedhi baat
+      - ulta seedha bol
+      - not making sense
+      - talking confused
+      - confused talking
+      - makes no sense
     conditional:
       - patterns: [confused, confusion, ajeeb baat]
-        requires: [sudden, older_adult, fever]
+        requires: [sudden, older_adult, fever, diabetic, heat]
+      - patterns: [yaad nahi, kuch yaad nahi, pata nahi chal, bhool gaye, bhool gayi]
+        requires: [sudden]
+  - id: low_sugar_signs
+    label: Possible very low or very high sugar in a diabetic
+    label_hinglish: Diabetes mein sugar bahut gir ya badh jaane ke lakshan
+    label_hi: डायबिटीज़ में शुगर बहुत गिरने या बढ़ने के लक्षण
+    soft: true   # dropped when the user says it has already settled ("ab theek hai")
+    patterns:
+      - insulin zyada
+      - zyada insulin
+      - sugar low
+      - sugar bahut kam
+      - sugar gir
+      - low sugar
+      - hypo
+    conditional:
+      - patterns: [pasina, kaamp, kaanp, thartharahat, shaking, sweating, confused, behki baat]
+        requires: [diabetic]
+  - id: heat_stroke
+    label: Possible heat stroke
+    label_hinglish: Loo lagne ke lakshan
+    label_hi: लू लगने के लक्षण
+    soft: true
+    patterns:
+      - loo lag
+      - lu lag
+      - heat stroke
+      - heatstroke
+      - sunstroke
+      - हीट स्ट्रोक
+    conditional:
+      - patterns: [behki baat, confused, behosh, hot dry skin, garam sukhi, not making sense]
+        requires: [heat]
+  - id: eye_injury
+    label: Eye injury or sudden loss of vision
+    label_hinglish: Aankh mein chot ya achanak dikhna band
+    label_hi: आँख में चोट या अचानक दिखना बंद
+    patterns:
+      - aankh chubh
+      - aankh mein chot
+      - aankh chot
+      - dikhna band
+      - dikhai nahi de
+      - nazar chali
+      - vision loss
+      - "can't see"
+      - cannot see
+      - aankh tezaab
+      - aankh chemical
+      - eye injury
+  - id: severe_bp
+    # raised from numbers in the text (BP 180 or more), see extract.py
+    label: Very high blood pressure
+    label_hinglish: BP bahut zyada
+    label_hi: बीपी बहुत ज़्यादा
+    patterns: []
   - id: possible_emergency
     # raised by the learned model, not by a phrase
     label: Signs that need urgent care
@@ -502,7 +625,7 @@ symptoms:
     label: Cough
     label_hinglish: Khansi
     label_hi: खांसी
-    patterns: [khansi, balgam, खांसी]
+    patterns: [khansi, balgam, cough_word, खांसी]
     acute: [gp, routine]
     chronic: [gp, routine]
     respiratory: true
@@ -518,7 +641,7 @@ symptoms:
     label: Sore throat
     label_hinglish: Gala kharab
     label_hi: गला ख़राब
-    patterns: [gala kharab, gale dard, gala dard, gale kharash, throat pain, sore throat, गला ख़राब]
+    patterns: [gala kharab, gale dard, gala dard, gale kharash, kharash, throat pain, throat dard, sore throat, गला ख़राब]
     acute: [gp, routine]
     chronic: [specialist, routine]
     specialty: ent

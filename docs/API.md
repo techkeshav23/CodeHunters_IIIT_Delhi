@@ -84,12 +84,18 @@ Rules the backend guarantees:
 | Internal key | `care_type` value |
 |---|---|
 | paramedic | `paramedic_home_visit` |
-| nurse | `nurse_home_visit` *TBC* |
-| gp | `gp_teleconsult` *TBC* |
-| specialist | `specialist_consult` *TBC* |
-| emergency | `emergency_referral` *TBC* |
+| nurse | `nurse` |
+| gp | `gp_teleconsult` |
+| specialist | `specialist` |
+| emergency | `emergency_referral` |
 
-`urgency`: `routine`, `same_day`, `immediate` (`immediate` *TBC*).
+`urgency`: `routine`, `same_day`, `immediate`.
+
+The organisers did not publish a final schema, so the values follow the problem
+statement's own list ("Paramedic home visit, nurse, GP teleconsult, specialist,
+or emergency referral"). Until 24 Oct ~13:30 the nurse and specialist values
+were `nurse_home_visit` and `specialist_consult`; labelled files using the old
+values are still read correctly.
 
 Red flag ids (stable): `breathing_difficulty`, `chest_pain`, `stroke_signs`,
 `unconscious`, `seizure`, `severe_bleeding`, `major_injury`, `severe_allergy`,

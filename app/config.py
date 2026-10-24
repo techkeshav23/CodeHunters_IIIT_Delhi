@@ -17,12 +17,14 @@ MODELS_DIR = REPO_DIR / "models"
 
 VERSION = "0.1.0"
 
-# Internal care keys -> API values. TODO: confirm all but paramedic with the final schema.
+# Internal care keys -> API values. No final schema was published, so these follow
+# the problem statement's own wording ("Paramedic home visit, nurse, GP teleconsult,
+# specialist, or emergency referral"); only paramedic_home_visit appears in its example.
 CARE_TYPES: dict[str, str] = {
     "paramedic": "paramedic_home_visit",
-    "nurse": "nurse_home_visit",
+    "nurse": "nurse",
     "gp": "gp_teleconsult",
-    "specialist": "specialist_consult",
+    "specialist": "specialist",
     "emergency": "emergency_referral",
 }
 
@@ -38,9 +40,12 @@ URGENCY_ORDER = list(URGENCY)  # ["routine", "same_day", "immediate"]
 LABEL_ALIASES: dict[str, str] = {
     "paramedic home visit": "paramedic",
     "paramedic_visit": "paramedic",
-    "nurse": "nurse",
     "nurse visit": "nurse",
+    "nurse home visit": "nurse",
+    "nurse_home_visit": "nurse",
     "home nurse": "nurse",
+    "specialist consult": "specialist",
+    "specialist_consult": "specialist",
     "gp": "gp",
     "gp teleconsult": "gp",
     "teleconsult": "gp",

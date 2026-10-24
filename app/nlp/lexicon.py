@@ -102,6 +102,8 @@ class Lexicon:
             self.entries["modifier"].append(self._entry({"id": mod_id, "patterns": words}, "modifier"))
         for rel_id, words in (data.get("relations") or {}).items():
             self.entries["relation"].append(self._entry({"id": rel_id, "patterns": words}, "relation"))
+        self.entries["modifier"].append(self._entry({"id": "resolved", "patterns": data.get("resolved") or []},
+                                                    "modifier"))
 
         self.by_id = {e.id: e for kind in self.entries.values() for e in kind}
         self.vocab = {t for kind in self.entries.values() for e in kind for p in e.patterns for t in p.tokens}
@@ -159,6 +161,67 @@ class Lexicon:
 
     def canon_tokens(self, tokens: list[str]) -> list[str]:
         return [self.canon(t) for t in tokens]
+
+    # ---- text without spaces ------------------------------------------------
+    _COMMON = ("ho raha rahi rahe rahein hai hain he gaya gayi gaye gai ko ki ka ke se men mein nahi nahin "
+               "bhi aur ab abhi ne par pe tha thi the kar liya li hua hui hue de do diya di ja jaa a aa "
+               "mujhe unko usko unhe mera meri mere hum ham bahut kuch").split()
+
+    @property
+    def _seg_words(self) -> set[str]:
+        if not hasattr(self, "_seg_cache"):
+            words = set(self.vocab) | set(self.alias) | FILLERS | {phon(w) for w in self._COMMON}
+            self._seg_cache = {w for w in words if w and not w.isdigit() and w != BOUNDARY}
+        return self._seg_cache
+
+    def _segment(self, word: str) -> list[str] | None:
+        """Split a run-together word into known words; None if it does not split cleanly."""
+        n, vocab = len(word), self._seg_words
+        best: list[tuple[float, list[str]] | None] = [None] * (n + 1)
+        best[0] = (0.0, [])
+        for i in range(n):
+            if best[i] is None:
+                continue
+            score, parts = best[i]
+            for j in range(i + 1, min(n, i + 16) + 1):
+                piece = word[i:j]
+                if phon(piece) in vocab and (len(piece) > 1 or piece == "a"):
+                    cand = (score + len(piece) ** 2, parts + [piece])
+                    if best[j] is None or cand[0] > best[j][0]:
+                        best[j] = cand
+            cand = (score - 3, parts + ["\0" + word[i]])  # skip one unknown character
+            if best[i + 1] is None or cand[0] > best[i + 1][0]:
+                best[i + 1] = cand
+        if best[n] is None:
+            return None
+        parts = best[n][1]
+        unknown = sum(1 for p in parts if p.startswith("\0"))
+        if unknown > 0.15 * n or sum(1 for p in parts if not p.startswith("\0")) < 3:
+            return None
+        merged: list[str] = []
+        for p in parts:  # glue unknown characters back onto their neighbour
+            if p.startswith("\0"):
+                if merged:
+                    merged[-1] += p[1:]
+                else:
+                    merged.append(p[1:])
+            else:
+                merged.append(p)
+        return merged
+
+    def split_runs(self, tokens: list[str], surface: list[str], min_len: int = 12) -> tuple[list[str], list[str]]:
+        out_t: list[str] = []
+        out_s: list[str] = []
+        for tok, surf in zip(tokens, surface):
+            if len(surf) >= min_len and tok not in self.vocab and tok not in self.alias and surf.isalpha():
+                parts = self._segment(surf)
+                if parts:
+                    out_t += [phon(p) for p in parts]
+                    out_s += parts
+                    continue
+            out_t.append(tok)
+            out_s.append(surf)
+        return out_t, out_s
 
     # ---- matching -----------------------------------------------------------
     def find(self, tokens: list[str], surface: list[str], kind: str) -> list[Hit]:

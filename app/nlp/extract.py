@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import lru_cache
 
-from .lexicon import Hit, Lexicon, get_lexicon
+from .lexicon import Hit, Lexicon, Pattern, get_lexicon
 from .normalize import BOUNDARY, Text, analyse, tokenize
 
 # Natural spellings; turned into canonical tokens once (see _tables).
@@ -34,6 +34,9 @@ _RELATIVE_DURATIONS = [
     ("bahut samay se", 30),
 ]
 _YOUNGER = ["chhota", "chhote", "chhoti", "kam"]  # "3 mahine se chhota" = younger than 3 months
+_DIABETIC = ["diabetic", "diabetes", "madhumeh", "insulin", "sugar ke patient", "sugar ki bimari"]
+_HEAT = ["dhoop", "sun", "garmi", "heat", "loo", "हीट"]
+BP_EMERGENCY = 180  # systolic reading that counts as a red flag on its own
 _PREGNANT_PATTERNS = ["pregnant", "pet se hai", "pet se hain", "garbh"]
 CHILD_WORDS = {"bachcha"}  # canonical; beta/beti may be adults
 
@@ -52,6 +55,9 @@ def _tables() -> dict:
         "dur_before": {k(w)[0] for w in _DURATION_BEFORE},
         "relative": [(k(w), d) for w, d in _RELATIVE_DURATIONS],
         "younger": {k(w)[0] for w in _YOUNGER},
+        "diabetic": [k(w) for w in _DIABETIC],
+        "heat": {k(w)[0] for w in _HEAT},
+        "bp": k("bp")[0],
         "pregnant": [k(w) for w in _PREGNANT_PATTERNS],
     }
 
@@ -123,7 +129,7 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         nxt = tokens[j + 1] if j + 1 < n else ""
         nxt2 = tokens[j + 2] if j + 2 < n else ""
         prev = tokens[i - 1] if i > 0 else ""
-        if nxt in ("ki", "ke", "ka") and nxt2 == "pregnant":
+        if nxt == "pregnant" or (nxt in ("ki", "ke", "ka") and nxt2 == "pregnant"):
             preg_months = True
             continue
         if nxt in tb["dur_after"] and nxt2 in tb["younger"]:
@@ -166,6 +172,8 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     questions and override what the free text says."""
     lex = lex or get_lexicon()
     t = analyse(text, language_hint)
+    # text typed or dictated without spaces: "saansnahiaaraheinbehoshhogayehain"
+    t.tokens, t.surface = lex.split_runs(t.tokens, t.surface)
     tokens = lex.canon_tokens(t.tokens)
     ex = Extraction(text=t, tokens=tokens)
 
@@ -222,6 +230,22 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
         context.add("pregnant")
     if "fever" in ex.symptom_ids():
         context.add("fever")
+    tb = _tables()
+    if any(_contains(tokens, p) for p in tb["diabetic"]):
+        context.add("diabetic")
+    if any(tok in tb["heat"] for tok in tokens):
+        context.add("heat")
+    for i, tok in enumerate(tokens):  # "BP 200 ho gaya"
+        if tok == tb["bp"]:
+            for j in range(i + 1, min(len(tokens), i + 4)):
+                if tokens[j].isdigit() and int(tokens[j]) >= BP_EMERGENCY:
+                    entry = lex.by_id["severe_bp"]
+                    ex.red_flags.append(Hit(entry=entry, start=i, end=j + 1,
+                                            pattern=Pattern(f"bp >= {BP_EMERGENCY}", ("bp",), False),
+                                            negated=False, evidence=" ".join(t.surface[i:j + 1])))
+                    break
+            if ex.red_flags:
+                break
     for h in lex.find(tokens, t.surface, "red_flag"):
         if h.negated:
             ex.negated_flags.add(h.id)
@@ -238,5 +262,7 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
                 continue
         if h.id not in [f.id for f in ex.red_flags]:
             ex.red_flags.append(h)
+    if "resolved" in ex.severity:  # "biscuit kha liya, ab theek": drop only the soft flags
+        ex.red_flags = [h for h in ex.red_flags if not h.entry.meta.get("soft")]
     ex.negated_flags -= {f.id for f in ex.red_flags}
     return ex
