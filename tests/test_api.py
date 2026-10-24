@@ -85,3 +85,20 @@ def test_booking_and_labels(client):
     labels = client.get("/v1/labels").json()
     assert "chest_pain" in {f["id"] for f in labels["red_flags"]}
     assert client.get("/health").json()["status"] == "ok"
+
+
+def test_follow_up_answer_is_still_screened(client):
+    history = [{"role": "user", "content": "Papa ko bukhar hai"},
+               {"role": "assistant", "content": "Kitne din se?", "question_id": "q_duration"}]
+    assert post(client, "2 din se, aur ab behosh ho gaye", history)["red_flags"] == ["unconscious"]
+    r = post(client, "2 din se", history, explain=True)  # a plain answer stays a duration, not free text
+    assert r["red_flags"] == [] and r["trace"]["understood"]["duration_days"] == 2
+
+
+def test_typed_age_answers(client):
+    def age_answer(answer):
+        history = [{"role": "user", "content": "Mere bete ko bukhar hai"},
+                   {"role": "assistant", "content": "Bachche ki umar kitni hai?", "question_id": "q_age"}]
+        return post(client, answer, history, explain=True)
+    assert age_answer("2 mahine")["urgency"] == "immediate"
+    assert age_answer("7")["trace"]["understood"]["patient"]["age_years"] == 7

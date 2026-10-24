@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta, timezone
@@ -18,6 +20,8 @@ from pathlib import Path
 from .. import config
 
 IST = timezone(timedelta(hours=5, minutes=30))
+DEV_SAMPLE = config.DATA_DIR / "dev_caregivers.json"
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -45,7 +49,18 @@ def now() -> datetime:
     return datetime.now(IST)
 
 
+def _decoded(value):
+    """A CSV cell holding JSON ('["Hindi", "English"]') becomes the list or dict it spells."""
+    if isinstance(value, str) and value.strip()[:1] in ("[", "{"):
+        try:
+            return json.loads(value)
+        except ValueError:
+            return value
+    return value
+
+
 def _list(value) -> list[str]:
+    value = _decoded(value)
     if value is None:
         return []
     if isinstance(value, str):
@@ -67,19 +82,23 @@ def _first(d: dict, *keys, default=None):
 
 def _float(v) -> float | None:
     try:
-        return float(v)
+        f = float(v)
     except (TypeError, ValueError):
         return None
+    return f if math.isfinite(f) else None
 
 
-def normalise(d: dict) -> Caregiver:
-    loc = d.get("location") if isinstance(d.get("location"), dict) else {}
-    slots = _first(d, "availability", "availability_slots", "slots", "available_slots", default=[])
+def normalise(d: dict, index: int = 0) -> Caregiver:
+    loc = _decoded(d.get("location"))
+    loc = loc if isinstance(loc, dict) else {}
+    slots = _decoded(_first(d, "availability", "availability_slots", "slots", "available_slots", default=[]))
     if isinstance(slots, str):
         slots = [s.strip() for s in re.split(r"[;|]", slots) if s.strip()]
+    elif isinstance(slots, dict):  # {"start": ..., "end": ...}
+        slots = [slots]
     slots = [json.dumps(s) if isinstance(s, dict) else str(s) for s in (slots or [])]
     return Caregiver(
-        id=str(_first(d, "caregiver_id", "id", "cg_id", "caregiverId")),
+        id=str(_first(d, "caregiver_id", "id", "cg_id", "caregiverId", default=f"CG_{index + 1:03d}")),
         name=str(_first(d, "name", "full_name", default="")),
         role=str(_first(d, "role", "type", "category", "designation", default="")).strip().lower(),
         skills=[s.lower() for s in _list(_first(d, "skills", "skill", "services", default=[]))],
@@ -87,7 +106,7 @@ def normalise(d: dict) -> Caregiver:
         lat=_float(_first(loc, "lat", "latitude", default=_first(d, "lat", "latitude"))),
         lng=_float(_first(loc, "lng", "lon", "long", "longitude", default=_first(d, "lng", "lon", "longitude"))),
         rating=_float(_first(d, "rating", "avg_rating", "stars")),
-        rating_count=int(_float(_first(d, "rating_count", "reviews", "num_ratings", default=0)) or 0),
+        rating_count=max(0, int(_float(_first(d, "rating_count", "reviews", "num_ratings", default=0)) or 0)),
         gender=(str(_first(d, "gender", "sex", default="")).lower() or None),
         specialty=(str(_first(d, "specialty", "specialisation", "specialization", "speciality", default="")).lower() or None),
         area=_first(loc, "area", "locality", default=_first(d, "area", "locality")),
@@ -97,29 +116,63 @@ def normalise(d: dict) -> Caregiver:
 
 
 def _read(path: Path) -> list[dict]:
-    if path.suffix.lower() == ".csv":
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
         with path.open(encoding="utf-8-sig", newline="") as fh:
             return list(csv.DictReader(fh))
-    data = json.loads(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8-sig")
+    if suffix == ".jsonl":
+        return [json.loads(line) for line in text.splitlines() if line.strip()]
+    data = json.loads(text)
     if isinstance(data, dict):
-        data = _first(data, "caregivers", "profiles", "data", default=[])
+        named = _first(data, "caregivers", "profiles", "data", "items", "records")
+        if isinstance(named, list):
+            return named
+        lists = [v for v in data.values() if isinstance(v, list)]
+        if lists:
+            return lists[0]
+        # {"CG_001": {...}, "CG_002": {...}}: the key is the id
+        return [{"caregiver_id": k, **v} for k, v in data.items() if isinstance(v, dict)]
     return list(data)
+
+
+def _load_rows(path: Path) -> list[Caregiver]:
+    out = []
+    for i, d in enumerate(_read(path)):
+        if not isinstance(d, dict):
+            continue
+        try:
+            out.append(normalise(d, i))
+        except Exception as e:  # one bad row must not take the service down
+            log.warning("skipping caregiver row %d in %s: %s", i, path, e)
+    return out
 
 
 def source_path() -> tuple[Path, str]:
     if config.CAREGIVERS_PATH:
         return Path(config.CAREGIVERS_PATH), "env"
-    for name in ("caregivers.json", "caregiver_profiles.json", "caregivers.csv", "caregiver_profiles.csv"):
+    for name in ("caregivers.json", "caregiver_profiles.json", "caregivers.jsonl", "caregivers.csv",
+                 "caregiver_profiles.csv"):
         p = config.PROVIDED_DIR / name
         if p.exists():
             return p, "provided"
-    return config.DATA_DIR / "dev_caregivers.json", "dev_sample"
+    return DEV_SAMPLE, "dev_sample"
 
 
 @lru_cache(maxsize=1)
 def load() -> tuple[list[Caregiver], str]:
+    """The caregiver pool and where it came from. An unreadable file falls back to
+    the dev sample, and /health says so, instead of failing every request."""
     path, kind = source_path()
-    return [normalise(d) for d in _read(path)], kind
+    try:
+        rows = _load_rows(path)
+        if rows or path == DEV_SAMPLE:
+            return rows, kind
+        error = "no caregiver rows found"
+    except Exception as e:
+        error = f"{type(e).__name__}: {e}"
+    log.error("could not load caregivers from %s (%s); using the dev sample", path, error)
+    return _load_rows(DEV_SAMPLE), f"dev_sample_fallback: {error}"[:200]
 
 
 # ---- availability ---------------------------------------------------------

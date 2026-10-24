@@ -140,7 +140,12 @@ def parse_answer(qid: str, answer: str) -> dict:
         if value in AGE_VALUES:
             return {"age_years": AGE_VALUES[value]}
         ex = extract(answer)
-        return {"age_years": ex.age_years} if ex.age_years is not None else {}
+        if ex.age_years is not None:
+            return {"age_years": ex.age_years}
+        if ex.duration_days is not None:  # "2 mahine" read as a duration: here it is the age
+            return {"age_years": ex.duration_days / 365}
+        bare = re.fullmatch(r"\s*(\d{1,3})\s*", to_roman(answer))
+        return {"age_years": float(bare.group(1))} if bare and int(bare.group(1)) <= 120 else {}
     return {}
 
 

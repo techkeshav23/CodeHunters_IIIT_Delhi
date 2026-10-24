@@ -73,7 +73,10 @@ def decide(ex: Extraction) -> Decision:
     confidence = 0.7 if len(symptoms) + len(services) >= 1 else 0.3
 
     # age and severity raise urgency for new problems
-    if not chronic and symptoms and ex.age_group in ("infant", "child", "older_adult"):
+    # (not for a child over 2 whose problem is called mild: "halki sardi", playing and feeding well)
+    mild_child = (ex.age_group == "child" and (ex.age_years is None or ex.age_years >= 2)
+                  and "mild" in ex.severity and "severe" not in ex.severity)
+    if not chronic and symptoms and ex.age_group in ("infant", "child", "older_adult") and not mild_child:
         urgency = _bump(urgency, "same_day")
         rule += f"+{ex.age_group}"
     if not chronic and "severe" in ex.severity:

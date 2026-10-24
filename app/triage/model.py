@@ -13,6 +13,7 @@ Set CC_MODEL=off to run on rules only.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
@@ -21,6 +22,8 @@ from pathlib import Path
 from ..config import MODELS_DIR, URGENCY_ORDER
 from ..nlp.lexicon import get_lexicon
 from ..nlp.normalize import BOUNDARY, analyse
+
+log = logging.getLogger(__name__)
 
 MODEL_PATH = Path(os.getenv("CC_MODEL_PATH", str(MODELS_DIR / "baseline.joblib")))
 DEFAULTS = {"rules_weight": 0.35, "under_cost": 3.0, "emergency_threshold": 0.35}
@@ -62,9 +65,13 @@ def get_model() -> Model | None:
         return None
     import joblib
 
-    bundle = joblib.load(MODEL_PATH)
     meta_path = MODEL_PATH.with_name(MODEL_PATH.stem + "_meta.json")
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else None
+    source = str((meta or {}).get("source", "")).lower()
+    if not source or "smoke" in source:  # a model with no record of its training data stays off
+        log.warning("not loading %s: training source is %r", MODEL_PATH, source or "unknown")
+        return None
+    bundle = joblib.load(MODEL_PATH)
     return Model(bundle=bundle, settings=settings_from(meta))
 
 

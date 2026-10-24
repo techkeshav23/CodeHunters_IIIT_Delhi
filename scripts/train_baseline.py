@@ -110,8 +110,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # grid over blend settings, mirroring app.pipeline._apply_model
     best = None
-    for w in (0.0, 0.2, 0.35, 0.5, 0.7, 1.0):  # 1.0 = rules decide, the model only adds emergencies
-        for under_cost in (1.0, 2.0, 3.0, 5.0):
+    # no 0.0 weight (model alone) or 1.0 cost (no penalty for under-triage): the rules stay in charge
+    for w in (0.2, 0.35, 0.5, 0.7, 1.0):  # 1.0 = rules decide, the model only adds emergencies
+        for under_cost in (2.0, 3.0, 5.0):
             for thr in (0.2, 0.3, 0.4, 0.5):
                 pc_all, pu_all = [], []
                 for i in range(len(rows)):

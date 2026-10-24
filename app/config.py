@@ -62,7 +62,8 @@ LABEL_ALIASES: dict[str, str] = {
 ROLES_FOR_CARE: dict[str, list[str]] = {
     "paramedic": ["paramedic", "emt", "health worker"],
     "nurse": ["nurse", "staff nurse", "nursing"],
-    "gp": ["gp", "general physician", "doctor", "physician", "family doctor"],
+    "gp": ["gp", "general physician", "doctor", "physician", "family doctor", "general practitioner",
+           "mbbs", "medical officer"],
     "specialist": ["specialist", "consultant", "physiotherapist", "psychologist"],
     "emergency": [],
 }

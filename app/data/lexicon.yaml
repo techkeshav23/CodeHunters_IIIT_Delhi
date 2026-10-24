@@ -683,10 +683,17 @@ red_flags:
       - labour dard
       - labor dard
       - delivery dard
+      # waters breaking only happens in pregnancy, so it needs no other cue
+      - thaili phat
+      - paani ki thaili
+      - water broke
+      - waters broke
+      - water has broke
+      - waters have broke
     conditional:
       - patterns: [khoon, spotting, pet dard, dard pet, paani gir, paani nikal, daura, sar dard, sujan,
                    dhundhla, blurred vision, movement band, movement kam, movement nahi, hilna band,
-                   thaili phat, paani ki thaili, water broke, waters broke, dard shuru]
+                   dard shuru]
         requires: [pregnant]
       # in the weeks after delivery: bleeding getting heavier, clots, fits, blurred vision
       - patterns: [khoon badh, khoon zyada, zyada khoon, thakke, clots, daura, dhundhla, blurred vision]

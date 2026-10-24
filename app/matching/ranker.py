@@ -1,8 +1,11 @@
-"""Caregiver ranking: hard filters, then a weighted score, with reasons built
-only from computed facts (distance, free time, language, skills)."""
+"""Caregiver ranking: a role filter, then a weighted score, with reasons built
+only from computed facts (distance, free time, language, skills). Far, busy or
+other-specialty caregivers are demoted, not removed, so the list is never empty
+while someone of the right role exists."""
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -21,12 +24,24 @@ FEMALE_WORDS = {"lady", "ladies", "female", "mahila", "woman", "aurat"}
 LANG_HI = {"Hindi": "हिंदी", "English": "अंग्रेज़ी", "Punjabi": "पंजाबी", "Urdu": "उर्दू", "Tamil": "तमिल",
            "Malayalam": "मलयालम", "Bengali": "बंगाली", "Telugu": "तेलुगु", "Marathi": "मराठी",
            "Bhojpuri": "भोजपुरी", "Konkani": "कोंकणी", "Gujarati": "गुजराती", "Kannada": "कन्नड़"}
+# words that name each specialty in a caregiver's role, specialty or skills;
+# "*" marks a stem ("cardi*" matches cardiology and cardiac), the rest are whole words
 SPECIALTY_ALIASES = {
-    "paediatrics": {"paediatrics", "pediatrics", "paediatric", "pediatric", "child"},
-    "gynaecology": {"gynaecology", "gynecology", "obstetrics", "pregnancy care", "women's health"},
-    "orthopaedics": {"orthopaedics", "orthopedics", "bone and joint", "ortho"},
-    "physiotherapy": {"physiotherapy", "physio"},
+    "paediatrics": ("paediatr*", "pediatr*", "child*"),
+    "gynaecology": ("gynaec*", "gynec*", "obstet*", "pregnan*", "women's health", "maternity"),
+    "orthopaedics": ("orthopaed*", "orthoped*", "ortho", "bone*", "joint*"),
+    "physiotherapy": ("physio*",),
+    "cardiology": ("cardi*", "heart"),
+    "dermatology": ("dermat*", "skin"),
+    "psychiatry": ("psychiatr*", "psycholog*", "mental health", "counsel*"),
+    "neurology": ("neuro*",),
+    "gastroenterology": ("gastro*", "digestive", "stomach", "hepat*"),
+    "urology": ("urolog*", "kidney*"),
+    "ophthalmology": ("ophthalm*", "eye*"),
+    "ent": ("ent", "ear nose", "ear", "otolaryng*", "otorhino*"),
+    "dental": ("dent*", "tooth", "teeth", "oral"),
 }
+SPECIALIST_ROLE = re.compile(r"(ologist|iatrist|iatrician|dentist|surgeon|therapist)\b")
 
 
 @dataclass
@@ -52,15 +67,26 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 def _role_ok(cg: Caregiver, care: str) -> bool:
     roles = config.ROLES_FOR_CARE.get(care, [])
-    return any(r == cg.role or r in cg.role for r in roles)
+    if any(r == cg.role or r in cg.role for r in roles):
+        return True
+    if care != "specialist":
+        return False
+    # "Cardiologist", "Dentist", or a doctor with a named specialty (not a nurse or paramedic)
+    home_roles = config.ROLES_FOR_CARE["nurse"] + config.ROLES_FOR_CARE["paramedic"]
+    return bool(SPECIALIST_ROLE.search(cg.role)) or (
+        bool(cg.specialty) and cg.specialty not in ("general", "general medicine", "none")
+        and not any(r in cg.role for r in home_roles))
 
 
 def _specialty_ok(cg: Caregiver, specialty: str | None) -> bool:
     if not specialty:
         return True
-    names = SPECIALTY_ALIASES.get(specialty, {specialty})
-    hay = " ".join([cg.specialty or ""] + cg.skills)
-    return any(n in hay for n in names)
+    hay = " ".join([cg.role, cg.specialty or ""] + cg.skills)
+    for name in SPECIALTY_ALIASES.get(specialty, (specialty + "*",)):
+        stem = name.endswith("*")
+        if re.search(r"\b" + re.escape(name.rstrip("*")) + ("" if stem else r"\b"), hay):
+            return True
+    return False
 
 
 def preferred_languages(ex: Extraction) -> list[str]:
@@ -139,8 +165,9 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
         f_rating = min(1.0, max(0.0, (bayes - 3.5) / 1.5))
         matched_skills = [s for s in want_skills if any(s in k or k in s for k in cg.skills)]
         f_skill = 1.0 if not want_skills else len(matched_skills) / len(want_skills)
+        wrong_specialty = care == "specialist" and not _specialty_ok(cg, specialty)
         if care == "specialist":
-            f_skill = 1.0 if _specialty_ok(cg, specialty) else 0.3
+            f_skill = 0.3 if wrong_specialty else 1.0
         if want_female:
             f_skill = (f_skill + (1.0 if cg.gender in ("female", "f") else 0.0)) / 2
 
@@ -148,6 +175,10 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
                     {"skill": f_skill, "time": f_time, "distance": f_dist, "language": f_lang, "rating": f_rating}.items())
         if mode == "home" and dist is not None and dist > config.MAX_HOME_VISIT_KM:
             score *= 0.5  # outside the home-visit radius: only if nobody closer
+        if wrong_specialty:
+            score *= 0.5  # another specialty: only fills the list after the right ones
+        if slot is None:
+            score *= 0.5  # no free slot listed: shown last, not hidden
 
         en_slot, hl_slot, hi_slot = _slot_labels(slot, ref)
         lang = spoken[0] if spoken else (cg.languages[0] if cg.languages else None)
@@ -170,6 +201,10 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
                 parts_en.append(f"free {'at ' if (slot.date() == ref.date()) else ''}{en_slot}")
                 parts_hl.append(f"{hl_slot} free")
                 parts_hi.append(f"{hi_slot} खाली")
+        else:
+            parts_en.append("no free slot listed")
+            parts_hl.append("abhi koi free slot nahi")
+            parts_hi.append("अभी कोई खाली समय नहीं")
         if matched_skills:
             parts_en.append(f"{matched_skills[0]} experience")
             parts_hl.append(f"{matched_skills[0]} ka anubhav")

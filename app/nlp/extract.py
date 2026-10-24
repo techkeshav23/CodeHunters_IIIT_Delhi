@@ -38,8 +38,12 @@ _YOUNGER = ["chhota", "chhote", "chhoti", "kam"]  # "3 mahine se chhota" = young
 _DIABETIC = ["diabetic", "diabetes", "madhumeh", "insulin", "sugar ke patient", "sugar ki bimari"]
 _HEAT = ["dhoop", "sun", "garmi", "heat", "loo", "हीट"]
 BP_EMERGENCY = 180  # systolic reading that counts as a red flag on its own
-_PREGNANT_PATTERNS = ["pregnant", "pet se hai", "pet se hain", "garbh"]
-CHILD_WORDS = {"bachcha"}  # canonical; beta/beti may be adults
+_PREGNANT_PATTERNS = ["pregnant", "pet se hai", "pet se hain", "garbh", "garbhavastha", "expecting",
+                      "ummeed se hai", "ummeed se hain", "trimester", "due date"]
+# "8th month", "7 va mahina", "aathva mahina": an ordinal month is a month of pregnancy
+_ORDINAL_SUFFIX = ["th", "st", "nd", "rd", "va", "vaan", "vi", "ve"]
+_ORDINAL_WORDS = {"chhatha": 6, "satva": 7, "satvan": 7, "aathva": 8, "aathvan": 8, "nauva": 9, "nauvan": 9}
+_CHILD_WORDS = ["bachcha"]  # beta/beti may be adults
 # Childbirth in the last weeks: "delivery ko 6 din hue", "delivery ke 10 din baad", "postpartum"
 _BIRTH_WORDS = ["delivery", "prasav", "c section", "cesarean", "caesarean"]
 _BIRTH_AFTER = ["baad", "hue", "hui", "hua", "ho", "after", "since", "ago", "pehle"]
@@ -97,6 +101,14 @@ def _tables() -> dict:
         "heat": {k(w)[0] for w in _HEAT},
         "bp": k("bp")[0],
         "pregnant": [k(w) for w in _PREGNANT_PATTERNS],
+        "ordinal_suffix": {k(w)[0] for w in _ORDINAL_SUFFIX},
+        "ordinal_words": {k(w)[0]: v for w, v in _ORDINAL_WORDS.items()},
+        "along": k("along")[0],
+        "expecting": k("expecting"),
+        "not_expecting": {k(w)[0] for w in ("a", "an", "the", "call", "result", "results", "report",
+                                            "reports", "reply", "someone", "him", "her", "them")},
+        "baby": k("baby")[0],
+        "child": {k(w)[0] for w in _CHILD_WORDS},
         "birth": [k(w) for w in _BIRTH_WORDS],
         "birth_after": {k(w)[0] for w in _BIRTH_AFTER},
         "birth_always": [k(w) for w in _BIRTH_ALWAYS],
@@ -167,11 +179,15 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         if tok in ("umar", "age") and i + 1 < n and tokens[i + 1].isdigit():
             age = age if age is not None else float(tokens[i + 1])
             continue
-        val = _number(tok, numbers)
+        ordinal = tok in tb["ordinal_words"]
+        val = tb["ordinal_words"][tok] if ordinal else _number(tok, numbers)
         if val is None or i + 1 >= n:
             continue
         j = i + 1
         prev = tokens[i - 1] if i > 0 else ""
+        if tokens[j] in tb["ordinal_suffix"] and j + 1 < n and tokens[j + 1] in units:
+            j += 1  # "8 th month", "7 va mahina"
+            ordinal = True
         if tokens[j] not in units:
             # "2-3 din": skip the second number
             if j + 1 < n and _number(tokens[j], numbers) is not None and tokens[j + 1] in units:
@@ -189,18 +205,23 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         if nxt == "pregnant" or (nxt in ("ki", "ke", "ka") and nxt2 == "pregnant"):
             preg_months = True
             continue
-        # "wife ka 7 month chal raha hai" (7th month of pregnancy), not "dawai 3 mahine chal rahi"
-        if (nxt == tb["chal"] and 25 <= unit_days <= 31 and 1 <= val <= 10 and prev not in tb["medicine"]
-                and not any(t in tb["medicine"] for t in tokens[max(0, i - 4):i])):
-            preg_months = True
-            continue
+        # "wife ka 7 month chal raha hai", "7 months along", "8th month" (month of pregnancy),
+        # not "dawai 3 mahine chal rahi"; "bachche ka 8th month" is the baby's age
+        if (nxt in (tb["chal"], tb["along"]) or ordinal) and 25 <= unit_days <= 31 and 1 <= val <= 10:
+            near = tokens[max(0, i - 4):i]
+            if any(t in tb["child"] for t in near):
+                age = age if age is not None else days / 365
+                continue
+            if not any(t in tb["medicine"] for t in near):
+                preg_months = True
+                continue
         if nxt in tb["dur_after"] and nxt2 in tb["younger"]:
             age = age if age is not None else days * 0.95 / 365
             continue
         is_duration = (nxt in tb["dur_after"] or prev in tb["dur_before"]
                        or (nxt in ("ka", "ki", "ke") and nxt2 in symptom_tokens))
         is_age = (nxt == "old" or (nxt in ("ka", "ki", "ke") and nxt2 not in symptom_tokens
-                                   and (nxt2 in relation_tokens or nxt2 in CHILD_WORDS
+                                   and (nxt2 in relation_tokens or nxt2 in tb["child"]
                                         or nxt2 in ("hai", "hain", "he", BOUNDARY, ""))))
         if is_age and not is_duration:
             age = age if age is not None else days / 365
@@ -225,11 +246,16 @@ _POSSIBLE = {phon(w) for w in ("possibility", "possible", "chance", "chances")}
 
 def _pregnant_now(tokens: list[str]) -> bool:
     """A plain "pregnant" mention, not "I am not pregnant" or "could she be pregnant?"."""
-    for i, tok in enumerate(tokens):
-        if tok != "pregnant" and not (tok == "garbh" or tuple(tokens[i:i + 3]) in {("pet", "se", "hai"), ("pet", "se", "hain")}):
+    patterns = _tables()["pregnant"]
+    for i in range(len(tokens)):
+        pat = next((p for p in patterns if tuple(tokens[i:i + len(p)]) == p), None)
+        if pat is None:
             continue
         before = set(tokens[max(0, i - 3):i])
-        after = tokens[i + 1:i + 3]
+        after = tokens[i + len(pat):i + len(pat) + 2]
+        if pat == _tables()["expecting"] and after[:1] and after[0] in _tables()["not_expecting"] \
+                and _tables()["baby"] not in tokens[i + 1:i + 4]:  # "expecting a call", not "expecting a baby"
+            continue
         if before & _NOT or "nahi" in after:
             continue
         if before & _MAYBE or tuple(after) in {("ho", "sakti"), ("ho", "sakta")}:
@@ -433,7 +459,7 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
             ex.age_years = 0.05
         elif any(h.id in ("grandparent", "elderly") for h in rel_hits):
             ex.age_group = "older_adult"
-        elif any(tok in CHILD_WORDS for tok in tokens):
+        elif any(tok in _tables()["child"] for tok in tokens):
             ex.age_group = "child"
     if ex.age_years is not None:
         ex.age_group = age_group_for(ex.age_years)

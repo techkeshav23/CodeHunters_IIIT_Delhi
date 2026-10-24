@@ -57,3 +57,41 @@ def test_metrics():
     assert ndcg_at_k(["x", "y", "z"], ["x", "y"], 3) == 1.0
     assert ndcg_at_k(["z", "y", "x"], ["x"], 3) < 1.0
     assert mrr(["z", "x"], ["x"]) == 0.5
+
+
+def test_specialty_words_and_roles():
+    pool = [cg("ent", "specialist", 28.55, 77.27, ["tomorrow 10:00"], ["Hindi"], specialty="ENT"),
+            cg("mind", "specialist", 28.55, 77.27, ["today 12:00"], ["Hindi"], specialty="mental health"),
+            cg("neuro", "specialist", 28.55, 77.27, ["today 12:00"], ["Hindi"], specialty="neurology"),
+            cg("uro", "specialist", 28.55, 77.27, ["tomorrow 10:00"], ["Hindi"], specialty="urology"),
+            cg("heart", "Cardiologist", 28.55, 77.27, ["tomorrow 10:00"], ["Hindi"])]
+    ex = extract("kaan mein dard hai")
+
+    def top(specialty):
+        return rank("specialist", "routine", ex, (28.54, 77.27), specialty=specialty, caregivers=pool, ref=REF)[0]
+    assert top("ent").caregiver.id == "ent"            # not "mental health"
+    assert top("urology").caregiver.id == "uro"        # not "neurology"
+    assert top("cardiology").caregiver.id == "heart"   # matched by role alone
+    assert top("psychiatry").caregiver.id == "mind"
+
+
+def test_no_free_slot_is_demoted_not_dropped():
+    pool = [cg("gone", "paramedic", 28.541, 77.271, ["today 09:00"], ["Hindi"]),
+            cg("tomorrow", "paramedic", 28.55, 77.28, ["tomorrow 10:00"], ["Hindi"])]
+    out = rank("paramedic", "routine", extract("papa ka BP check karna hai"), (28.54, 77.27), caregivers=pool, ref=REF)
+    assert [m.caregiver.id for m in out] == ["tomorrow", "gone"]
+    assert "no free slot" in out[1].reason
+
+
+def test_loader_tolerates_odd_files(tmp_path):
+    from app.matching.caregivers import _load_rows
+    p = tmp_path / "cg.json"
+    p.write_text('\ufeff{"CG_9": {"role": "MBBS", "languages": "", "rating": "NaN", "rating_count": null},'
+                 ' "CG_10": {"role": "nurse", "skills": "[\\"wound dressing\\"]"}}', encoding="utf-8")
+    rows = {c.id: c for c in _load_rows(p)}
+    assert set(rows) == {"CG_9", "CG_10"}
+    assert rows["CG_9"].rating is None and rows["CG_9"].languages == [] and rows["CG_10"].skills == ["wound dressing"]
+    csv_path = tmp_path / "cg.csv"
+    csv_path.write_text("name,role,languages\nAsha,nurse,\"[\"\"Hindi\"\", \"\"English\"\"]\"\n", encoding="utf-8")
+    (only,) = _load_rows(csv_path)
+    assert only.id == "CG_001" and only.languages == ["Hindi", "English"]

@@ -142,11 +142,20 @@ def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, 
     urgency = choose_urgency(urg_b, s["under_cost"])
     if urgency == "immediate":
         return d, True, "model"
-    # a rules bump for a baby, child, older adult or severe pain is a floor
-    if "+" in d.rule and urgency_rank(d.urgency) > urgency_rank(urgency):
+    # the model may raise urgency but never lower the rules' level
+    if urgency_rank(d.urgency) > urgency_rank(urgency):
         urgency = d.urgency
     return (Decision(care, urgency, round(care_b[care], 2), d.rule + "+model", needs=d.needs,
                      specialty=d.specialty if care == d.care else None), False, "blend")
+
+
+def _adds_red_flag(before: list[str], answer: str, language: str | None) -> bool:
+    """Structured answers are read by parse_answer, not as free text (so "2 mahine"
+    is an age, not a duration); they join the free text only when they add a red flag."""
+    if not answer.strip():
+        return False
+    base = {h.id for h in extract(" . ".join(before), language).red_flags} if before else set()
+    return bool({h.id for h in extract(" . ".join(before + [answer]), language).red_flags} - base)
 
 
 def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None,
@@ -169,6 +178,9 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             answers[pending] = turn.text
             if pending in STRUCTURED_ANSWERS:
                 pending = None
+                # an answer like "2 din se, aur ab behosh ho gaye" still carries an emergency
+                if _adds_red_flag(free_text, turn.text, req.language):
+                    free_text.append(turn.text)
                 continue
         pending = None
         if turn.text.strip():
