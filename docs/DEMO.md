@@ -33,12 +33,13 @@ or speaking. CareCompass says what care fits, how soon, and who should come."
 **Show:** one question, **Kya saans lene mein dikkat ho rahi hai?** (Sawaal 1 / 3).
 **Say:** "Fever and cough, so it checks one danger sign before deciding."
 **Do:** tap **Nahi**.
-**Show:** the dial on **Aaj hi**, "Paramedic ghar aakar check karenge", and three
-caregivers: Ravi Kumar first (Hindi, 1.5 km, free at 4 pm, fever care experience).
+**Show:** the dial on **Aaj hi**, "Paramedic ghar aakar check karenge", and three medics
+from the organisers' roster: Sunita Chauhan first (Hindi, 1.3 km, free 08:00–13:00).
 **Do:** open **Yeh faisla kyon?** (what we understood: Papa, Bukhar, Khansi, 2 din se;
-what we checked: breathing, Nahi hai), then **Match kaise hua** on Ravi Kumar.
-**Say:** "Every decision and every match shows its reason, built from the data, never
-made up."
+what we checked: breathing, Nahi hai), then **Match kaise hua** on the first medic (language, distance, skill, rating bars),
+and the "Model" line (the trained model's confidence in this decision).
+**Say:** "Every decision and every match shows its reason. Caregivers are ranked exactly
+as in the organisers' labels, and a model trained on their data agrees with this call."
 **Do:** **Book karein**, then **Pakki karein**.
 **Show:** "Booking pakki ho gayi" with a booking number. Close it with **Band karein**.
 
@@ -53,10 +54,10 @@ is the one mistake this app must not make."
 ### 1:30 to 2:00. Hindi and a specialist
 **Do:** **Wapas**, **Nayi jaanch**, switch the language to **हिंदी**, then speak or type
 `दो महीने से घुटने में दर्द है`.
-**Show:** "विशेषज्ञ डॉक्टर से मिलना", **विभाग: हड्डी और जोड़ (Orthopaedics)**, the
-orthopaedics doctor first. Tap **सुनाइए** to hear it.
-**Say:** "The whole app switches to Hindi, picks the right department, and can read the
-answer aloud."
+**Show:** "डॉक्टर से फ़ोन / वीडियो पर बात", **विभाग: हड्डी और जोड़ (Orthopaedics)**, and
+three doctors who consult by video. Tap **सुनाइए** to hear it.
+**Say:** "The whole app switches to Hindi, names the department, and can read the answer
+aloud. Doctors in the roster consult by video, so distance does not count for them."
 
 ### 2:00 to 2:25. A question that can change everything
 **Do:** switch back to **Hinglish**, **Nayi jaanch**, type `Mere bete ko bukhar hai`.
@@ -71,6 +72,15 @@ three months is an emergency, so it asks the age."
 caregiver matches, and the last API request and response with the time in ms.
 **Say:** "This is the exact API call behind the screen: the problem statement's JSON
 schema, answered in a few milliseconds, with no outside AI service."
+
+### Spare examples (all checked on the live server)
+- `dadi ko bedsore dressing chahiye` → home nursing, today, three medics with wound dressing.
+- `Want a CBC and thyroid test with home sample collection` → lab test at home, scheduled,
+  three sample collectors.
+- `help chahiye` → one question asking what is needed, with tap options.
+- Avoid injection requests at the default location: the organisers' roster has no medic
+  with the IM-injection skill near Okhla, so the answer (correctly, as in their labels) has
+  no caregivers.
 
 ### 2:50 to 3:00. Close
 **Say:** "Three languages, voice in and out, a reason for every decision, and an
