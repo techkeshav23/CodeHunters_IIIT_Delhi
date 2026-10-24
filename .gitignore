@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / web
+node_modules/
+dist/
+web/.env.local
+
+# Organiser data and local outputs
+data/provided/*
+!data/provided/.gitkeep
+eval/out/
+models/*.joblib
+
+# Secrets
+.env
+*.key

@@ -1,0 +1,124 @@
+{
+  "turn_1": {
+    "request": {
+      "user_input": "Papa ki tabiyat theek nahi hai",
+      "language": "auto",
+      "location": { "lat": 28.54, "lng": 77.27 },
+      "conversation_history": []
+    },
+    "response": {
+      "follow_up_question": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.",
+      "care_type": null,
+      "urgency": null,
+      "red_flags": [],
+      "reasoning": "The main problem is not clear yet, so one question is needed before routing.",
+      "matched_caregivers": [],
+      "trace": {
+        "version": "0.1.0",
+        "language": "hinglish",
+        "understood": {
+          "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
+          "symptoms": [],
+          "duration_days": null,
+          "duration_label": null,
+          "services": [],
+          "severity": []
+        },
+        "checks": [],
+        "red_flags": [],
+        "decision": {
+          "care_type": null,
+          "urgency": null,
+          "care_label": null,
+          "care_label_local": null,
+          "urgency_label": null,
+          "urgency_label_local": null,
+          "confidence": 0.0,
+          "source": "rules",
+          "rule": "no_symptom_understood"
+        },
+        "reasoning_local": "Abhi saaf nahi hai ki taklif kya hai, isliye ek sawaal.",
+        "follow_up": {
+          "id": "q_main_symptom",
+          "text": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.",
+          "kind": "free_text",
+          "options": [
+            { "value": "fever", "label": "Bukhar" },
+            { "value": "pain", "label": "Dard" },
+            { "value": "breathing", "label": "Saans ki dikkat" },
+            { "value": "vomiting", "label": "Ulti / dast" },
+            { "value": "injury", "label": "Chot" }
+          ],
+          "asked_so_far": 1,
+          "max": 3
+        },
+        "emergency": null,
+        "caregivers": [],
+        "timing_ms": 6.1
+      }
+    }
+  },
+  "turn_2": {
+    "request": {
+      "user_input": "Bukhar",
+      "language": "auto",
+      "location": { "lat": 28.54, "lng": 77.27 },
+      "conversation_history": [
+        { "role": "user", "content": "Papa ki tabiyat theek nahi hai" },
+        { "role": "assistant", "content": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.", "question_id": "q_main_symptom" }
+      ]
+    },
+    "response": {
+      "follow_up_question": "Kitne din se ho raha hai?",
+      "care_type": null,
+      "urgency": null,
+      "red_flags": [],
+      "reasoning": "Fever reported; how long it has lasted decides the care type.",
+      "matched_caregivers": [],
+      "trace": {
+        "version": "0.1.0",
+        "language": "hinglish",
+        "understood": {
+          "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
+          "symptoms": [{ "id": "fever", "label": "Fever", "label_local": "Bukhar" }],
+          "duration_days": null,
+          "duration_label": null,
+          "services": [],
+          "severity": []
+        },
+        "checks": [
+          { "id": "breathing_difficulty", "label": "Breathing difficulty", "label_local": "Saans lene mein dikkat", "status": "not_reported" }
+        ],
+        "red_flags": [],
+        "decision": {
+          "care_type": null,
+          "urgency": null,
+          "care_label": null,
+          "care_label_local": null,
+          "urgency_label": null,
+          "urgency_label_local": null,
+          "confidence": 0.45,
+          "source": "rules",
+          "rule": "needs_duration"
+        },
+        "reasoning_local": "Bukhar bataya hai; kitne din se hai, us se care tay hogi.",
+        "follow_up": {
+          "id": "q_duration",
+          "text": "Kitne din se ho raha hai?",
+          "kind": "choice",
+          "options": [
+            { "value": "today", "label": "Aaj se" },
+            { "value": "2_3_days", "label": "2-3 din" },
+            { "value": "week", "label": "1 hafte se zyada" },
+            { "value": "month", "label": "1 mahine se zyada" }
+          ],
+          "asked_so_far": 2,
+          "max": 3
+        },
+        "emergency": null,
+        "caregivers": [],
+        "timing_ms": 7.0
+      }
+    }
+  }
+}

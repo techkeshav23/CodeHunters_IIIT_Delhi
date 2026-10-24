@@ -1,0 +1,101 @@
+{
+  "request": {
+    "user_input": "papa ko do din se bukhar hai aur khansi bhi",
+    "language": "auto",
+    "location": { "lat": 28.54, "lng": 77.27 },
+    "conversation_history": []
+  },
+  "response": {
+    "follow_up_question": null,
+    "care_type": "paramedic_home_visit",
+    "urgency": "same_day",
+    "red_flags": [],
+    "reasoning": "Fever with cough for 2 days; no breathing difficulty reported, so a same-day paramedic home visit fits.",
+    "matched_caregivers": [
+      { "caregiver_id": "DEV_CG_003", "score": 0.91, "reason": "Hindi-speaking, 2.1 km away, free at 4 pm" },
+      { "caregiver_id": "DEV_CG_001", "score": 0.84, "reason": "Hindi-speaking, 4.0 km away, free at 5:30 pm" },
+      { "caregiver_id": "DEV_CG_006", "score": 0.77, "reason": "Hindi-speaking, 6.2 km away, free at 6 pm" }
+    ],
+    "trace": {
+      "version": "0.1.0",
+      "language": "hinglish",
+      "understood": {
+        "patient": { "relation": "father", "relation_label": "Papa", "age_years": null, "age_group": null, "pregnant": null },
+        "symptoms": [
+          { "id": "fever", "label": "Fever", "label_local": "Bukhar" },
+          { "id": "cough", "label": "Cough", "label_local": "Khansi" }
+        ],
+        "duration_days": 2,
+        "duration_label": "2 days",
+        "services": [],
+        "severity": []
+      },
+      "checks": [
+        { "id": "breathing_difficulty", "label": "Breathing difficulty", "label_local": "Saans lene mein dikkat", "status": "not_reported" }
+      ],
+      "red_flags": [],
+      "decision": {
+        "care_type": "paramedic_home_visit",
+        "urgency": "same_day",
+        "care_label": "Paramedic home visit",
+        "care_label_local": "Paramedic ghar aakar check karenge",
+        "urgency_label": "Today",
+        "urgency_label_local": "Aaj hi",
+        "confidence": 0.74,
+        "source": "rules",
+        "rule": "acute_fever"
+      },
+      "reasoning_local": "2 din se bukhar aur khansi, saans ki dikkat nahi batayi. Aaj ek paramedic ghar aakar check karenge.",
+      "follow_up": null,
+      "emergency": null,
+      "caregivers": [
+        {
+          "caregiver_id": "DEV_CG_003",
+          "name": "Ravi Kumar",
+          "role": "paramedic",
+          "languages": ["Hindi", "English"],
+          "skills": ["vitals check", "fever care"],
+          "distance_km": 2.1,
+          "next_slot": "2026-10-24T16:00:00+05:30",
+          "next_slot_label": "today 4 pm",
+          "next_slot_label_local": "aaj 4 baje",
+          "rating": 4.8,
+          "score": 0.91,
+          "reason": "Hindi-speaking, 2.1 km away, free at 4 pm",
+          "reason_local": "Hindi bolte hain, 2.1 km door, aaj 4 baje free"
+        },
+        {
+          "caregiver_id": "DEV_CG_001",
+          "name": "Sunita Verma",
+          "role": "paramedic",
+          "languages": ["Hindi"],
+          "skills": ["vitals check", "sample collection"],
+          "distance_km": 4.0,
+          "next_slot": "2026-10-24T17:30:00+05:30",
+          "next_slot_label": "today 5:30 pm",
+          "next_slot_label_local": "aaj 5:30 baje",
+          "rating": 4.6,
+          "score": 0.84,
+          "reason": "Hindi-speaking, 4.0 km away, free at 5:30 pm",
+          "reason_local": "Hindi bolti hain, 4.0 km door, aaj 5:30 baje free"
+        },
+        {
+          "caregiver_id": "DEV_CG_006",
+          "name": "Arjun Mehta",
+          "role": "paramedic",
+          "languages": ["Hindi", "Punjabi"],
+          "skills": ["vitals check", "elderly care"],
+          "distance_km": 6.2,
+          "next_slot": "2026-10-24T18:00:00+05:30",
+          "next_slot_label": "today 6 pm",
+          "next_slot_label_local": "aaj 6 baje",
+          "rating": 4.7,
+          "score": 0.77,
+          "reason": "Hindi-speaking, 6.2 km away, free at 6 pm",
+          "reason_local": "Hindi bolte hain, 6.2 km door, aaj 6 baje free"
+        }
+      ],
+      "timing_ms": 9.4
+    }
+  }
+}

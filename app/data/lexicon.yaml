@@ -1,0 +1,771 @@
+# CareCompass lexicon (English, Hindi, Hinglish).
+#
+# Every word below is passed through app/nlp/normalize.py (Devanagari is
+# transliterated, spellings are reduced to a phonetic key), so write words the
+# natural way. Pattern words are matched in order with up to 2 extra words in
+# between, never across a sentence boundary. Words of 5+ letters also match
+# small typos.
+#
+# Align red flags with the organisers' care taxonomy when it arrives and have
+# the clinical mentors review this file.
+
+# canonical word: [other spellings / languages that mean the same thing]
+aliases:
+  saans: [saas, swas, shwas, saanse, saanso, saanson, saansein, breath, breathe, breathing]
+  dikkat: [dikkt, takleef, taklif, pareshani, problem, difficulty, dificulty, trouble]
+  dard: [dardh, drd, pain, pains, painful, ache, aching, hurts, hurting, peeda, dukh]
+  seena: [seene, sina, seeney, chhati, chati, chaati, chest]
+  sar: [sir, head, matha]
+  pet: [stomach, abdomen, abdominal, tummy, belly]
+  khoon: [khun, blood, bleeding, bleed]
+  ulti: [ulty, ultiyan, ultiya, vomit, vomits, vomiting, vomitting]
+  behosh: [behos, beyhosh, behoshi, unconscious, unresponsive]
+  bukhar: [bukar, bkhar, bukhaar, fever, feverish, jwar, jvar]
+  khansi: [khasi, kansi, khaasi, cough, coughing, coughs]
+  chakkar: [chakar, dizzy, dizziness, giddy, giddiness, vertigo]
+  mirgi: [epilepsy]
+  lakwa: [laqwa, lakva, paralysis, paralysed, paralyzed, falij]
+  zeher: [jahar, zahar, jehar, poison, poisoning, poisonous]
+  pregnant: [pregnent, pregnancy, garbhvati, garbhavati]
+  bachcha: [bacha, bachha, baccha, bachche, bache, bachchi, bachi, baby, kid, child, shishu]
+  navjaat: [navjat, newborn, nawjat]
+  saanp: [sanp, snake]
+  bichhu: [bichu, scorpion]
+  kaat: [kata, kaata, kati, kaati, kate, bite, bitten]
+  sujan: [sooj, suj, sooja, soojan, sujna, swelling, swollen, swell]
+  chehra: [chehre, face]
+  hont: [honth, hoth, lips, lip]
+  jeebh: [jibh, tongue]
+  peshab: [pishab, pesab, urine]
+  kamzori: [kamjori, kamzor, weakness, weak]
+  ghutna: [ghutne, ghutno, ghutnon, knee, knees]
+  nahi: [nahin, nai, nhi, nahee, nahii]
+  zyada: [jyada, jyaada, zyaada, jada]
+  tez: [tej, high]
+  achanak: [achaanak, suddenly, sudden]
+  pada: [pda, pad, pade, padi, pde]
+  dikha: [dikhani, dikhana, dikhane, dikhao, dikhaana, dikhaani, show]
+  dekh: [dekhna, dekhni, dekhne, dekho]
+  dawai: [dawa, dava, davai, medicine, medicines, tablet, tablets, pills]
+
+# negation words: after a symptom ("dikkat nahi") or before it ("no chest pain")
+negation:
+  after: [nahi]
+  before: ["no", "not", without, denies, denied, never, bina, na]
+  breakers: [aur, and, but, par, lekin, magar, however, kintu, parantu]
+  # "nahi" after these words confirms the symptom: "dard kam nahi ho raha",
+  # "bardasht nahi", "bukhar utar nahi raha", "khoon ruk nahi raha".
+  not_after: [bardasht, ruk, rukta, kam, theek, thik, ja, jaa, utar, utarta, band, sudhar, aaram, rahat, chain, so, sakte]
+
+modifiers:
+  # checked within 3 words of the symptom, same sentence
+  severe: [bahut tez, bahut zyada, bahut dard, tez dard, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe"]
+  sudden: [achanak, ekdam, "ek dam se", "all of a sudden"]
+  mild: [halka, thoda, "thoda sa", mild, slight, "a bit", "little bit"]
+
+# Red flags. `patterns` always fire. `conditional` patterns fire only with
+# one of `requires`: severe, sudden, infant, child, older_adult, pregnant, fever.
+red_flags:
+  - id: breathing_difficulty
+    label: Breathing difficulty
+    label_hinglish: Saans lene mein dikkat
+    label_hi: सांस लेने में दिक्कत
+    patterns:
+      - saans nahi aa
+      - saans nahi le
+      - saans nahi ho
+      - saans dikkat
+      - dikkat saans
+      - saans phool
+      - saans fool
+      - saans ruk
+      - saans atak
+      - saans chadh
+      - saans tez chal
+      - dam ghut
+      - dum ghut
+      - hont neele
+      - "can't breathe"
+      - cannot breathe
+      - unable to breathe
+      - not able to breathe
+      - short of breath
+      - shortness of breath
+      - breathless
+      - breathlessness
+      - gasping
+      - not breathing
+      - choking
+      - lips blue
+      - सांस नहीं आ रही
+      - सांस लेने में दिक्कत
+      - सांस फूल रही
+      - दम घुट रहा
+  - id: chest_pain
+    label: Chest pain or pressure
+    label_hinglish: Seene mein dard ya dabav
+    label_hi: सीने में दर्द या दबाव
+    patterns:
+      - seena dard
+      - dard seena
+      - seena dabav
+      - seena dabaav
+      - seena bhari
+      - seena bhaaripan
+      - chest tightness
+      - chest pressure
+      - heart attack
+      - dil dard
+      - dil ka daura
+      - सीने में दर्द
+      - छाती में दर्द
+  - id: stroke_signs
+    label: Stroke warning signs (face, arm, speech)
+    label_hinglish: Lakwe ke lakshan (chehra, haath, bolna)
+    label_hi: लकवे के लक्षण (चेहरा, हाथ, बोलना)
+    patterns:
+      - munh tedha
+      - muh tedha
+      - chehra tedha
+      - face drooping
+      - face droop
+      - ek taraf kamzori
+      - ek side kamzori
+      - ek taraf sunn
+      - ek side sunn
+      - aadha sharir
+      - one side weak
+      - weakness on one side
+      - lakwa
+      - zubaan ladkhada
+      - jeebh ladkhada
+      - slurred speech
+      - stroke
+      - मुंह टेढ़ा
+      - लकवा
+    conditional:
+      - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak"]
+        requires: [sudden, older_adult]
+  - id: unconscious
+    label: Unconscious or not responding
+    label_hinglish: Behosh ya jawab nahi de rahe
+    label_hi: बेहोश या जवाब नहीं दे रहे
+    patterns:
+      - behosh
+      - hosh nahi
+      - hosh mein nahi
+      - jawab nahi de
+      - jaag nahi
+      - not waking
+      - not responding
+      - passed out
+      - fainted
+      - faint ho
+      - बेहोश
+      - होश नहीं
+  - id: seizure
+    label: Seizure or fits
+    label_hinglish: Daura ya jhatke
+    label_hi: दौरा या झटके
+    exclude_if_before: [dil]
+    patterns:
+      - mirgi
+      - jhatke
+      - daura pada
+      - daure pada
+      - daura aa
+      - daure aa
+      - seizure
+      - seizures
+      - convulsion
+      - convulsions
+      - fits
+      - fit aa
+      - दौरा पड़
+      - मिर्गी
+  - id: severe_bleeding
+    label: Heavy bleeding or blood in vomit or stool
+    label_hinglish: Bahut khoon behna, ulti ya potty mein khoon
+    label_hi: बहुत खून बहना, उल्टी या मल में खून
+    patterns:
+      - bahut khoon
+      - khoon ruk nahi
+      - khoon beh
+      - khoon bah
+      - khoon nikal raha
+      - khoon ki ulti
+      - ulti khoon
+      - khoon ulti
+      - khansi khoon
+      - potty khoon
+      - latrine khoon
+      - kali potty
+      - kala potty
+      - khoon stool
+      - heavy khoon
+      - "khoon won't stop"
+      - khoon not stopping
+      - बहुत खून
+      - खून की उल्टी
+  - id: major_injury
+    label: Serious injury, fall or accident
+    label_hinglish: Gambhir chot, girna ya accident
+    label_hi: गंभीर चोट, गिरना या दुर्घटना
+    patterns:
+      - accident
+      - hadsa
+      - sar chot
+      - sar injury
+      - head injury
+      - gir uth nahi
+      - uth nahi pa
+      - haddi toot
+      - haddi bahar
+      - fracture
+      - gehra ghaav
+      - deep cut
+      - chaku
+      - chhat se gir
+      - unchai se gir
+      - fell from height
+      - सिर पर चोट
+      - एक्सीडेंट
+    conditional:
+      # any fall in an older adult goes to emergency (hip fracture, head injury risk)
+      - patterns: [gir gaye, gir gayi, gir gaya, gir pade, gir padi, fell, fall]
+        requires: [older_adult]
+  - id: severe_allergy
+    label: Swelling of face, lips or tongue
+    label_hinglish: Chehre, honth ya jeebh par sujan
+    label_hi: चेहरे, होंठ या जीभ पर सूजन
+    patterns:
+      - chehra sujan
+      - sujan chehra
+      - hont sujan
+      - sujan hont
+      - jeebh sujan
+      - sujan jeebh
+      - anaphylaxis
+      - चेहरे पर सूजन
+  - id: poisoning
+    label: Poison, chemical or medicine overdose swallowed
+    label_hinglish: Zeher, chemical ya zyada dawai kha li
+    label_hi: ज़हर, केमिकल या ज़्यादा दवाई खा ली
+    patterns:
+      - zeher
+      - keetnashak
+      - pesticide
+      - phenyl pi
+      - tezaab
+      - acid pi
+      - kerosene pi
+      - chuhe maar
+      - rat poison
+      - dawai zyada kha
+      - dawai zyada li
+      - zyada dawai kha
+      - zyada dawai le
+      - overdose
+      - galti se dawai
+      - neend ki goli
+      - neend ki goliyan
+      - goliyan kha
+      - goliyan zyada
+      - sleeping pills
+      - battery nigal
+      - sikka nigal
+      - nigal liya
+      - nigal li
+      - swallowed
+      - ज़हर
+  - id: venomous_bite
+    label: Snake or scorpion bite
+    label_hinglish: Saanp ya bichhu ne kaata
+    label_hi: सांप या बिच्छू ने काटा
+    patterns:
+      - saanp kaat
+      - kaat saanp
+      - bichhu kaat
+      - kaat bichhu
+      - saanp ne
+      - bichhu ne
+      - सांप ने काट
+      - बिच्छू ने काट
+  - id: severe_burn
+    label: Serious burn or electric shock
+    label_hinglish: Gambhir jalna ya current lagna
+    label_hi: गंभीर जलना या करंट लगना
+    patterns:
+      - current laga
+      - current lag
+      - bijli jhatka
+      - electric shock
+      - aag lag
+      - bahut jal
+      - chehra jal
+      - pura jal
+      - करंट लगा
+    conditional:
+      - patterns: [jal gaya, jal gayi, jal gaye, jhulas, burn, burns, burnt, burned, scald]
+        requires: [severe, infant, child]
+  - id: self_harm_risk
+    label: Thoughts of self-harm or suicide
+    label_hinglish: Khud ko nuksan pahunchane ke khayal
+    label_hi: ख़ुद को नुकसान पहुँचाने के ख़याल
+    patterns:
+      - khudkushi
+      - aatmhatya
+      - suicide
+      - suicidal
+      - jeena nahi chahta
+      - jeena nahi chahti
+      - jina nahi chahta
+      - marna chahta
+      - marna chahti
+      - mar jana chahta
+      - mar jana chahti
+      - khud ko nuksan
+      - apne aap ko nuksan
+      - apni jaan
+      - kill myself
+      - killing myself
+      - jeene ka mann nahi
+      - jeene ki ichha nahi
+      - end my life
+      - want to die
+      - self harm
+      - hurt myself
+      - nas kaat
+      - आत्महत्या
+      - जीना नहीं चाहता
+  - id: pregnancy_emergency
+    label: Pregnancy warning sign
+    label_hinglish: Pregnancy mein khatre ka lakshan
+    label_hi: गर्भावस्था में ख़तरे का लक्षण
+    patterns:
+      - bachcha hil nahi
+      - baby hil nahi
+      - baby not moving
+      - baby movement kam
+      - labour dard
+      - labor dard
+      - delivery dard
+    conditional:
+      - patterns: [khoon, spotting, pet dard, dard pet, paani gir, paani nikal, daura]
+        requires: [pregnant]
+  - id: infant_danger_sign
+    label: Danger sign in a young baby
+    label_hinglish: Chhote bachche mein khatre ka lakshan
+    label_hi: छोटे बच्चे में ख़तरे का लक्षण
+    patterns:
+      - doodh nahi pi
+      - doodh nahi pee
+      - feed nahi le
+      - not feeding
+      - doodh nahi le
+    conditional:
+      - patterns: [bukhar, sust, bilkul sust, neela pad, ulti]
+        requires: [infant]
+  - id: severe_headache
+    label: Sudden severe headache or stiff neck with fever
+    label_hinglish: Achanak tez sar dard ya bukhar ke saath gardan akadna
+    label_hi: अचानक तेज़ सिर दर्द या बुखार के साथ गर्दन अकड़ना
+    patterns:
+      - worst headache
+      - zindagi ka sabse
+    conditional:
+      - patterns: [sar dard, dard sar, headache]
+        requires: [sudden]
+      - patterns: [gardan akad, stiff neck, neck stiff]
+        requires: [fever]
+  - id: severe_abdominal_pain
+    label: Severe stomach pain
+    label_hinglish: Pet mein bahut tez dard
+    label_hi: पेट में बहुत तेज़ दर्द
+    conditional:
+      - patterns: [pet dard, dard pet]
+        requires: [severe, sudden]
+  - id: severe_dehydration
+    label: Not passing urine or unable to drink
+    label_hinglish: Peshab nahi ho raha ya paani nahi pi pa rahe
+    label_hi: पेशाब नहीं हो रहा या पानी नहीं पी पा रहे
+    patterns:
+      - peshab nahi aa
+      - peshab nahi ho
+      - peshab band
+      - no urine
+      - not passed urine
+      - paani nahi pi pa
+      - kuch nahi pi pa
+      - पेशाब नहीं हो रहा
+  - id: sudden_confusion
+    label: Sudden confusion
+    label_hinglish: Achanak behki baatein
+    label_hi: अचानक बहकी बातें
+    patterns:
+      - behki baat
+      - pehchaan nahi
+      - pehchan nahi
+      - kisi ko pehchan
+    conditional:
+      - patterns: [confused, confusion, ajeeb baat]
+        requires: [sudden, older_adult, fever]
+  - id: emergency_requested
+    label: Ambulance or emergency asked for
+    label_hinglish: Ambulance ya emergency maangi
+    label_hi: एम्बुलेंस या इमरजेंसी माँगी
+    patterns:
+      - ambulance
+      - emergency hai
+      - icu
+      - एम्बुलेंस
+
+# Symptoms. acute / chronic: [care, urgency]. Chronic = 14+ days.
+symptoms:
+  - id: fever
+    label: Fever
+    label_hinglish: Bukhar
+    label_hi: बुखार
+    patterns: [bukhar, temperature, badan garam, tapman, बुखार]
+    acute: [paramedic, same_day]
+    chronic: [gp, same_day]
+    respiratory: false
+  - id: cough
+    label: Cough
+    label_hinglish: Khansi
+    label_hi: खांसी
+    patterns: [khansi, balgam, खांसी]
+    acute: [gp, routine]
+    chronic: [gp, routine]
+    respiratory: true
+  - id: cold
+    label: Cold or runny nose
+    label_hinglish: Zukam
+    label_hi: ज़ुकाम
+    patterns: [zukam, jukam, sardi, naak beh, naak band, runny nose, cold, chheenk, sneezing, ज़ुकाम, सर्दी]
+    acute: [gp, routine]
+    chronic: [gp, routine]
+    respiratory: true
+  - id: sore_throat
+    label: Sore throat
+    label_hinglish: Gala kharab
+    label_hi: गला ख़राब
+    patterns: [gala kharab, gale dard, gala dard, gale kharash, throat pain, sore throat, गला ख़राब]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: ent
+    respiratory: true
+  - id: headache
+    label: Headache
+    label_hinglish: Sar dard
+    label_hi: सिर दर्द
+    patterns: [sar dard, dard sar, headache, migraine, सिर दर्द]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: neurology
+    needs_duration: true
+  - id: body_ache
+    label: Body ache
+    label_hinglish: Badan dard
+    label_hi: बदन दर्द
+    patterns: [badan dard, body dard, body ache, sharir dard, बदन दर्द]
+    acute: [gp, routine]
+    chronic: [gp, routine]
+  - id: vomiting
+    label: Vomiting or nausea
+    label_hinglish: Ulti ya ji machlana
+    label_hi: उल्टी या जी मचलाना
+    patterns: [ulti, ji machal, nausea, matli, उल्टी]
+    acute: [paramedic, same_day]
+    chronic: [specialist, routine]
+    specialty: gastroenterology
+  - id: diarrhoea
+    label: Loose motions
+    label_hinglish: Dast
+    label_hi: दस्त
+    patterns: [dast, loose motion, loose motions, diarrhea, diarrhoea, pet kharab, potty baar baar, दस्त]
+    acute: [paramedic, same_day]
+    chronic: [specialist, routine]
+    specialty: gastroenterology
+  - id: stomach_pain
+    label: Stomach pain
+    label_hinglish: Pet dard
+    label_hi: पेट दर्द
+    patterns: [pet dard, dard pet, gas, acidity, pet jalan, पेट दर्द]
+    acute: [gp, same_day]
+    chronic: [specialist, routine]
+    specialty: gastroenterology
+    needs_duration: true
+  - id: back_pain
+    label: Back pain
+    label_hinglish: Kamar dard
+    label_hi: कमर दर्द
+    patterns: [kamar dard, back dard, peeth dard, कमर दर्द]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: orthopaedics
+    needs_duration: true
+  - id: joint_pain
+    label: Joint or knee pain
+    label_hinglish: Jodon ya ghutne mein dard
+    label_hi: जोड़ों या घुटने में दर्द
+    patterns: [ghutna dard, jod dard, jodon dard, joint dard, arthritis, घुटने में दर्द]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: orthopaedics
+    needs_duration: true
+  - id: skin
+    label: Skin rash or itching
+    label_hinglish: Daane ya khujli
+    label_hi: दाने या खुजली
+    patterns: [rash, daane, khujli, itching, kharish, skin allergy, chakatte, दाने, खुजली]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: dermatology
+    needs_duration: true
+  - id: weakness
+    label: Weakness or tiredness
+    label_hinglish: Kamzori
+    label_hi: कमज़ोरी
+    patterns: [kamzori, thakan, tired, fatigue, कमज़ोरी]
+    acute: [gp, routine]
+    chronic: [gp, routine]
+  - id: dizziness
+    label: Dizziness
+    label_hinglish: Chakkar
+    label_hi: चक्कर
+    patterns: [chakkar, चक्कर]
+    acute: [paramedic, same_day]
+    chronic: [gp, routine]
+  - id: urinary
+    label: Burning or frequent urine
+    label_hinglish: Peshab mein jalan
+    label_hi: पेशाब में जलन
+    patterns: [peshab jalan, jalan peshab, burning peshab, peshab infection, uti, peshab baar baar, पेशाब में जलन]
+    acute: [gp, same_day]
+    chronic: [specialist, routine]
+    specialty: urology
+  - id: eye
+    label: Eye problem
+    label_hinglish: Aankh ki taklif
+    label_hi: आँख की तकलीफ़
+    patterns: [aankh laal, aankh dard, aankh se paani, eye dard, red eye, आँख]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: ophthalmology
+  - id: ear
+    label: Ear pain
+    label_hinglish: Kaan dard
+    label_hi: कान दर्द
+    patterns: [kaan dard, kaan beh, ear dard, कान दर्द]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: ent
+  - id: tooth
+    label: Tooth pain
+    label_hinglish: Daant dard
+    label_hi: दाँत दर्द
+    patterns: [daant dard, toothache, tooth dard, दाँत दर्द]
+    acute: [specialist, routine]
+    chronic: [specialist, routine]
+    specialty: dental
+  - id: wound
+    label: Wound or cut
+    label_hinglish: Ghaav ya kat jaana
+    label_hi: घाव या कट जाना
+    patterns: [ghaav, zakhm, wound, cut lag, kat gaya, kat gayi, घाव]
+    acute: [nurse, same_day]
+    chronic: [nurse, routine]
+  - id: injury
+    label: Minor injury
+    label_hinglish: Halki chot
+    label_hi: हल्की चोट
+    patterns: [chot, injury, moch, sprain, चोट]
+    acute: [paramedic, same_day]
+    chronic: [specialist, routine]
+    specialty: orthopaedics
+  - id: blood_pressure
+    label: Blood pressure problem
+    label_hinglish: BP ki dikkat
+    label_hi: बीपी की दिक्कत
+    patterns: [bp, blood pressure]
+    acute: [paramedic, same_day]
+    chronic: [gp, routine]
+    condition: true
+  - id: blood_sugar
+    label: Blood sugar problem
+    label_hinglish: Sugar ki dikkat
+    label_hi: शुगर की दिक्कत
+    patterns: [sugar, diabetes, madhumeh, शुगर]
+    acute: [paramedic, same_day]
+    chronic: [gp, routine]
+    condition: true
+  - id: palpitations
+    label: Fast heartbeat
+    label_hinglish: Dhadkan tez
+    label_hi: धड़कन तेज़
+    patterns: [dhadkan tez, dhadkan, palpitation, palpitations, ghabrahat, धड़कन]
+    acute: [paramedic, same_day]
+    chronic: [specialist, routine]
+    specialty: cardiology
+  - id: sweating
+    label: Sweating
+    label_hinglish: Pasina
+    label_hi: पसीना
+    patterns: [pasina, paseena, sweating, पसीना]
+    acute: [paramedic, same_day]
+    chronic: [gp, routine]
+  - id: mental_health
+    label: Stress, anxiety or low mood
+    label_hinglish: Tension, ghabrahat ya udaasi
+    label_hi: तनाव, घबराहट या उदासी
+    patterns: [tension, anxiety, depression, udaas, udaasi, stress, neend nahi, panic]
+    acute: [specialist, routine]
+    chronic: [specialist, routine]
+    specialty: psychiatry
+  - id: constipation
+    label: Constipation
+    label_hinglish: Kabz
+    label_hi: क़ब्ज़
+    patterns: [kabz, kabj, constipation, क़ब्ज़]
+    acute: [gp, routine]
+    chronic: [gp, routine]
+  - id: swelling
+    label: Swelling
+    label_hinglish: Sujan
+    label_hi: सूजन
+    patterns: [sujan, सूजन]
+    acute: [gp, same_day]
+    chronic: [gp, routine]
+  - id: minor_burn
+    label: Small burn
+    label_hinglish: Thoda jal gaya
+    label_hi: थोड़ा जल गया
+    patterns: [burn, jal gaya, jal gayi, jal gaye, jala, chhala]
+    acute: [nurse, same_day]
+    chronic: [nurse, routine]
+  - id: animal_bite
+    label: Animal bite
+    label_hinglish: Jaanwar ne kaata
+    label_hi: जानवर ने काटा
+    patterns: [kutte ne kaat, kutta kaat, dog bite, dog kaat, bandar ne kaat, billi ne kaat]
+    acute: [paramedic, same_day]
+    chronic: [gp, routine]
+  - id: pain
+    label: Pain
+    label_hinglish: Dard
+    label_hi: दर्द
+    patterns: [dard]
+    acute: [gp, same_day]
+    chronic: [gp, routine]
+    generic: true
+
+# Services people ask for directly.
+services:
+  - id: injection
+    label: Injection at home
+    label_hinglish: Ghar pe injection
+    label_hi: घर पर इंजेक्शन
+    patterns: [injection, sui, insulin, इंजेक्शन]
+    care: nurse
+    skill: injection
+  - id: iv_drip
+    label: Drip at home
+    label_hinglish: Ghar pe drip
+    label_hi: घर पर ड्रिप
+    patterns: [drip, iv, glucose chadh, bottle chadh, ड्रिप]
+    care: nurse
+    skill: iv
+  - id: dressing
+    label: Wound dressing
+    label_hinglish: Patti / dressing
+    label_hi: पट्टी / ड्रेसिंग
+    patterns: [dressing, patti, wound care, ghaav saaf, पट्टी]
+    care: nurse
+    skill: wound care
+  - id: catheter
+    label: Catheter care
+    label_hinglish: Catheter
+    label_hi: कैथेटर
+    patterns: [catheter, kathetar, नली]
+    care: nurse
+    skill: catheter
+  - id: bedsore
+    label: Bedsore care
+    label_hinglish: Bedsore
+    label_hi: बेडसोर
+    patterns: [bedsore, bed sore]
+    care: nurse
+    skill: wound care
+  - id: elderly_care
+    label: Care for a bedridden or elderly person
+    label_hinglish: Bujurg ki dekhbhal
+    label_hi: बुज़ुर्ग की देखभाल
+    patterns: [dekhbhal, attendant, caretaker, care taker, elderly care, bistar pe, bistar par, bedridden]
+    care: nurse
+    skill: elderly care
+  - id: post_op
+    label: Care after an operation
+    label_hinglish: Operation ke baad dekhbhal
+    label_hi: ऑपरेशन के बाद देखभाल
+    patterns: [operation baad, operation ke baad, surgery baad, surgery ke baad, post op, post surgery, tanke, stitches]
+    care: nurse
+    skill: post-operative care
+  - id: vaccination
+    label: Vaccination
+    label_hinglish: Teeka
+    label_hi: टीका
+    patterns: [teeka, tika, vaccine, vaccination, टीका]
+    care: nurse
+    skill: vaccination
+  - id: physiotherapy
+    label: Physiotherapy
+    label_hinglish: Physiotherapy
+    label_hi: फ़िज़ियोथेरेपी
+    patterns: [physio, physiotherapy, physiotherapist]
+    care: specialist
+    skill: physiotherapy
+  - id: sample_collection
+    label: Blood test at home
+    label_hinglish: Ghar pe blood test
+    label_hi: घर पर खून की जाँच
+    patterns: [blood test, khoon ki jaanch, khoon jaanch, sample, lab test, test karwana]
+    care: paramedic
+    skill: sample collection
+  - id: vitals_check
+    label: BP or sugar check at home
+    label_hinglish: Ghar pe BP / sugar check
+    label_hi: घर पर बीपी / शुगर जाँच
+    patterns: [bp check, blood pressure check, sugar check, bp naap, checkup ghar, health checkup]
+    care: paramedic
+    skill: vitals check
+  - id: checkup
+    label: Check-up
+    label_hinglish: Checkup
+    label_hi: जाँच
+    patterns: [checkup, check up, routine checkup, antenatal]
+    care: gp
+  - id: teleconsult
+    label: Talk to a doctor
+    label_hinglish: Doctor se baat
+    label_hi: डॉक्टर से बात
+    patterns: [doctor se baat, video call, online consult, phone pe doctor, teleconsult, doctor chahiye, salah chahiye]
+    care: gp
+  - id: report_review
+    label: Show reports to a doctor
+    label_hinglish: Report dikhana
+    label_hi: रिपोर्ट दिखाना
+    patterns: [report dikha, report dekh, report review, reports]
+    care: gp
+
+# Who the patient is.
+relations:
+  father: [papa, pitaji, pita, dad, father, abbu, babuji]
+  mother: [mummy, mumma, mummi, maa, mother, mom, ammi, mataji]
+  grandparent: [dadi, dada, nani, nana, grandmother, grandfather, grandma, grandpa]
+  elderly: [bujurg, buzurg, elderly]
+  child: [bachcha, beta, bete, beti, betiyan, son, daughter, ladka, ladke, ladki]
+  infant: [navjaat, infant]
+  wife: [wife, patni, biwi]
+  husband: [husband, pati]
+  self: [mujhe, mera, meri, mere, main, myself]

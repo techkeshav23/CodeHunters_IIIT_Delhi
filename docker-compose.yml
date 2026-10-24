@@ -1,0 +1,20 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CC_FOLLOWUP_POLICY=minimal
+      - CC_TOP_K=3
+    volumes:
+      - ./data/provided:/srv/data/provided:ro
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_BASE: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - api

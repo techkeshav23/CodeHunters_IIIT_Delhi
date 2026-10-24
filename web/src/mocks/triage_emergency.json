@@ -1,0 +1,60 @@
+{
+  "request": {
+    "user_input": "Mummy ke seene mein dard hai aur pasina aa raha hai",
+    "language": "auto",
+    "location": { "lat": 28.54, "lng": 77.27 },
+    "conversation_history": []
+  },
+  "response": {
+    "follow_up_question": null,
+    "care_type": "emergency_referral",
+    "urgency": "immediate",
+    "red_flags": ["chest_pain"],
+    "reasoning": "Possible emergency signs: chest pain or pressure (with sweating). Do not wait for a booking: call 112 now (ambulance 102 in Delhi).",
+    "matched_caregivers": [],
+    "trace": {
+      "version": "0.1.0",
+      "language": "hinglish",
+      "understood": {
+        "patient": { "relation": "mother", "relation_label": "Mummy", "age_years": null, "age_group": null, "pregnant": null },
+        "symptoms": [{ "id": "sweating", "label": "Sweating", "label_local": "Pasina" }],
+        "duration_days": null,
+        "duration_label": null,
+        "services": [],
+        "severity": []
+      },
+      "checks": [
+        { "id": "chest_pain", "label": "Chest pain or pressure", "label_local": "Seene mein dard ya dabav", "status": "present" }
+      ],
+      "red_flags": [
+        { "id": "chest_pain", "label": "Chest pain or pressure", "label_local": "Seene mein dard ya dabav", "evidence": "seene mein dard" }
+      ],
+      "decision": {
+        "care_type": "emergency_referral",
+        "urgency": "immediate",
+        "care_label": "Emergency: call for help now",
+        "care_label_local": "Emergency: abhi madad bulayein",
+        "urgency_label": "Now",
+        "urgency_label_local": "Abhi",
+        "confidence": 1.0,
+        "source": "rules",
+        "rule": "red_flag"
+      },
+      "reasoning_local": "Emergency ke lakshan: seene mein dard (pasine ke saath). Booking ka intezaar mat karein, abhi 112 par call karein (Delhi mein ambulance 102).",
+      "follow_up": null,
+      "emergency": {
+        "title": "This may be an emergency",
+        "title_local": "Yeh emergency ho sakti hai",
+        "numbers": [
+          { "label": "Emergency (all India)", "label_local": "Emergency (poore Bharat mein)", "number": "112" },
+          { "label": "Ambulance in Delhi (CATS, free)", "label_local": "Delhi ambulance (CATS, free)", "number": "102" },
+          { "label": "Ambulance in many states", "label_local": "Kai rajyon mein ambulance", "number": "108" }
+        ],
+        "steps": ["Call 112 now.", "Stay with the patient.", "Keep your phone on and share your location."],
+        "steps_local": ["Abhi 112 par call karein.", "Mareez ke saath rahein.", "Phone chalu rakhein aur location share karein."]
+      },
+      "caregivers": [],
+      "timing_ms": 4.2
+    }
+  }
+}

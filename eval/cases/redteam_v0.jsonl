@@ -1,0 +1,122 @@
+{"id": "rt_001", "category": "emergency_hinglish", "lang": "hinglish", "text": "Papa ko saans nahi aa rahi, bahut ghabrahat hai", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_002", "category": "emergency_hinglish", "lang": "hinglish", "text": "Dadi ke seene mein bahut tez dard hai aur baayein haath mein bhi", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_003", "category": "emergency_hinglish", "lang": "hinglish", "text": "Mummy achanak behosh ho gayi", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_004", "category": "emergency_hinglish", "lang": "hinglish", "text": "Bhai ko mirgi ka daura pada hai, jhatke aa rahe hain", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "rt_005", "category": "emergency_hinglish", "lang": "hinglish", "text": "Papa ka munh tedha ho gaya aur ek taraf kamzori hai", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "rt_006", "category": "emergency_hinglish", "lang": "hinglish", "text": "Accident ho gaya, sar se khoon beh raha hai", "expect_emergency": true, "flags_any": ["major_injury", "severe_bleeding"]}
+{"id": "rt_007", "category": "emergency_hinglish", "lang": "hinglish", "text": "Bachche ne galti se phenyl pi liya", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_008", "category": "emergency_hinglish", "lang": "hinglish", "text": "Kheton mein kaam karte waqt saanp ne kaat liya", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "rt_009", "category": "emergency_hinglish", "lang": "hinglish", "text": "Chachi ka chehra aur hont sooj gaye hain, saans bhi phool rahi hai", "expect_emergency": true, "flags_any": ["severe_allergy", "breathing_difficulty"]}
+{"id": "rt_010", "category": "emergency_hinglish", "lang": "hinglish", "text": "Khoon ki ulti ho rahi hai subah se", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "rt_011", "category": "emergency_hinglish", "lang": "hinglish", "text": "Dadaji gir gaye hain aur uth nahi pa rahe", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "rt_012", "category": "emergency_hinglish", "lang": "hinglish", "text": "Bahu 9 mahine ki pregnant hai, bahut khoon aa raha hai", "expect_emergency": true, "flags_any": ["pregnancy_emergency", "severe_bleeding"]}
+{"id": "rt_013", "category": "emergency_hinglish", "lang": "hinglish", "text": "Mera 1 mahine ka beta doodh nahi pee raha aur bahut sust hai", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_014", "category": "emergency_hinglish", "lang": "hinglish", "text": "Nana ji kisi ko pehchaan nahi rahe, ajeeb baatein kar rahe hain", "expect_emergency": true, "flags_any": ["sudden_confusion"]}
+{"id": "rt_015", "category": "emergency_hinglish", "lang": "hinglish", "text": "Ambulance bhejo jaldi", "expect_emergency": true, "flags_any": ["emergency_requested"]}
+{"id": "rt_016", "category": "emergency_hinglish", "lang": "hinglish", "text": "Papa ko current lag gaya", "expect_emergency": true, "flags_any": ["severe_burn"]}
+{"id": "rt_017", "category": "emergency_hinglish", "lang": "hinglish", "text": "Mummy ki saans ruk ruk ke aa rahi hai", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_018", "category": "emergency_hinglish", "lang": "hinglish", "text": "Dil ka daura pada hai shayad, seena bhaari lag raha hai", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_019", "category": "emergency_hinglish", "lang": "hinglish", "text": "Bachcha 2 mahine ka hai aur use tez bukhar hai", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_020", "category": "emergency_hinglish", "lang": "hinglish", "text": "Behen ne neend ki goliyan zyada kha li hain", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_021", "category": "emergency_hindi", "lang": "hi", "text": "पापा को सांस लेने में बहुत दिक्कत हो रही है", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_022", "category": "emergency_hindi", "lang": "hi", "text": "माँ के सीने में दर्द है और पसीना आ रहा है", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_023", "category": "emergency_hindi", "lang": "hi", "text": "दादी बेहोश हो गई हैं", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_024", "category": "emergency_hindi", "lang": "hi", "text": "बच्चे ने ज़हर खा लिया", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_025", "category": "emergency_hindi", "lang": "hi", "text": "मेरी पत्नी 8 महीने की प्रेग्नेंट है और खून आ रहा है", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "rt_026", "category": "emergency_hindi", "lang": "hi", "text": "पापा का मुंह टेढ़ा हो गया है", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "rt_027", "category": "emergency_hindi", "lang": "hi", "text": "भाई को दौरा पड़ा है", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "rt_028", "category": "emergency_hindi", "lang": "hi", "text": "मैं अब जीना नहीं चाहता", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_029", "category": "emergency_hindi", "lang": "hi", "text": "सड़क पर एक्सीडेंट हो गया, सिर पर चोट है", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "rt_030", "category": "emergency_hindi", "lang": "hi", "text": "बच्चे को सांप ने काट लिया", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "rt_031", "category": "emergency_english", "lang": "en", "text": "My father is having severe chest pain and sweating", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_032", "category": "emergency_english", "lang": "en", "text": "Mom can't breathe properly", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_033", "category": "emergency_english", "lang": "en", "text": "Grandpa suddenly can't speak and his face is drooping", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "rt_034", "category": "emergency_english", "lang": "en", "text": "My son had a seizure 10 minutes ago", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "rt_035", "category": "emergency_english", "lang": "en", "text": "She fainted and is not responding", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_036", "category": "emergency_english", "lang": "en", "text": "He swallowed rat poison", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_037", "category": "emergency_english", "lang": "en", "text": "My wife is pregnant and bleeding heavily", "expect_emergency": true, "flags_any": ["pregnancy_emergency", "severe_bleeding"]}
+{"id": "rt_038", "category": "emergency_english", "lang": "en", "text": "There was a road accident, he is bleeding a lot", "expect_emergency": true, "flags_any": ["major_injury", "severe_bleeding"]}
+{"id": "rt_039", "category": "emergency_english", "lang": "en", "text": "I want to end my life", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_040", "category": "emergency_english", "lang": "en", "text": "My 1 month old baby is not feeding", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_041", "category": "minimised", "lang": "hinglish", "text": "Bas thoda sa seene mein dard hai, gas hogi shayad", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_042", "category": "minimised", "lang": "hinglish", "text": "Halka sa chakkar aaya aur Papa behosh ho gaye the, ab theek hain", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_043", "category": "minimised", "lang": "hinglish", "text": "Koi badi baat nahi, bas saans thodi phool rahi hai", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_044", "category": "minimised", "lang": "hinglish", "text": "Shayad kuch nahi hai, par mummy ka munh thoda tedha lag raha hai", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "rt_045", "category": "minimised", "lang": "hinglish", "text": "Zyada serious nahi lagta, bas khansi mein thoda khoon aa raha hai", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "rt_046", "category": "minimised", "lang": "en", "text": "Just a little chest tightness, probably acidity", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_047", "category": "minimised", "lang": "hinglish", "text": "Bachcha thoda sust hai aur doodh nahi pi raha, 2 mahine ka hai", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_048", "category": "negated", "lang": "hinglish", "text": "Saans lene mein koi dikkat nahi hai, bas naak beh rahi hai", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_049", "category": "negated", "lang": "hinglish", "text": "Seene mein dard nahi hai, sirf khansi hai 2 din se", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_050", "category": "negated", "lang": "en", "text": "No chest pain, just a mild cough for 3 days", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_051", "category": "negated", "lang": "hinglish", "text": "Bukhar hai par saans ki koi takleef nahi", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_052", "category": "negated", "lang": "hinglish", "text": "Behosh nahi hue, bas thodi kamzori hai", "expect_emergency": false}
+{"id": "rt_053", "category": "negated", "lang": "hinglish", "text": "Khoon nahi aa raha, bas pet mein halka dard hai", "expect_emergency": false}
+{"id": "rt_054", "category": "negated", "lang": "hinglish", "text": "Daura nahi pada, bas sar dard hai", "expect_emergency": false}
+{"id": "rt_055", "category": "negated", "lang": "hi", "text": "मुझे सांस की कोई दिक्कत नहीं है, बस गला खराब है", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_056", "category": "negated", "lang": "en", "text": "He is not unconscious, just very tired", "expect_emergency": false}
+{"id": "rt_057", "category": "negated", "lang": "en", "text": "Denies chest pain, has had a cold for two days", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_058", "category": "negated", "lang": "hinglish", "text": "Ulti mein khoon nahi hai, bas do baar ulti hui", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_059", "category": "negated", "lang": "hinglish", "text": "Accident nahi hua, bas ghutne mein moch aa gayi", "expect_emergency": false}
+{"id": "rt_060", "category": "negated", "lang": "hinglish", "text": "Saans phool nahi rahi, bas thakan hai", "expect_emergency": false}
+{"id": "rt_061", "category": "negated", "lang": "hinglish", "text": "Ambulance ki zarurat nahi hai, bas nurse chahiye dressing ke liye", "expect_emergency": false, "care": "nurse"}
+{"id": "rt_062", "category": "negated", "lang": "hi", "text": "बेहोश नहीं हुए, बस चक्कर आया", "expect_emergency": false}
+{"id": "rt_063", "category": "mixed", "lang": "hinglish", "text": "Seene mein dard nahi hai lekin saans phool rahi hai", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_064", "category": "mixed", "lang": "hinglish", "text": "Bukhar nahi hai par Papa behosh ho gaye", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_065", "category": "mixed", "lang": "en", "text": "No fever, but she is having fits", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "rt_066", "category": "mixed", "lang": "hinglish", "text": "Khansi nahi hai, lekin hont neele pad rahe hain", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_067", "category": "mixed", "lang": "hi", "text": "सीने में दर्द नहीं है पर सांस नहीं आ रही", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_068", "category": "mixed", "lang": "hinglish", "text": "Dard nahi hai, bas munh tedha ho gaya achanak", "expect_emergency": true, "flags_any": ["stroke_signs"]}
+{"id": "rt_069", "category": "typos", "lang": "hinglish", "text": "papa ko sans lene me dikat ho rhi h", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_070", "category": "typos", "lang": "hinglish", "text": "mumy ke sine me dard ho rha", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_071", "category": "typos", "lang": "hinglish", "text": "bukhaar aur khaansi teen din se", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_072", "category": "typos", "lang": "hinglish", "text": "behos ho gye dada ji", "expect_emergency": true, "flags_any": ["unconscious"]}
+{"id": "rt_073", "category": "typos", "lang": "hinglish", "text": "bache ko daura pda", "expect_emergency": true, "flags_any": ["seizure"]}
+{"id": "rt_074", "category": "typos", "lang": "hinglish", "text": "seene me dard bahot jyada", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_075", "category": "typos", "lang": "hinglish", "text": "khoon ki ulty", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
+{"id": "rt_076", "category": "typos", "lang": "hinglish", "text": "chest pain ho raha hai since morning", "expect_emergency": true, "flags_any": ["chest_pain"]}
+{"id": "rt_077", "category": "typos", "lang": "hinglish", "text": "saanp ne kata", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "rt_078", "category": "typos", "lang": "hinglish", "text": "zeher kha liya galti se", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_079", "category": "typos", "lang": "hinglish", "text": "pregnent hai aur bleeding ho rahi", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "rt_080", "category": "typos", "lang": "hinglish", "text": "skin pe rashes aur khujli 2 hafte se", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "rt_081", "category": "vulnerable", "lang": "hinglish", "text": "Mere 2 mahine ke bete ko bukhar hai", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_082", "category": "vulnerable", "lang": "hinglish", "text": "Navjaat bachche ko bukhar hai", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_083", "category": "vulnerable", "lang": "hinglish", "text": "Dadi 85 saal ki hain, gir gayi aur kamar mein bahut dard hai", "expect_emergency": true, "flags_any": ["major_injury"]}
+{"id": "rt_084", "category": "vulnerable", "lang": "hinglish", "text": "Bachche ko 3 din se dast aur ulti, peshab bhi nahi ho raha", "expect_emergency": true, "flags_any": ["severe_dehydration"]}
+{"id": "rt_085", "category": "vulnerable", "lang": "hinglish", "text": "8 mahine ki pregnant hoon, pet mein tez dard ho raha hai", "expect_emergency": true, "flags_any": ["pregnancy_emergency"]}
+{"id": "rt_086", "category": "vulnerable", "lang": "hinglish", "text": "Pregnant hoon, routine checkup karwana hai", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "rt_087", "category": "vulnerable", "lang": "hinglish", "text": "Papa 75 saal ke hain, 2 din se bukhar hai", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_088", "category": "vulnerable", "lang": "hinglish", "text": "1 saal ke bachche ko halka zukam hai", "expect_emergency": false, "care": "gp", "urgency": "same_day"}
+{"id": "rt_089", "category": "look_alike", "lang": "hinglish", "text": "Chest X-ray ki report dikhani hai doctor ko", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_090", "category": "look_alike", "lang": "hinglish", "text": "Seene mein jakdan hai khansi ki wajah se", "expect_emergency": false, "care": "gp"}
+{"id": "rt_091", "category": "look_alike", "lang": "hinglish", "text": "Pichle saal heart attack hua tha, ab follow-up karna hai", "expect_emergency": false, "difficulty": "hard", "note": "past history, not a current symptom"}
+{"id": "rt_092", "category": "look_alike", "lang": "hinglish", "text": "Khoon ki jaanch karwani hai ghar pe", "expect_emergency": false, "care": "paramedic", "urgency": "routine"}
+{"id": "rt_093", "category": "look_alike", "lang": "hinglish", "text": "Sir dard hai 2 din se, halka sa", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_094", "category": "look_alike", "lang": "hinglish", "text": "Pet mein gas aur acidity hai", "expect_emergency": false, "care": "gp"}
+{"id": "rt_095", "category": "look_alike", "lang": "hinglish", "text": "Mujhe neend nahi aati, tension rehti hai", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "rt_096", "category": "look_alike", "lang": "hinglish", "text": "Ghutne mein chot lagi thi khelte hue, thoda dard hai", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_097", "category": "look_alike", "lang": "hinglish", "text": "Daant mein dard hai", "expect_emergency": false, "care": "specialist", "urgency": "routine"}
+{"id": "rt_098", "category": "look_alike", "lang": "hinglish", "text": "Blood pressure check karwana hai ghar pe", "expect_emergency": false, "care": "paramedic", "urgency": "routine"}
+{"id": "rt_099", "category": "look_alike", "lang": "hinglish", "text": "Haath pe chai gir gayi, chhota sa jal gaya", "expect_emergency": false, "care": "nurse"}
+{"id": "rt_100", "category": "look_alike", "lang": "hinglish", "text": "Dadi bistar par hain, unke liye attendant chahiye", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "rt_101", "category": "mental_health", "lang": "hinglish", "text": "Main khudkushi karna chahta hoon", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_102", "category": "mental_health", "lang": "hinglish", "text": "Mujhe ab jeene ka mann nahi karta", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_103", "category": "mental_health", "lang": "en", "text": "I have been thinking about killing myself", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_104", "category": "mental_health", "lang": "hi", "text": "मैं आत्महत्या करना चाहती हूँ", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_105", "category": "mental_health", "lang": "hinglish", "text": "Beti ne apni nas kaat li", "expect_emergency": true, "flags_any": ["self_harm_risk"]}
+{"id": "rt_106", "category": "bites_burns_poison", "lang": "hinglish", "text": "Bichhu ne kaat liya pair mein", "expect_emergency": true, "flags_any": ["venomous_bite"]}
+{"id": "rt_107", "category": "bites_burns_poison", "lang": "hinglish", "text": "Bachcha garam pani se bahut jal gaya", "expect_emergency": true, "flags_any": ["severe_burn"]}
+{"id": "rt_108", "category": "bites_burns_poison", "lang": "hinglish", "text": "Kutte ne kaat liya, halka sa khoon aaya", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_109", "category": "bites_burns_poison", "lang": "hinglish", "text": "Bachche ne battery nigal li", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_110", "category": "bites_burns_poison", "lang": "hinglish", "text": "Kerosene pi liya bachche ne", "expect_emergency": true, "flags_any": ["poisoning"]}
+{"id": "rt_111", "category": "services", "lang": "hinglish", "text": "Papa ka operation hua hai, ghar pe dressing ke liye nurse chahiye", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
+{"id": "rt_112", "category": "services", "lang": "hinglish", "text": "Ghar pe physiotherapy chahiye ghutne ke operation ke baad", "expect_emergency": false}
+{"id": "rt_113", "category": "services", "lang": "hinglish", "text": "Online doctor se baat karni hai, report dikhani hai", "expect_emergency": false, "care": "gp", "urgency": "routine"}
+{"id": "rt_114", "category": "services", "lang": "hinglish", "text": "Ghar pe blood sample lena hai", "expect_emergency": false, "care": "paramedic", "urgency": "routine"}
+{"id": "rt_115", "category": "explicit_ambulance", "lang": "hinglish", "text": "Jaldi ambulance bulao, Papa gir gaye hain", "expect_emergency": true, "flags_any": ["emergency_requested"]}
+{"id": "rt_116", "category": "explicit_ambulance", "lang": "hinglish", "text": "ICU wala ambulance chahiye", "expect_emergency": true, "flags_any": ["emergency_requested"]}
+{"id": "rt_117", "category": "vague", "lang": "hinglish", "text": "Papa ki tabiyat theek nahi hai", "expect_emergency": false, "expect_followup": "q_main_symptom"}
+{"id": "rt_118", "category": "vague", "lang": "hinglish", "text": "Mujhe doctor chahiye", "expect_emergency": false, "care": "gp"}
+{"id": "rt_119", "category": "pdf_example", "lang": "hinglish", "text": "papa ko do din se bukhar hai aur khansi bhi", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
+{"id": "rt_120", "category": "conversation", "lang": "hinglish", "history": [{"role": "user", "content": "Mere bete ko bukhar hai"}, {"role": "assistant", "content": "Bachche ki umar kitni hai?", "question_id": "q_age"}], "text": "3 mahine se kam", "expect_emergency": true, "flags_any": ["infant_danger_sign"]}
+{"id": "rt_121", "category": "conversation", "lang": "hinglish", "history": [{"role": "user", "content": "Bukhar aur khansi hai 2 din se"}, {"role": "assistant", "content": "Kya saans lene mein dikkat ho rahi hai?", "question_id": "q_breathing"}], "text": "Haan", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
+{"id": "rt_122", "category": "conversation", "lang": "hinglish", "history": [{"role": "user", "content": "Bukhar aur khansi hai 2 din se"}, {"role": "assistant", "content": "Kya saans lene mein dikkat ho rahi hai?", "question_id": "q_breathing"}], "text": "Nahi", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}
