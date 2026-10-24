@@ -1,4 +1,6 @@
-"""Safety gate on the team-written tricky cases (eval/cases/redteam_v0.jsonl).
+"""Safety gate on the tricky case sets in eval/cases/:
+redteam_v0 (written by the backend side) and redteam_blind_v1 (written by the
+web side without seeing the lexicon; fixed against, so now a regression set).
 
 A missed emergency fails the build. Cases marked "hard" are reported by the
 eval harness but not gated."""
@@ -8,12 +10,14 @@ import pytest
 
 from eval.run_eval import evaluate, load_rows
 
-CASES = Path(__file__).resolve().parents[1] / "eval" / "cases" / "redteam_v0.jsonl"
+CASE_DIR = Path(__file__).resolve().parents[1] / "eval" / "cases"
+CASES = CASE_DIR / "redteam_v0.jsonl"
+SETS = sorted(CASE_DIR.glob("redteam_*.jsonl"))
 
 
-@pytest.fixture(scope="module")
-def batch():
-    return evaluate(load_rows(CASES), mode="batch")
+@pytest.fixture(scope="module", params=SETS, ids=[p.stem for p in SETS])
+def batch(request):
+    return evaluate(load_rows(request.param), mode="batch")
 
 
 def test_no_missed_emergencies(batch):

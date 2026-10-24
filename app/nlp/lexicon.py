@@ -20,10 +20,13 @@ from .normalize import BOUNDARY, phon, tokenize
 
 MAX_GAP = 2        # content words allowed between two pattern words
 MAX_SPAN_GAP = 6   # total words allowed between two pattern words
-# Small words that do not count towards MAX_GAP ("pet mein bahut tez dard").
-FILLERS = {"mein", "me", "ho", "raha", "rahi", "rahe", "hai", "hain", "tha", "thi", "the", "ka", "ki",
-           "ke", "ko", "pe", "bhi", "bahut", "tej", "thoda", "sa", "si", "se", "hi", "to", "in", "my",
-           "of", "a", "an", "is", "his", "her", "on", "at", "uske", "unke", "mere", "meri", "mera"}
+# Small words that do not count towards MAX_GAP ("pet mein bahut tez dard",
+# "pet ke neeche daayein taraf dard"). Stored as phonetic keys.
+FILLERS = {phon(w) for w in (
+    "mein me ho raha rahi rahe hai hain tha thi the ka ki ke ko pe bhi bahut tez thoda sa si se hi to "
+    "in my of a an is his her on at uske unke mere meri mera neeche upar daayein baayein dayi bayi "
+    "daahine taraf side right left hisse wale wali"
+).split()}
 NEG_WINDOW = 3
 MOD_WINDOW = 3
 FUZZY_MIN_LEN = 5

@@ -30,7 +30,10 @@ _RELATIVE_DURATIONS = [
     ("since morning", 0), ("this morning", 0), ("today", 0), ("kai din", 7), ("bahut din", 7),
     ("kaafi din", 7), ("kai hafte", 21), ("kai mahine", 60), ("mahino se", 60), ("saalon se", 365),
     ("for months", 60), ("for years", 365), ("for weeks", 21),
+    ("purana", 60), ("purani", 60), ("chronic", 60), ("long time", 60), ("kaafi samay se", 30),
+    ("bahut samay se", 30),
 ]
+_YOUNGER = ["chhota", "chhote", "chhoti", "kam"]  # "3 mahine se chhota" = younger than 3 months
 _PREGNANT_PATTERNS = ["pregnant", "pet se hai", "pet se hain", "garbh"]
 CHILD_WORDS = {"bachcha"}  # canonical; beta/beti may be adults
 
@@ -48,6 +51,7 @@ def _tables() -> dict:
         "dur_after": {k(w)[0] for w in _DURATION_AFTER},
         "dur_before": {k(w)[0] for w in _DURATION_BEFORE},
         "relative": [(k(w), d) for w, d in _RELATIVE_DURATIONS],
+        "younger": {k(w)[0] for w in _YOUNGER},
         "pregnant": [k(w) for w in _PREGNANT_PATTERNS],
     }
 
@@ -121,6 +125,9 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         prev = tokens[i - 1] if i > 0 else ""
         if nxt in ("ki", "ke", "ka") and nxt2 == "pregnant":
             preg_months = True
+            continue
+        if nxt in tb["dur_after"] and nxt2 in tb["younger"]:
+            age = age if age is not None else days * 0.95 / 365
             continue
         is_duration = (nxt in tb["dur_after"] or prev in tb["dur_before"]
                        or (nxt in ("ka", "ki", "ke") and nxt2 in symptom_tokens))

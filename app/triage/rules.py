@@ -46,9 +46,13 @@ def decide(ex: Extraction) -> Decision:
     if ex.duration_days is None and any(s.meta.get("needs_duration") for s in symptoms):
         needs.append("duration")
 
+    vulnerable = ex.age_group in ("infant", "child", "older_adult") or bool(ex.pregnant)
+    mild = "mild" in ex.severity and "severe" not in ex.severity and not vulnerable
     best: tuple[str, str, str | None, str] | None = None  # care, urgency, specialty, rule
     for s in symptoms:
         care, urg = s.meta.get("chronic" if chronic else "acute") or ["gp", "routine"]
+        if mild and not chronic and s.id == "fever":  # "halka bukhar" in an adult: teleconsult
+            care, urg = "gp", "routine"
         cand = (care, urg, s.meta.get("specialty"), f"{'chronic' if chronic else 'acute'}_{s.id}")
         if best is None or (urgency_rank(cand[1]), -CARE_PRIORITY.index(cand[0])) > \
                 (urgency_rank(best[1]), -CARE_PRIORITY.index(best[0])):

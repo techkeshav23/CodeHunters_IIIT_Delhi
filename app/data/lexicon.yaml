@@ -17,7 +17,7 @@ aliases:
   seena: [seene, sina, seeney, chhati, chati, chaati, chest]
   sar: [sir, head, matha]
   pet: [stomach, abdomen, abdominal, tummy, belly]
-  khoon: [khun, blood, bleeding, bleed]
+  khoon: [khun, khon, khoon, blood, bleeding, bleed]
   ulti: [ulty, ultiyan, ultiya, vomit, vomits, vomiting, vomitting]
   behosh: [behos, beyhosh, behoshi, unconscious, unresponsive]
   bukhar: [bukar, bkhar, bukhaar, fever, feverish, jwar, jvar]
@@ -29,7 +29,7 @@ aliases:
   pregnant: [pregnent, pregnancy, garbhvati, garbhavati]
   bachcha: [bacha, bachha, baccha, bachche, bache, bachchi, bachi, baby, kid, child, shishu]
   navjaat: [navjat, newborn, nawjat]
-  saanp: [sanp, snake]
+  saanp: [sanp, saamp, samp, saap, sap, snake]
   bichhu: [bichu, scorpion]
   kaat: [kata, kaata, kati, kaati, kate, bite, bitten]
   sujan: [sooj, suj, sooja, soojan, sujna, swelling, swollen, swell]
@@ -39,7 +39,14 @@ aliases:
   peshab: [pishab, pesab, urine]
   kamzori: [kamjori, kamzor, weakness, weak]
   ghutna: [ghutne, ghutno, ghutnon, knee, knees]
-  nahi: [nahin, nai, nhi, nahee, nahii]
+  nahi: [nahin, nai, nhi, ni, nahee, nahii]
+  # WhatsApp-style short forms
+  raha: [rha]
+  rahi: [rhi]
+  rahe: [rhe]
+  bahut: [bht, bhot, bohot, bahot, bahoot, bhut]
+  tedha: [teda, ted, tedhi, tedi, terha, tirchha]
+  aankh: [aankhein, aankhen, ankhe, ankhen, eyes]
   zyada: [jyada, jyaada, zyaada, jada]
   tez: [tej, high]
   achanak: [achaanak, suddenly, sudden]
@@ -59,8 +66,8 @@ negation:
 
 modifiers:
   # checked within 3 words of the symptom, same sentence
-  severe: [bahut tez, bahut zyada, bahut dard, tez dard, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe"]
-  sudden: [achanak, ekdam, "ek dam se", "all of a sudden"]
+  severe: [bahut tez, bahut zyada, bahut dard, tez dard, tez bukhar, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe"]
+  sudden: [achanak, ekdam, "ek dam se", "all of a sudden", "abhi abhi"]
   mild: [halka, thoda, "thoda sa", mild, slight, "a bit", "little bit"]
 
 # Red flags. `patterns` always fire. `conditional` patterns fire only with
@@ -97,10 +104,19 @@ red_flags:
       - not breathing
       - choking
       - lips blue
+      - saans bhari
+      - saans bhaari
+      - pasliyan chal
+      - pasli chal
+      - pasliyan andar
+      - chest indrawing
       - सांस नहीं आ रही
       - सांस लेने में दिक्कत
       - सांस फूल रही
       - दम घुट रहा
+    conditional:
+      - patterns: [seeti awaaz, seeti jaisi, wheezing, wheeze]
+        requires: [child, infant, severe]
   - id: chest_pain
     label: Chest pain or pressure
     label_hinglish: Seene mein dard ya dabav
@@ -114,6 +130,14 @@ red_flags:
       - seena bhaaripan
       - chest tightness
       - chest pressure
+      - chest discomfort
+      - seena bechaini
+      - baayein haath dard
+      - baaye haath dard
+      - left arm dard
+      - haath tak dard
+      - jabde dard
+      - jaw dard
       - heart attack
       - dil dard
       - dil ka daura
@@ -129,6 +153,11 @@ red_flags:
       - chehra tedha
       - face drooping
       - face droop
+      - mouth drooping
+      - mouth droop
+      - muh ek taraf
+      - munh ek taraf
+      - chehra ek taraf
       - ek taraf kamzori
       - ek side kamzori
       - ek taraf sunn
@@ -144,7 +173,8 @@ red_flags:
       - मुंह टेढ़ा
       - लकवा
     conditional:
-      - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak"]
+      - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak", haath nahi uth, baazu nahi uth,
+                   pair nahi uth, cannot lift, "can't lift", "can not lift", unable to lift]
         requires: [sudden, older_adult]
   - id: unconscious
     label: Unconscious or not responding
@@ -335,6 +365,15 @@ red_flags:
       - want to die
       - self harm
       - hurt myself
+      - hurting myself
+      - harm myself
+      - harming myself
+      - end it all
+      - no reason to live
+      - better off dead
+      - khud ko khatam
+      - jaan de dunga
+      - jaan de dungi
       - nas kaat
       - आत्महत्या
       - जीना नहीं चाहता
@@ -363,9 +402,14 @@ red_flags:
       - feed nahi le
       - not feeding
       - doodh nahi le
+      - ekdam sust
+      - bilkul sust
+      - sust pada
     conditional:
-      - patterns: [bukhar, sust, bilkul sust, neela pad, ulti]
+      - patterns: [bukhar, sust, neela pad, ulti]
         requires: [infant]
+      - patterns: [sust, lethargic, thanda pad]
+        requires: [child]
   - id: severe_headache
     label: Sudden severe headache or stiff neck with fever
     label_hinglish: Achanak tez sar dard ya bukhar ke saath gardan akadna
@@ -382,6 +426,18 @@ red_flags:
     label: Severe stomach pain
     label_hinglish: Pet mein bahut tez dard
     label_hi: पेट में बहुत तेज़ दर्द
+    patterns:
+      # pain on touch and a rigid belly are danger signs even when described as mild
+      - chhuo to cheekh
+      - chhune par cheekh
+      - chhune pe cheekh
+      - dabane par cheekh
+      - dabane pe cheekh
+      - pet patthar
+      - pet kada
+      - pet sakht
+      - rigid abdomen
+      - hard belly
     conditional:
       - patterns: [pet dard, dard pet]
         requires: [severe, sudden]
@@ -397,6 +453,12 @@ red_flags:
       - not passed urine
       - paani nahi pi pa
       - kuch nahi pi pa
+      - aankh dhas
+      - aankh andar dhas
+      - aankh andar
+      - sunken eyes
+      - aansu nahi
+      - no tears
       - पेशाब नहीं हो रहा
   - id: sudden_confusion
     label: Sudden confusion
@@ -497,11 +559,19 @@ symptoms:
     label: Stomach pain
     label_hinglish: Pet dard
     label_hi: पेट दर्द
-    patterns: [pet dard, dard pet, gas, acidity, pet jalan, पेट दर्द]
+    patterns: [pet dard, dard pet, pet jalan, पेट दर्द]
     acute: [gp, same_day]
     chronic: [specialist, routine]
     specialty: gastroenterology
     needs_duration: true
+  - id: heartburn
+    label: Acidity or heartburn
+    label_hinglish: Acidity ya seene mein jalan
+    label_hi: एसिडिटी या सीने में जलन
+    patterns: [acidity, heartburn, seena jalan, khatti dakar, dakar, gas, antacid, एसिडिटी]
+    acute: [gp, routine]
+    chronic: [specialist, routine]
+    specialty: gastroenterology
   - id: back_pain
     label: Back pain
     label_hinglish: Kamar dard
