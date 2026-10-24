@@ -49,6 +49,18 @@ export default function Composer(p: Props) {
 
   const listening = mic.state === "listening";
 
+  // the start screen's big mic asks the composer to listen
+  useEffect(() => {
+    const onMic = () => {
+      if (!mic.supported || listening) return;
+      sentByVoice.current = true;
+      mic.start();
+      p.inputRef.current?.focus();
+    };
+    window.addEventListener("cc:mic", onMic);
+    return () => window.removeEventListener("cc:mic", onMic);
+  }, [mic, listening, p.inputRef]);
+
   return (
     <div className="dock">
       <div className="composer">

@@ -7,6 +7,7 @@ import {
   Copy,
   ExternalLink,
   HandHeart,
+  Mic,
   Pill,
   Phone,
   ShieldCheck,
@@ -34,21 +35,34 @@ const PICKS: Array<{ icon: typeof Thermometer; label: Key; seed: Key }> = [
   { icon: Activity, label: "pickBp", seed: "seedBp" },
 ];
 
-export function Start({ lang, onSeed, onExample }: { lang: Lang; onSeed: (text: string) => void; onExample: (text: string) => void }) {
+// Voice first: the one big action is the mic (it starts dictation in the composer below);
+// quick picks and examples are small and secondary.
+export function Start({ lang, onSeed, onExample, onMic, micSupported }: {
+  lang: Lang;
+  onSeed: (text: string) => void;
+  onExample: (text: string) => void;
+  onMic: () => void;
+  micSupported: boolean;
+}) {
   return (
     <div className="start">
       <div className="start__hello">
         <h1 lang={lang === "hi" ? "hi" : undefined}>{t(lang, "hello")}</h1>
         <p>{t(lang, "helloSub")}</p>
       </div>
+      <div className="voice-hero">
+        <button type="button" className="voice-hero__mic" onClick={onMic} disabled={!micSupported}
+          aria-label={t(lang, "micStart")}>
+          <Mic size={44} aria-hidden="true" />
+        </button>
+        <span className="voice-hero__label">{micSupported ? t(lang, "micStart") : t(lang, "voiceOff")}</span>
+      </div>
       <div className="picks">
         <span className="picks__label">{t(lang, "quickPicks")}</span>
-        <div className="picks__grid">
+        <div className="picks__row">
           {PICKS.map((p) => (
             <button key={p.label} type="button" className="pick" onClick={() => onSeed(t(lang, p.seed))}>
-              <span className="pick__icon" aria-hidden="true">
-                <p.icon size={20} />
-              </span>
+              <p.icon size={18} aria-hidden="true" />
               {t(lang, p.label)}
             </button>
           ))}
@@ -59,14 +73,12 @@ export function Start({ lang, onSeed, onExample }: { lang: Lang; onSeed: (text: 
         <div className="examples">
           {(["ex1", "ex2", "ex3"] as Key[]).map((k) => (
             <button key={k} type="button" className="example" onClick={() => onExample(t(lang, k))}>
-              {t(lang, k)}
+              “{t(lang, k)}”
             </button>
           ))}
         </div>
       </div>
-      <p className="notice" style={{ textAlign: "left" }}>
-        {t(lang, "disclaimer")}
-      </p>
+      <p className="notice">{t(lang, "disclaimer")}</p>
     </div>
   );
 }

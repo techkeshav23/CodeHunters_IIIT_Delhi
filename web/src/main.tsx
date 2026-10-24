@@ -1,11 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource/anek-latin/600.css";
-import "@fontsource/anek-latin/700.css";
-import "@fontsource/anek-latin/800.css";
-import "@fontsource/anek-devanagari/600.css";
-import "@fontsource/anek-devanagari/700.css";
-import "@fontsource/anek-devanagari/800.css";
 import "@fontsource/noto-sans/400.css";
 import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";

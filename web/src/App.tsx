@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryItem, Lang, LatLng, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
 import { t } from "./i18n";
 import { triage, health, USE_MOCKS } from "./api";
-import { speak, stopSpeaking } from "./voice";
+import { speak, stopSpeaking, voiceSupported } from "./voice";
 import { isEmergency, readJSON, writeJSON, type BookingTarget, type Msg, type SavedBooking, type View } from "./lib";
 import { Sidebar, TopBar, BottomNav, type Backend } from "./ui/Nav";
 import Composer from "./ui/Composer";
@@ -21,7 +21,9 @@ export default function App() {
   const [lang, setLangState] = useState<Lang>(() => readJSON<Lang>("cc_lang", "hinglish"));
   const [large, setLarge] = useState<boolean>(() => readJSON("cc_large", false));
   const [autoRead, setAutoRead] = useState<boolean>(() => readJSON("cc_autoread", true));
-  const [theme, setTheme] = useState<Theme>(() => readJSON<Theme>("cc_theme", "auto"));
+  // light by default (the palette is designed for it); dark only when chosen in Settings
+  const [theme, setTheme] = useState<Theme>(() => readJSON<Theme>("cc_theme", "light"));
+  const micSupported = voiceSupported();
   const setLang = (l: Lang) => {
     setLangState(l);
     writeJSON("cc_lang", l);
@@ -207,6 +209,8 @@ export default function App() {
                       }, 30);
                     }}
                     onExample={(s) => void send(s, false)}
+                    onMic={() => window.dispatchEvent(new Event("cc:mic"))}
+                    micSupported={micSupported}
                   />
                 ) : (
                   <Thread

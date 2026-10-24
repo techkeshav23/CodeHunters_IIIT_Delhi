@@ -52,7 +52,7 @@ const S = {
   seedElder: { hinglish: "Bujurg ki dekhbhal ke liye attendant chahiye ", hi: "बुज़ुर्ग की देखभाल के लिए अटेंडेंट चाहिए ", en: "Need an attendant for an elderly person " },
   seedBp: { hinglish: "Ghar pe BP aur sugar check karwana hai ", hi: "घर पर बीपी और शुगर जाँच करवानी है ", en: "Need a BP and sugar check at home " },
   ex1: { hinglish: "Papa ko do din se bukhar hai aur khansi bhi", hi: "पापा को दो दिन से बुखार है और खांसी भी", en: "My father has had fever and cough for two days" },
-  ex2: { hinglish: "Dadi ko roz insulin ka injection ghar pe lagwana hai", hi: "दादी को रोज़ इंसुलिन का इंजेक्शन घर पर लगवाना है", en: "My grandmother needs a daily insulin injection at home" },
+  ex2: { hinglish: "Dadi ko bedsore ki dressing ghar pe karwani hai", hi: "दादी की बेडसोर की ड्रेसिंग घर पर करवानी है", en: "My grandmother's bedsore needs dressing at home" },
   ex3: { hinglish: "2 mahine se ghutne mein dard hai", hi: "दो महीने से घुटने में दर्द है", en: "My knee has hurt for two months" },
 
   // composer
@@ -123,7 +123,7 @@ const S = {
   },
   roleParamedic: { hinglish: "Paramedic", hi: "पैरामेडिक", en: "Paramedic" },
   roleNurse: { hinglish: "Nurse", hi: "नर्स", en: "Nurse" },
-  roleMedic: { hinglish: "Medic (nurse)", hi: "मेडिक (नर्स)", en: "Medic (nurse)" },
+  roleMedic: { hinglish: "Medic", hi: "मेडिक", en: "Medic" },
   roleLab: { hinglish: "Sample collector", hi: "सैंपल लेने वाले", en: "Sample collector" },
   roleGp: { hinglish: "Doctor (GP)", hi: "डॉक्टर (GP)", en: "Doctor (GP)" },
   roleSpecialist: { hinglish: "Specialist doctor", hi: "विशेषज्ञ डॉक्टर", en: "Specialist doctor" },
