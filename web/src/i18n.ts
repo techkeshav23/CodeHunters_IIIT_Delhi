@@ -223,9 +223,9 @@ const S = {
   // how it works
   howTitle: { hinglish: "CareCompass kaise kaam karta hai", hi: "CareCompass कैसे काम करता है", en: "How CareCompass works" },
   howSub: {
-    hinglish: "Har message 1 millisecond se kam mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.",
-    hi: "हर संदेश 1 मिलीसेकंड से कम में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।",
-    en: "Every message goes through these steps in under a millisecond, and every decision shows its reason.",
+    hinglish: "Har message lagbhag 50 millisecond mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.",
+    hi: "हर संदेश लगभग 50 मिलीसेकंड में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।",
+    en: "Every message goes through these steps in about 50 milliseconds, and every decision shows its reason.",
   },
   step1: { hinglish: "Samajhna", hi: "समझना", en: "Understand" },
   step1t: { hinglish: "Humara train kiya MuRIL model padhta hai: Hindi, Hinglish, English, galat spelling bhi.", hi: "हमारा ट्रेन किया MuRIL मॉडल पढ़ता है: हिंदी, हिंग्लिश, अंग्रेज़ी, ग़लत स्पेलिंग भी।", en: "Our fine-tuned MuRIL model reads it: Hindi, Hinglish, English, misspellings too." },

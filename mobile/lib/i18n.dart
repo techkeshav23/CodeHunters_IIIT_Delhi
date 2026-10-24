@@ -359,9 +359,9 @@ const Map<K, (String, String, String)> _strings = {
   K.tapToCall: ('Call karne ke liye dabayein', 'कॉल करने के लिए दबाएँ', 'Tap to call'),
   K.howTitle: ('CareCompass kaise kaam karta hai', 'CareCompass कैसे काम करता है', 'How CareCompass works'),
   K.howSub: (
-    'Har message 1 millisecond se kam mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.',
-    'हर संदेश 1 मिलीसेकंड से कम में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।',
-    'Every message goes through these steps in under a millisecond, and every decision shows its reason.',
+    'Har message lagbhag 50 millisecond mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.',
+    'हर संदेश लगभग 50 मिलीसेकंड में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।',
+    'Every message goes through these steps in about 50 milliseconds, and every decision shows its reason.',
   ),
   K.step1: ('Samajhna', 'समझना', 'Understand'),
   K.step1t: (
