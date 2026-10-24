@@ -129,6 +129,8 @@ def _tables() -> dict:
         "preg_past": {k(w)[0] for w in _PREG_PAST},
         "female": {k(w)[0] for w in _FEMALE},
         "child": {k(w)[0] for w in _CHILD_WORDS},
+        "baby_nouns": {k(w)[0] for w in ("bachcha", "infant", "navjaat", "toddler")},
+        "age_units_en": {k(w)[0] for w in ("week", "weeks", "month", "months", "year", "years", "yr", "yrs")},
         "child_after": {k(w)[0] for w in _CHILD_OWNER_AFTER},
         "child_before": {k(w)[0] for w in _CHILD_OWNER_BEFORE},
         "child_not_after": {k(w)[0] for w in _CHILD_NOT_AFTER},
@@ -254,6 +256,12 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         if nxt in tb["dur_after"] and nxt2 in tb["younger"]:
             age = age if age is not None else days * 0.95 / 365
             continue
+        # "9 month baby", "3 week infant": the baby's age, said the English way (not "2 din bachche ko ulti",
+        # where "se" is missing, and not in a pregnancy: "7 month baby hil nahi raha")
+        if (nxt in tb["baby_nouns"] and tokens[j] in tb["age_units_en"] and prev not in tb["dur_before"]
+                and not tb["preg_context"] & set(tokens) and not _pregnant_now(tokens)):
+            age = age if age is not None else days / 365
+            continue
         is_duration = (nxt in tb["dur_after"] or prev in tb["dur_before"]
                        or (nxt in ("ka", "ki", "ke") and nxt2 in symptom_tokens))
         is_age = (nxt == "old" or (nxt in ("ka", "ki", "ke") and nxt2 not in symptom_tokens
@@ -275,6 +283,7 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
 
 RESOLVABLE = {"chest_pain", "breathing_difficulty", "major_injury"}
 _PAST_TENSE = {phon(w) for w in ("tha", "thi", "the", "pehle", "was", "were", "had")}
+_FIRST_PERSON = {phon(w) for w in ("hu", "hun", "hoon", "i", "im", "am")}  # "abhi thik hu", "I am fine now"
 _NOT = {"not", "no", "na", "nahi", "never"}
 _MAYBE = {"could", "maybe", "might", "may", "shayad", "kya", "if", "agar", "whether", "possibly"}
 _POSSIBLE = {phon(w) for w in ("possibility", "possible", "chance", "chances")}
@@ -506,7 +515,9 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     """`age_years` / `duration_days` come from answers to our follow-up
     questions and override what the free text says."""
     lex = lex or get_lexicon()
-    t = analyse(text, language_hint)
+    # Devanagari typed without spaces is cut into words before transliteration ("खूनबहुतआरहाहै")
+    t = analyse(lex.space_devanagari(text), language_hint)
+    t.raw = text
     # text typed or dictated without spaces: "saansnahiaaraheinbehoshhogayehain"
     t.tokens, t.surface = lex.split_runs(t.tokens, t.surface)
     tokens = lex.canon_tokens(t.tokens)
@@ -540,7 +551,9 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     # "koi tez dard nahi" is not severe (only a negation right next to it: in
     # "achanak kuch yaad nahi" the "nahi" belongs to the symptom, not to "achanak")
     mod_hits = [h for h in lex.find(tokens, t.surface, "modifier")
-                if not (h.id == "severe" and _negated_next_to(tokens, h, lex))]
+                if not (h.id in ("severe", "resolved") and _negated_next_to(tokens, h, lex))
+                # "ab theek se saans nahi le pa rahe" (properly), "2 mahine pehle se dard" (since)
+                and not (h.id in ("resolved", "past") and tokens[h.end:h.end + 1] == ["se"])]
     for h in mod_hits:
         if h.id not in _CONTEXT_ONLY:
             ex.severity.add(h.id)
@@ -648,12 +661,21 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     # "pehle seene mein dard laga tha ... gas thi ... ab bilkul theek": a past, settled episode of
     # chest pain or breathlessness is a same-day check, not an emergency (fainting, stroke signs etc. stay)
     if "resolved" in ex.severity:
+        # "... saans mein dikkat ho rahi, bas ghabra gaya. abhi thik hu.": the patient's own "I am fine
+        # now", in a later sentence that names no symptom ("abhi thik hu par pasina aa raha" does not
+        # count), puts the episode told before it in the past
+        busy = {sentence[h.start] for h in sym_hits + flag_hits if not h.negated}
+        fine_now = {sentence[m.start] for m in mod_hits if m.id == "resolved"
+                    and sentence[m.start] not in busy
+                    and _FIRST_PERSON & {tok for tok, s in zip(tokens, sentence) if s == sentence[m.start]}}
         keep = []
         for h in ex.red_flags:
             # WhatsApp text often has no punctuation, so look at the words around the symptom
             around = set(tokens[max(0, h.start - 3):min(len(tokens), h.end + 6)])
             now = any(m.start >= h.start - 3 and m.start < h.end + 3 for m in current)
-            settled = h.id in RESOLVABLE and around & _PAST_TENSE and not now
+            told_before = (any(s > sentence[h.start] for s in fine_now)
+                           and not any(sentence[m.start] == sentence[h.start] for m in current))
+            settled = h.id in RESOLVABLE and (around & _PAST_TENSE or told_before) and not now
             if settled:
                 ex.settled_flags.add(h.id)
             else:

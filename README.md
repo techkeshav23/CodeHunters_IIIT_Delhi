@@ -9,6 +9,9 @@ each). Any red-flag symptom skips matching and goes straight to call-for-help.
 
 It supports routing decisions only. It does not diagnose or prescribe.
 
+Live demo: https://carecompass.145-223-21-27.sslip.io (web app; the API is on the same
+origin, for example `/health`, `/v1/triage`, `/docs`). Synthetic data only.
+
 ## Quick start
 
 ```bash
@@ -23,6 +26,15 @@ With Docker (API on 8000, web app on 5173):
 
 ```bash
 docker compose up --build
+```
+
+On a shared server behind its own HTTPS reverse proxy, `docker-compose.server.yml`
+keeps both containers on 127.0.0.1 (API 8000, web 8001), with memory limits and restart;
+the web container passes `/v1`, `/health` and `/docs` to the API, so the site and a
+mobile app use one HTTPS address:
+
+```bash
+docker compose -f docker-compose.server.yml up -d --build
 ```
 
 ## API
@@ -57,17 +69,17 @@ text / voice
  -> normalise: Devanagari transliterated, Hinglish spellings reduced to phonetic keys
  -> red-flag rules (English, Hindi, Hinglish; negation-aware) -- hit --> emergency, no matching
  -> extract: symptoms, services asked for, who the patient is, age, duration, severity
- -> triage rules (care type + urgency)    [optional learned model: can only raise urgency, off by default]
+ -> rules (care type) + learned model trained on the organisers' data (TF-IDF + logistic regression, ~2 ms)
+ -> urgency from the care type, never below the rules' own
  -> follow-up question only if the answer can change the decision (max 3; answers re-checked for red flags)
- -> caregiver ranking: role filter, then skill, free time, distance, language, rating
+ -> caregiver matching (organisers' recipe): role, active, skill, radius; 0.35 language + 0.30 proximity + 0.20 skill + 0.15 rating
  -> response with reasons built only from computed facts
 ```
 
 Safety logic:
 
-- Red flags come from `app/data/lexicon.yaml` (to be aligned with the organisers'
-  care taxonomy and reviewed by the clinical mentors). A red flag is never
-  answered with a question; it returns `immediate` with call-for-help numbers
+- Red flags come from `app/data/lexicon.yaml`. A red flag is never answered with a
+  question and the model cannot remove it; it returns `emergency_112` / `emergency` with call-for-help numbers
   (112, Delhi ambulance 102, 108; Tele-MANAS 14416 for self-harm; AIIMS poisons
   centre 1800-116-117).
 - Negation is handled ("saans lene mein koi dikkat nahi" is not a red flag), but
@@ -84,7 +96,7 @@ Safety logic:
 
 `eval/run_eval.py` reports macro-F1 for care type and urgency, emergency recall,
 false alarms, under-triage, NDCG@3 for matching (when labels exist) and latency.
-`eval/cases/` holds 511 synthetic tricky cases (313 emergencies): casual
+`eval/cases/` holds 583 synthetic tricky cases (354 emergencies): casual
 emergencies, negations, Devanagari, typos, run-together words, babies, pregnancy,
 mental health, other people's or past events, and look-alikes. They are for
 testing only, not training, and their care/urgency labels are the team's own,
@@ -97,6 +109,7 @@ not doctors'.
 | `redteam_sweep_v1` | 33 | adversarial sweep, built from the misses it found |
 | `redteam_probe_v1`, `redteam_pregnancy_v1` | 18, 13 | probes of suppression rules and pregnancy cues |
 | `redteam_review_v1` | 79 | review of our own fixes (look-alikes, run-together words, other apps' questions) |
+| `redteam_blind_v4` | 72 | second team member, blind again, with 21 multi-turn histories (first run caught 73%) |
 
 Every miss was fixed and all sets are in the test suite, so they are regression
 sets now. `pytest` fails if any emergency is missed, if false emergencies pass
@@ -111,8 +124,9 @@ CC BY-NC 4.0 per its GitHub README, so it is used for evaluation only and not in
 .venv\Scripts\python -m scripts.external_carebench data\external\care_bench\evaluation_prefixes_public.jsonl
 ```
 
-On 24 Oct 2026: 87.8% of CARE-Bench "urgent care" cases were sent to same-day or
-immediate care, and 13.5% of non-urgent cases were over-triaged to emergency.
+On 24 Oct 2026, with the organisers' labels (only lab tests are scheduled): every urgent
+CARE-Bench case got at least same-day care, 53.5% went straight to emergency, and 13.8%
+of non-urgent cases were over-triaged to emergency.
 CARE-Bench labels (info needed, self-care, non-urgent, urgent) differ from ours,
 so this is a safety check, not a routing score.
 
@@ -124,16 +138,26 @@ Predictions file for the hidden test set:
 
 ## Data
 
-All data is synthetic. Organiser files go in `data/provided/` (git-ignored).
-Until the organisers' caregiver profiles are there, matching uses
-`app/data/dev_caregivers.json`: 26 mock profiles written by the team around
-IIIT-Delhi, labelled DEV.
+All data is synthetic. The organisers' dataset (Sanocare synthetic care-triage dataset
+v1, redistributable for the event) is in `data/sanocare_v1/`: 340 labelled requests
+(66 distinct messages, 22 situations in three languages) and a 60-caregiver roster, which
+is the default matching pool (`/health` shows `caregivers_source: sanocare_v1`). Other
+files can go in `data/provided/` (git-ignored); `app/data/dev_caregivers.json` is the
+team's 26-profile sample, used only as a fallback.
+
+Train and check:
+
+```bash
+.venv\Scripts\python -m scripts.train_triage      # by-situation split, writes models/triage.joblib
+.venv\Scripts\python -m scripts.eval_matching     # caregiver lists vs the labels
+.venv\Scripts\python -m eval.run_eval data\sanocare_v1\triage_dataset.jsonl --mode interactive
+```
 
 ## Models and APIs used
 
 - Rules and lexicon written by the team; RapidFuzz for spelling distance.
-- Optional TF-IDF + logistic regression model (`scripts/train_baseline.py`), off until
-  doctor-labelled data exists; it can only raise urgency.
+- TF-IDF + logistic regression model trained on the organisers' data
+  (`scripts/train_triage.py`); its probabilities are in every response (`trace.model`).
 - No LLM and no paid API at runtime (see `docs/WRITEUP.md` for why).
 - Voice in the web app: the browser's Web Speech API.
 

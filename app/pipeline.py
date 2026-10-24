@@ -15,7 +15,7 @@ from .nlp.normalize import to_roman
 from .schemas import MatchedCaregiver, TriageRequest, TriageResponse, TriageResponseWithTrace
 from .config import URGENCY_ORDER, urgency_rank
 from .triage import followup, text
-from .triage.model import blend_care, choose_urgency, get_model
+from .triage.model import FOLLOWUP, care_urgency, fuse, get_model
 from .triage.rules import Decision, decide
 
 USER_ROLES = {"user", "patient", "human", "customer", "client"}
@@ -129,28 +129,23 @@ def _decision_trace(care: str | None, urgency: str | None, d: Decision, language
     }
 
 
-def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, bool, str]:
-    """Blend the learned model (if one is trained) with the rules decision.
-    Returns (decision, model_says_emergency, source)."""
+def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, bool, str, dict]:
+    """Run the learned model on every request and combine it with the rules' decision.
+    Returns (decision, model_says_emergency, source, model_probabilities)."""
     model = get_model()
-    if model is None or d.care is None:
-        return d, False, "rules"
+    if model is None:
+        return d, False, "rules", {}
     s = model.settings
-    care_p, urg_p = model.probs(combined)
-    if care_p.get("emergency", 0.0) >= s["emergency_threshold"] or urg_p.get("immediate", 0.0) >= s["emergency_threshold"]:
-        return d, True, "model"
-    care_b = blend_care({k: v for k, v in care_p.items() if k != "emergency"}, d.care, s["rules_weight"])
-    care = max(care_b, key=care_b.get)
-    w = s["rules_weight"]
-    urg_b = {u: (1 - w) * urg_p.get(u, 0.0) + w * (1.0 if u == d.urgency else 0.0) for u in URGENCY_ORDER}
-    urgency = choose_urgency(urg_b, s["under_cost"])
-    if urgency == "immediate":
-        return d, True, "model"
-    # the model may raise urgency but never lower the rules' level
-    if urgency_rank(d.urgency) > urgency_rank(urgency):
-        urgency = d.urgency
-    return (Decision(care, urgency, round(care_b[care], 2), d.rule + "+model", needs=d.needs,
-                     specialty=d.specialty if care == d.care else None), False, "blend")
+    probs = model.probs(combined, ex)
+    if probs.get("emergency", 0.0) >= s["emergency_threshold"]:
+        return d, True, "model", probs
+    care, p = fuse(probs, d.care, s)
+    if care == FOLLOWUP:  # not enough to decide: ask what is needed
+        needs = list(dict.fromkeys(d.needs + ["main_symptom"]))
+        return Decision(None, None, round(p, 2), d.rule + "+model", needs=needs), False, "model", probs
+    urgency = care_urgency(care, d.urgency)
+    return (Decision(care, urgency, round(p, 2), d.rule + "+model", needs=[n for n in d.needs if n != "main_symptom"],
+                     specialty=d.specialty if care in (d.care, "gp") else None), False, "model", probs)
 
 
 # the age itself in an answer to the age question ("3 saal", "8 mahine ka", "५ साल")
@@ -243,7 +238,8 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         why_en, why_local = text.emergency_reasoning(labels_en, labels_local, language)
         d_em = Decision("emergency", "immediate", 1.0, rule)
         resp = dict(follow_up_question=None, care_type=api_care("emergency"), urgency=api_urgency("immediate"),
-                    red_flags=flags, reasoning=why_local if out_lang != "en" else why_en, matched_caregivers=[])
+                    red_flags=config.api_flags(flags), reasoning=why_local if out_lang != "en" else why_en,
+                    matched_caregivers=[])
         evidence = {h.id: h.evidence for h in ex.red_flags}
         trace.update({
             "checks": _checks(ex, breathing, flags, language),
@@ -259,8 +255,19 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     if flag_ids:
         return emergency(flag_ids, "red_flag", "rules")
 
-    # 2) decide, or ask one question
+    # 2) decide (rules, then the learned model on every request), or ask one question
     d = decide(ex)
+    source, model_probs = "rules", {}
+    if use_model:
+        d, model_emergency, source, model_probs = _apply_model(ex, d, combined)
+        if model_emergency:
+            return emergency(["possible_emergency"], "model_emergency", "model")
+    if source == "rules" and d.care:
+        d = Decision(d.care, care_urgency(d.care, d.urgency), d.confidence, d.rule, needs=d.needs,
+                     specialty=d.specialty)
+    if model_probs:
+        trace["model"] = {"probabilities": {k: round(v, 3) for k, v in sorted(model_probs.items())},
+                          "version": get_model().meta.get("trained_at") if get_model() else None}
     qid = followup.choose(ex, d, asked, policy) if mode == "interactive" else None
     if qid:
         q = followup.question(qid, language)
@@ -276,12 +283,6 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "emergency": None, "caregivers": [],
         })
         return _finish(resp, trace, t0, explain)
-
-    source = "rules"
-    if use_model:
-        d, model_emergency, source = _apply_model(ex, d, combined)
-        if model_emergency:
-            return emergency(["possible_emergency"], "model_emergency", "model")
 
     care, urgency = d.care, d.urgency
     if care is None:  # nothing understood and no more questions: safe default

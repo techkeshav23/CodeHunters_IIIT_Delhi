@@ -1,11 +1,11 @@
-# CareCompass API (v0 contract)
+# CareCompass API
 
-Base URL (local): `http://localhost:8000`. Interactive docs: `http://localhost:8000/docs`.
+Base URL (local): `http://localhost:8000`; live: `https://carecompass.145-223-21-27.sslip.io`.
+Interactive docs: `/docs`.
 
-This follows the indicative schema in the problem statement. The organisers
-publish the final schema with the dataset; when it lands, only the label values
-and field names in `app/config.py` / `app/schemas.py` change. Label values
-marked *TBC* are placeholders until then.
+This follows the problem statement's schema, with the label values of the organisers'
+dataset (Sanocare synthetic care-triage dataset v1, `data/sanocare_v1/README.md`). All
+outward-facing values live in `app/config.py`.
 
 The API is **stateless**: the client sends the whole conversation every time.
 
@@ -71,7 +71,7 @@ Three shapes:
 |---|---|---|---|---|
 | Final decision | `null` | set | `[]` | top 3, best first |
 | Needs more info | question text (user's language) | `null` | `[]` | `[]` |
-| Emergency | `null` | `emergency_referral` *TBC* / `immediate` | non-empty | `[]` (matching is skipped) |
+| Emergency | `null` | `emergency_112` / `emergency` | non-empty | `[]` (matching is skipped) |
 
 Rules the backend guarantees:
 
@@ -79,33 +79,35 @@ Rules the backend guarantees:
 - At most 3 follow-up questions per conversation (`CC_MAX_FOLLOWUPS`).
 - `reasoning` and `reason` never name a disease or a medicine.
 
-### Labels
+### Labels (the organisers' values)
 
-| Internal key | `care_type` value |
-|---|---|
-| paramedic | `paramedic_home_visit` |
-| nurse | `nurse` |
-| gp | `gp_teleconsult` |
-| specialist | `specialist` |
-| emergency | `emergency_referral` |
+| Internal key | `care_type` value | `urgency` that goes with it |
+|---|---|---|
+| paramedic | `paramedic_home_visit` | `same_day` |
+| nurse | `home_nursing` | `same_day` |
+| lab | `lab_test_home` | `scheduled` |
+| gp, specialist | `teleconsultation` (a department, if any, is in `trace.decision.specialty`) | `same_day` |
+| emergency | `emergency_112` | `emergency` |
 
-`urgency`: `routine`, `same_day`, `immediate`.
+`urgency`: `scheduled`, `same_day`, `emergency` (internally routine, same_day, immediate).
+Urgency never goes below what the rules found (a baby, an older adult, severe pain).
+Files with the earlier values (`nurse`, `gp_teleconsult`, `specialist`,
+`emergency_referral`, `routine`, `immediate`) are still read correctly.
 
-The organisers did not publish a final schema, so the values follow the problem
-statement's own list ("Paramedic home visit, nurse, GP teleconsult, specialist,
-or emergency referral"). Until 24 Oct ~13:30 the nurse and specialist values
-were `nurse_home_visit` and `specialist_consult`; labelled files using the old
-values are still read correctly.
-
-Red flag ids (stable): `breathing_difficulty`, `chest_pain`, `stroke_signs`,
-`unconscious`, `seizure`, `severe_bleeding`, `major_injury`, `severe_allergy`,
-`poisoning`, `venomous_bite`, `severe_burn`, `self_harm_risk`,
-`pregnancy_emergency`, `infant_danger_sign`, `severe_headache`,
-`severe_abdominal_pain`, `severe_dehydration`, `sudden_confusion`,
+`red_flags` uses the organisers' vocabulary where it has the flag: `chest_pain`,
+`breathlessness`, `unconsciousness`, `severe_bleeding`, `stroke_symptoms`, `seizure`,
+`high_fever_infant` (our danger signs in a young baby), `suicidal_ideation`,
+`severe_dehydration`. Flags their list does not have keep our id: `major_injury`,
+`severe_allergy`, `poisoning`, `venomous_bite`, `severe_burn`, `psychiatric_emergency`,
+`pregnancy_emergency`, `severe_headache`, `severe_abdominal_pain`, `sudden_confusion`,
 `low_sugar_signs`, `heat_stroke`, `eye_injury`, `severe_bp`, `abnormal_vitals`
 (pulse, oxygen, BP, sugar or child temperature numbers out of range),
-`psychiatric_emergency`, `emergency_requested`, and `possible_emergency`
-(raised by the optional learned model). Labels for each come from `GET /v1/labels`.
+`emergency_requested`, and `possible_emergency` (raised by the learned model alone).
+`trace.red_flags[].id` always holds our id, with labels in three languages; labels for
+each come from `GET /v1/labels`.
+
+`trace.model` (when the learned model is loaded): `probabilities` over paramedic, nurse,
+lab, gp, emergency and followup for this message, and the model's training date.
 
 ---
 

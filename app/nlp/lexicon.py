@@ -8,6 +8,8 @@ match ("saans lene mein koi dikkat nahi" is not a red flag).
 """
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -17,6 +19,7 @@ from rapidfuzz import fuzz, process
 
 from ..config import DATA_DIR
 from .normalize import BOUNDARY, COMMA, phon, tokenize
+from .translit import CONSONANTS, MATRAS, NASAL, NUKTA, VIRAMA, VISARGA, transliterate
 
 MAX_GAP = 2        # content words allowed between two pattern words
 MAX_SPAN_GAP = 6   # total words allowed between two pattern words
@@ -41,10 +44,75 @@ FUTURE = {phon(w) for w in "jaega jayega jaegi jayegi jaenge jayenge jaye jaaye"
 OR_WORDS = {"ya"}
 OR_WORDS_EN = {"or"}  # Hinglish "or" often means "aur" (and), so only in English text
 LIST_VERBS = {phon(w) for w in "hai hain he h tha thi the raha rahi rahe ho hua hui is are was".split()}
+COPULA = {phon(w) for w in "hai hain he h".split()}
 COUNT_WORDS = {phon(w) for w in ("once twice times baar din days day hafte weeks mahine months saal years "
                                  "ghante hours one two three four five ek do teen char paanch").split()}
 # top-level phrase lists in lexicon.yaml, matched like modifiers (see extract.py for their use)
 CONTEXT_LISTS = ("resolved", "past", "current", "episodic", "chest_wall", "third_party", "report")
+
+# Everyday words that help split long run-together text ("heartattackhorenahailogmujhekomatfeel",
+# "breathingproblabhairha") and Devanagari typed without spaces. Used only to cut long runs
+# (12+ letters, or a Devanagari run), never for matching or fuzzy spelling.
+_COMMON_LONG = (
+    # Hinglish / romanised Hindi
+    "main mai hum tum tu aap vo voh wo woh ye yeh yah us iska uska unka inka iski uski unki inki iske uske "
+    "apna apni apne kya kyu kyun kyon kaise kaisa kaisi kab kahan kaha kaun kitna kitni kitne itna itni itne "
+    "utna jitna jaisa jaise sab sabhi koi kisi kuchh phir fir jab tab agar toh lekin magar liye wala wali wale "
+    "log mat kal aaj parso subah shaam raat din ghanta ghante hafta mahina saal baar haan ji hoga hogi hona "
+    "hone hota hoti hote karna karne karo karu karun kare karein kiya kiye dena dene diya liya lena lene jana "
+    "jane jao chalna aana aane aaya aayi aaye laga lagi lage lag lagta lagti lagte samajh samajhna samjha pata "
+    "dekha bola boli bolna sun suna khana khaya piya paani doodh ghar bahar andar saath sath baad pehle jaldi "
+    "dheere turant madad naak kaan munh muh haath pair sharir badan tel phisal fisal gira giri gire kala kaala "
+    "kaali neela laal peela safed garam thanda acha accha achha theek thik sahi galat pura poora puri poori "
+    "ek teen char paanch das kabhi bilkul sach bas mehsoos mahsoos mahasoos hazam hajam takleef pareshan "
+    # English
+    "you he she we they me him them us my your his her our their its it am are was were be been have has had "
+    "does did done will would can could should may might must yes the and but if then so of in on at for with "
+    "from by up down out off over into about as this that these those what when where who why how which very "
+    "really too also just only now here there feel feels feeling felt fine ok okay problem prob issue help "
+    "please lot much more some any all one two three get got going went come coming came take took give "
+    "make made say said tell told know think want need like look keep happen happened since after before "
+    "because still again even body"
+).split()
+
+# a Devanagari run: letters and signs, not the danda or digits
+_DEVA_RUN = re.compile(r"[ऀ-ॣॱ-ॿ]+")
+# one-syllable words that may stand alone inside a run (है, से, में, को, भी, क्या, हूँ); any other
+# single syllable is part of a longer unknown word ("हजम" is not "ह ज म")
+_DEVA_SINGLE = {phon(w) for w in ("hai hain he se ka ki ke ko men main mai pe to hi bhi ne ho aa ja ye vo kya "
+                                  "hu hun tha thi the de do le lo so jo").split()}
+_ZERO_WIDTH = dict.fromkeys(map(ord, "​‌‍﻿"), None)
+
+
+def _aksharas(run: str) -> list[str]:
+    """Split a Devanagari run into written syllables (a consonant cluster with its vowel sign
+    and nasal). A word boundary can only fall between two of these."""
+    out: list[str] = []
+    i, n = 0, len(run)
+    while i < n:
+        j = i + 1
+        if run[i] in CONSONANTS:
+            while j < n:
+                if run[j] == NUKTA:
+                    j += 1
+                elif run[j] == VIRAMA and j + 1 < n and run[j + 1] in CONSONANTS:
+                    j += 2  # conjunct: क्त, स्प
+                else:
+                    break
+        if j < n and (run[j] in MATRAS or run[j] == VIRAMA):
+            j += 1
+        while j < n and (run[j] in NASAL or run[j] == VISARGA):
+            j += 1
+        out.append(run[i:j])
+        i = j
+    return out
+
+
+@lru_cache(maxsize=50000)
+def _deva_key(piece: str) -> tuple[str, str]:
+    """(romanised word, phonetic key) for a piece of Devanagari read as one word."""
+    roman = transliterate(piece).lower()
+    return roman, phon(roman)
 
 
 @dataclass(frozen=True)
@@ -203,10 +271,17 @@ class Lexicon:
             self._seg_cache = {w for w in words if w and not w.isdigit() and w not in (BOUNDARY, COMMA)}
         return self._seg_cache
 
+    @property
+    def _seg_words_long(self) -> set[str]:
+        """Words for cutting long runs: the lexicon plus everyday words."""
+        if not hasattr(self, "_seg_long_cache"):
+            self._seg_long_cache = self._seg_words | {phon(w) for w in _COMMON_LONG}
+        return self._seg_long_cache
+
     def _segment(self, word: str, exact: bool = False) -> list[str] | None:
         """Split a run-together word into known words; None if it does not split cleanly.
         `exact`: every letter must belong to a known word of 2+ letters ("chestpain", "seenemein")."""
-        n, vocab = len(word), self._seg_words
+        n, vocab = len(word), (self._seg_words if exact else self._seg_words_long)
         best: list[tuple[float, list[str]] | None] = [None] * (n + 1)
         best[0] = (0.0, [])
         for i in range(n):
@@ -257,7 +332,8 @@ class Lexicon:
         out_s: list[str] = []
         for tok, surf in zip(tokens, surface):
             if (len(surf) >= 6 and tok not in self.vocab and tok not in self.alias and surf.isalpha()
-                    and self.canon(tok) not in self.vocab):  # a typo of a known word stays one word
+                    and self.canon(tok) not in self.vocab  # a typo of a known word stays one word
+                    and self.canon(tok) not in self.negation_words):  # "without" is never "with out"
                 # shorter runs ("chestpain", "saansnahi") must split into whole words
                 parts = (self._segment(surf) if len(surf) >= min_len else None) or self._segment(surf, exact=True)
                 if parts:
@@ -267,6 +343,71 @@ class Lexicon:
             out_t.append(tok)
             out_s.append(surf)
         return out_t, out_s
+
+    def space_devanagari(self, text: str, min_len: int = 12) -> str:
+        """Put spaces into Devanagari typed without them ("खूनबहुतआरहाहैनाकसे"), cutting between
+        written syllables so each word is transliterated on its own (रहा -> "rahaa", not the
+        "rhaa" a whole-run transliteration gives). A run that does not split cleanly is left
+        as it was, for split_runs to try on its Latin form."""
+        text = unicodedata.normalize("NFC", text or "").translate(_ZERO_WIDTH)
+        if not _DEVA_RUN.search(text):
+            return text
+
+        def cut(m: re.Match) -> str:
+            parts = self._segment_devanagari(m.group(0), min_len)
+            return " ".join(parts) if parts else m.group(0)
+        return _DEVA_RUN.sub(cut, text)
+
+    def _segment_devanagari(self, run: str, min_len: int = 12) -> list[str] | None:
+        aks = _aksharas(run)
+        roman, key = _deva_key(run)
+        if len(aks) < 2 or len(roman) < 6 or key in self.vocab or key in self.alias or self.canon(key) in self.vocab:
+            return None
+        exact = len(roman) < min_len
+        vocab = self._seg_words if exact else self._seg_words_long
+        n = len(aks)
+        # best[i] = (score, pieces, unknown letters); a piece is (devanagari, known)
+        best: list[tuple[float, list[tuple[str, bool]], int] | None] = [None] * (n + 1)
+        best[0] = (0.0, [], 0)
+        for i in range(n):
+            if best[i] is None:
+                continue
+            score, parts, unknown = best[i]
+            for j in range(i + 1, min(n, i + 8) + 1):
+                piece = "".join(aks[i:j])
+                r, k = _deva_key(piece)
+                if k not in vocab or k.isdigit() or (j - i == 1 and k not in _DEVA_SINGLE):
+                    continue
+                # "न", "नि", "नो" inside a word are not a "no" ("निकल" is not "ni kal")
+                if self.canon(k) in self.negation_words and len(k) < 4:
+                    continue
+                cand = (score + len(k) ** 2, parts + [(piece, True)], unknown)
+                if best[j] is None or cand[0] > best[j][0]:
+                    best[j] = cand
+            if exact:
+                continue
+            r, _ = _deva_key(aks[i])
+            cand = (score - 3 * max(1, len(r)), parts + [(aks[i], False)], unknown + len(r))
+            if best[i + 1] is None or cand[0] > best[i + 1][0]:
+                best[i + 1] = cand
+        if best[n] is None:
+            return None
+        _, parts, unknown = best[n]
+        known = [p for p, ok in parts if ok]
+        if exact:
+            # two or three whole words, one of them from the lexicon itself ("सीनेमें", "सांसनहीं")
+            keys = [_deva_key(p)[1] for p in known]
+            if not (2 <= len(known) <= 3 and any(len(k) >= 3 and (k in self.vocab or k in self.alias) for k in keys)):
+                return None
+        elif unknown > 0.15 * len(roman) or len(known) < 3:
+            return None
+        merged: list[tuple[str, bool]] = []
+        for piece, ok in parts:  # unknown syllables in a row are one unknown word ("तेल|हस|फिसल")
+            if not ok and merged and not merged[-1][1]:
+                merged[-1] = (merged[-1][0] + piece, False)
+            else:
+                merged.append((piece, ok))
+        return [p for p, _ in merged]
 
     # ---- matching -----------------------------------------------------------
     def find(self, tokens: list[str], surface: list[str], kind: str) -> list[Hit]:
@@ -328,6 +469,10 @@ class Lexicon:
         for k in range(skip, min(len(tokens), skip + NEG_WINDOW)):
             t = tokens[k]
             if t in (BOUNDARY, COMMA) or t in self.breakers:
+                break
+            # "chest pain hai, saans nahi aa rahi": a "hai" first affirms this symptom, and
+            # the later "nahi" belongs to the next one ("dard nahi hai" still negates)
+            if t in COPULA:
                 break
             if t == "na" and k + 1 < len(tokens) and tokens[k + 1] in ("ho", "hua", "hoga", "hoye"):
                 return True

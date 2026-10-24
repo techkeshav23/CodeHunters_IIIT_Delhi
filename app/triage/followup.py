@@ -22,16 +22,20 @@ QUESTIONS: dict[str, dict] = {
     "q_main_symptom": {
         "kind": "free_text",
         "text": {
-            "en": "What problem are they having? For example fever, pain, breathing trouble, vomiting or an injury.",
-            "hinglish": "Unhe kya taklif ho rahi hai? Jaise bukhar, dard, saans ki dikkat, ulti ya chot.",
-            "hi": "उन्हें क्या तकलीफ़ हो रही है? जैसे बुखार, दर्द, सांस की दिक्कत, उल्टी या चोट।",
+            "en": "Happy to help. Who is this for, and what is needed: a symptom such as fever or pain, "
+                  "nursing at home (injection, dressing), a lab test, or a doctor consult?",
+            "hinglish": "Zaroor madad karenge. Kiske liye hai, aur kya chahiye: koi taklif jaise bukhar ya dard, "
+                        "ghar pe nursing (injection, dressing), lab test, ya doctor se baat?",
+            "hi": "ज़रूर मदद करेंगे। किसके लिए है, और क्या चाहिए: कोई तकलीफ़ जैसे बुखार या दर्द, "
+                  "घर पर नर्सिंग (इंजेक्शन, ड्रेसिंग), लैब टेस्ट, या डॉक्टर से बात?",
         },
         "options": [
             ("fever", {"en": "Fever", "hinglish": "Bukhar", "hi": "बुखार"}),
             ("pain", {"en": "Pain", "hinglish": "Dard", "hi": "दर्द"}),
             ("breathing", {"en": "Breathing trouble", "hinglish": "Saans ki dikkat", "hi": "सांस की दिक्कत"}),
-            ("vomiting", {"en": "Vomiting / loose motions", "hinglish": "Ulti / dast", "hi": "उल्टी / दस्त"}),
-            ("injury", {"en": "Injury", "hinglish": "Chot", "hi": "चोट"}),
+            ("nursing", {"en": "Injection or dressing", "hinglish": "Injection / dressing", "hi": "इंजेक्शन / ड्रेसिंग"}),
+            ("lab", {"en": "Lab test at home", "hinglish": "Ghar pe lab test", "hi": "घर पर लैब टेस्ट"}),
+            ("doctor", {"en": "Talk to a doctor", "hinglish": "Doctor se baat", "hi": "डॉक्टर से बात"}),
         ],
     },
     "q_age": {
@@ -102,9 +106,11 @@ QUESTION_WORDS = {
                              r"|कब से|कितने दिन"),
     "q_breathing": re.compile(r"\b(saans|sans|breath\w*)\b|सांस|साँस"),
 }
-# a question about something else: "Kitne saal se sugar hai?", "How long has he been diabetic?"
+# a question about something else: "Kitne saal se sugar hai?", "How long has he been diabetic?",
+# or about the past: "Ye saans rone ki baat pehle bhi hui?" (a "haan" there is not breathing trouble now)
 OTHER_SUBJECT = re.compile(r"\b(sugar|diabet\w*|bp|blood pressure|dawai|dawa|medicine\w*|tablet\w*|goli|insulin"
-                           r"|treatment|ilaj|operation|pregnan\w*)\b|दवा|शुगर")
+                           r"|treatment|ilaj|operation|pregnan\w*|pehle|pahle|before|kabhi|history|pichle|pichhle)\b"
+                           r"|दवा|शुगर|पहले")
 
 
 def identify(text: str, question_id: str | None = None, keywords: bool = True) -> str | None:

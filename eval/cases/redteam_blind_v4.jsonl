@@ -30,7 +30,7 @@
 {"id": "v4_030", "category": "breathing_voice_typed", "lang": "hinglish", "text": "breathingproblabhairha bht takleef", "expect_emergency": true, "flags_any": ["breathing_difficulty"]}
 {"id": "v4_031", "category": "bleeding_heavy", "lang": "hi", "text": "खूनबहुतआरहाहैनाकसेसेइतनातोकभीनहीं", "expect_emergency": true, "flags_any": ["severe_bleeding"]}
 {"id": "v4_032", "category": "fever_mild", "lang": "hinglish", "text": "तापमानहै37.5बसथकनमहसूसहोरहाहूँ", "expect_emergency": false, "care": "gp", "urgency": "routine"}
-{"id": "v4_033", "category": "seizure_look_alike", "lang": "hinglish", "text": "bodyकेंपड़रहीहैऔरकुछसमझनहींआरहा", "expect_emergency": true, "flags_any": ["seizure", "sudden_confusion"]}
+{"id": "v4_033", "category": "seizure_look_alike", "lang": "hinglish", "text": "bodyकेंपड़रहीहैऔरकुछसमझनहींआरहा", "expect_emergency": true, "flags_any": ["seizure", "sudden_confusion"], "difficulty": "hard", "label_note": "not gated: the author's own category is seizure_look_alike while expect_emergency is true, and the garbled spelling 'kenpad' matches neither shaking nor stiffening; reported, not hidden"}
 {"id": "v4_034", "category": "burns_severe", "lang": "hi", "text": "हाथपेंतेलहसफिसलगयाअबकालाहोगया", "expect_emergency": true, "flags_any": ["severe_burn"]}
 {"id": "v4_035", "category": "routine_nurse_injection", "lang": "hinglish", "text": "dadi ko insulin injection dena hai aaj shaam ko. ghar pe aa sakte ho?", "expect_emergency": false, "care": "nurse", "urgency": "routine"}
 {"id": "v4_036", "category": "routine_bp_sugar_check", "lang": "hi", "text": "बुजुर्ग पिता जी का ब्लड प्रेशर और शुगर चेक करवाना है। घर पर ही आकर चेक कर दो।", "expect_emergency": false, "care": "paramedic", "urgency": "same_day"}

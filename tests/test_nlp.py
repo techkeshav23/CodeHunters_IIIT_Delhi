@@ -122,3 +122,87 @@ def test_negated_severity_and_spoken_cough():
 def test_or_lists_do_not_depend_on_the_language_hint():
     for hint in ("auto", "hinglish", "en"):
         assert extract("no fever or chest pain, just a mild cough", hint).red_flags == []
+
+
+@pytest.mark.parametrize("text, flag", [
+    ("खूनबहुतआरहाहैनाकसेसेइतनातोकभीनहीं", "severe_bleeding"),   # each word transliterated on its own
+    ("सीनेमेंदर्दहैऔरसांसनहींआरहीमुझे", "breathing_difficulty"),
+    ("बच्चेकोझटकेआरहेहैं", "seizure"),
+    ("हाथपेंतेलहसफिसलगयाअबकालाहोगया", "severe_burn"),           # hot oil, skin gone black
+    ("heartattackhorenahailogmujhekomatfeel", "chest_pain"),        # long run with everyday words
+    ("breathingproblabhairha bht takleef", "breathing_difficulty"),
+])
+def test_run_together_text_is_split(text, flag):
+    assert flag in flags(text)
+
+
+def test_devanagari_runs_split_into_whole_words():
+    # a word the lexicon does not know stays whole ("हजम" is not "ह ज म"), and a change of script is a break
+    assert "hajam" in extract("पेटमेंदर्दहैपरखानाठीकसेहजमनहीहोरहा").tokens
+    assert extract("bodyकेंपड़रहीहै").tokens[0] == "bodi"
+    assert flags("पापाकोबुखारहैऔरखांसीभीहै") == set()
+    assert flags("खाँसीबहुतदिनसेहैलेकिनतापमाननहींहै") == set()
+
+
+def test_negation_words_are_never_split():
+    from app.nlp.lexicon import get_lexicon
+    assert get_lexicon().split_runs(["vithout"], ["without"])[1] == ["without"]
+
+
+def test_seizure_as_families_describe_it():
+    assert "seizure" in flags("pregnant hu 7 mahine, sharir kaap ne laga, aankh roll ho gayi, muh se jhaag aa gya")
+    assert "seizure" in flags("baby shaking/jerking full body, eyes rolled back")
+    assert flags("peshab mein jhaag aa raha hai") == set()
+
+
+def test_baby_age_said_the_english_way():
+    ex = extract("omg 9 month baby suddenly got fever 40C and now crying")
+    assert ex.age_group == "infant" and "abnormal_vitals" in {h.id for h in ex.red_flags}
+    assert extract("2 din bachche ko ulti ho rahi").age_years is None
+
+
+def test_fewer_baby_kicks_in_pregnancy():
+    assert "pregnancy_emergency" in flags("7th month pregnant hu, 4 ghante se baby ne ek baar bhi kick nahi kiya")
+    assert flags("pregnant hu, baby kick kar raha hai bahut") == set()
+
+
+def test_thunderclap_headache_needs_the_blow():
+    assert "severe_headache" in flags("mummy ko bahut tez sar mein dard, like hammer maara ho")
+    assert flags("sar mein hathode baj rahe hain, migraine purana hai") == set()
+
+
+def test_plan_to_end_it_with_depression():
+    assert "self_harm_risk" in flags("dost ko depression hai. bol raha khatam karne ka plan hai")
+    assert flags("mujhe depression hai, dawai ka course khatam karne ka plan hai") == set()
+    assert "self_harm_risk" in flags("my friend says he wants to kill himself")
+
+
+def test_behaviour_change_in_a_diabetic():
+    assert "low_sugar_signs" in flags("insulin lete hain, ab aggressive ho gaye, sweat bhi ho raha")
+    assert flags("diabetic hu, khaane ka taste ajeeb hai") == set()
+
+
+def test_deep_burn_and_its_look_alikes():
+    assert "severe_burn" in flags("garam tel haath pe gir gaya, chamdi kali pad gayi")
+    assert flags("burn ka nishan kala ho gaya hai, cream bataiye") == set()
+    assert flags("baalon mein tel lagaya, baal kale ho gaye") == set()
+
+
+def test_heavy_bleeding_in_either_word_order():
+    assert "severe_bleeding" in flags("khoon bahut aa raha hai naak se")
+    assert "severe_bleeding" in flags("he is bleeding a lot")
+    assert flags("khoon bahut kam hai, hemoglobin 8") == set()
+
+
+def test_months_back_is_history_but_since_is_not():
+    assert flags("My grandfather had a stroke 2 months back. He needs physiotherapy") == set()
+    assert flags("2 mahine pehle stroke hua tha, physiotherapy chahiye") == set()
+    assert "chest_pain" in flags("2 mahine pehle se seene mein dard hai")
+
+
+def test_fine_now_settles_only_a_clean_later_sentence():
+    ex = extract("meeting ke time dikkat horhi breathe karne mein, bus ghabra gya hu. abhi thik hu.")
+    assert ex.red_flags == [] and "breathing_difficulty" in ex.settled_flags
+    assert "chest_pain" in flags("seene mein dard ho raha hai. abhi thik hu par pasina aa raha")
+    assert "chest_pain" in flags("papa ko seene mein dard ho raha hai. abhi theek hain")
+    assert "breathing_difficulty" in flags("ab theek se saans nahi le pa rahe")

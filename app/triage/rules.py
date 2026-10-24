@@ -63,8 +63,11 @@ def decide(ex: Extraction) -> Decision:
     only_conditions = bool(symptoms) and all(s.meta.get("condition") for s in symptoms)
     physio = next((sv for sv in services if sv.id == "physiotherapy"), None)
     nurse_service = next((sv for sv in services if sv.meta.get("care") == "nurse"), None)
-    if services and (best is None or nurse_service or physio or only_conditions):
-        sv = physio or nurse_service or services[0]
+    # "weak hain, ghar pe checkup chahiye": a home visit asked for beats a doctor consult
+    home_service = next((sv for sv in services if sv.meta.get("care") in ("paramedic", "lab")), None)
+    home_over_consult = bool(home_service) and best is not None and best[0] in ("gp", "specialist")
+    if services and (best is None or nurse_service or physio or only_conditions or home_over_consult):
+        sv = physio or nurse_service or (home_service if home_over_consult else services[0])
         care = sv.meta.get("care", "gp")
         urg = "routine" if (best is None or only_conditions) else best[1]
         best = (care, urg, "physiotherapy" if sv is physio else None, f"service_{sv.id}")

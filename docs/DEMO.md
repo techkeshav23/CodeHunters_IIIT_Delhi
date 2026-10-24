@@ -67,8 +67,8 @@ three months is an emergency, so it asks the age."
 
 ### 2:25 to 2:50. For the judges
 **Do:** open **Kaise kaam karta hai** in the sidebar.
-**Show:** the steps, "511 mushkil test messages, har emergency pakdi", 87.8% on
-CARE-Bench, and the last API request and response with the time in ms.
+**Show:** the steps, "583 mushkil test messages, har emergency pakdi", 209/209
+caregiver matches, and the last API request and response with the time in ms.
 **Say:** "This is the exact API call behind the screen: the problem statement's JSON
 schema, answered in a few milliseconds, with no outside AI service."
 
@@ -77,6 +77,10 @@ schema, answered in a few milliseconds, with no outside AI service."
 emergency path you cannot miss."
 
 ## If something goes wrong
+
+- **Laptop setup fails:** use the live site https://carecompass.145-223-21-27.sslip.io
+  (same app and API, HTTPS, so the mic works in Chrome). On a phone, Chrome's menu offers
+  "Install app" for a home-screen icon.
 
 - **Mic does not hear:** type the same text; the result is identical.
 - **Read-aloud is silent:** no Hindi voice on the laptop. Say so and move on.
@@ -92,12 +96,17 @@ emergency path you cannot miss."
   could not prove an LLM keeps every emergency, its text can drift into diagnosis, and a
   hosted model would send family health details outside. We built a normaliser for
   Hinglish, Devanagari and speech-to-text, a negation-aware red-flag engine and a scoring
-  ranker, and tested them on 511 tricky messages and an unseen public benchmark.
+  ranker, and tested them on 583 tricky messages, the organisers' dataset and an unseen public benchmark.
   A learned model is wired in but off until doctor-labelled data exists, and it can only
   raise urgency.
-- **"How do you know it generalises?"** CARE-Bench, which we never tuned on: 87.8% of
-  urgent cases went to same-day or immediate care, and 12% went to routine. That 12% is
-  our main known gap.
+- **"How do you know it generalises?"** We split the organisers' data by situation (all three
+  languages of a message on one side), so the test set is situations the model never saw: 100%
+  with rules, 83% for the model alone. On 88 messages written by other people the system picks
+  the organisers' care type 86% of the time; that is our main known gap, and it comes from the
+  data (22 situations), which is why a bigger transformer model did not help when we tried it.
+- **"Why not an LLM?"** Seconds per answer, health details sent to a third party, network needed
+  during scoring, and no way to prove it never misses an emergency. Our model answers in ~2 ms
+  offline and shows its probabilities in every response.
 - **"What if the organisers' caregiver file looks different?"** Field names are mapped
   loosely (id or caregiver_id, location or lat/lng, lists or comma text); a file that
   cannot be read falls back to the sample profiles and `/health` says why.

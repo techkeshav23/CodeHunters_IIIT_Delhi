@@ -76,6 +76,7 @@ aliases:
   dikha: [dikhani, dikhana, dikhane, dikhao, dikhaana, dikhaani, show]
   dekh: [dekhna, dekhni, dekhne, dekho]
   dawai: [dawa, dava, davai, medicine, medicines, tablet, tablets, pills]
+  sugar: [shakkar, shugar]
 
 # negation words: after a symptom ("dikkat nahi") or before it ("no chest pain")
 negation:
@@ -94,7 +95,8 @@ negation:
 # says it is happening now (ab, abhi, now, again, phir se). A year ("in 2019") counts too
 # (extract.py). "stroke ke baad wali" (the medicine for after the stroke) is history.
 past: [years ago, year ago, months ago, last year, pichle saal, saal pehle, saal purana, history of,
-       in the past, used to, had a history, ke baad wali, ke baad wala, ke baad wale, last winter, last summer]
+       in the past, used to, had a history, ke baad wali, ke baad wala, ke baad wale, last winter, last summer,
+       years back, year back, months back, month back, mahine pehle, mahina pehle, mahino pehle]
 current: [ab, abhi, now, again, phir se, dobara, today, aaj, this episode, is different, alag tarah]
 
 # Long-standing, on-and-off breathlessness or chest discomfort ("sometimes, for 3 months")
@@ -104,9 +106,10 @@ episodic: [sometimes, kabhi kabhi, kabhi kabhar, occasionally, on and off, with 
 
 # Phrases saying the problem has settled. They only cancel flags marked `soft`;
 # chest pain, fainting and the like stay emergencies even if "ab theek hain".
-resolved: [ab theek, ab thik, ab sahi, aaram aa gaya, aaram mil gaya, theek ho gaya, theek ho gayi,
-           theek ho gaye, bilkul theek, hosh mein hain, hosh mein hai, chal pa rahe, chal pa rahi,
-           feels better, feeling better, better now]
+# "ab theek se saans nahi le pa rahe" (properly) and "ab theek nahi" are not on this list (extract.py).
+resolved: [ab theek, ab thik, ab sahi, abhi theek, abhi thik, abhi sahi, aaram aa gaya, aaram mil gaya, theek ho gaya,
+           theek ho gayi, theek ho gaye, bilkul theek, hosh mein hain, hosh mein hai, chal pa rahe, chal pa rahi,
+           feels better, feeling better, better now, settle, settled, fine now, okay now, ok now]
 
 # Chest pain that hurts when the spot is pressed or the arm is moved. In a young adult with
 # no sweating, breathlessness or dizziness this is chest-wall strain: a same-day check, not
@@ -350,6 +353,8 @@ red_flags:
       - hosh nahi
       - hosh mein nahi
       - jawab nahi de
+      - response nahi de
+      - respond nahi kar
       - jaag nahi
       - not waking
       - not responding
@@ -385,6 +390,19 @@ red_flags:
       - aankh chadh
       - aankh palat
       - eyes rolling
+      # eyes rolled up, froth from the mouth: how families describe a fit they are watching
+      - aankh roll
+      - aankh rolled
+      - aankh ulat
+      - muh se jhaag
+      - munh se jhaag
+      - muh mein jhaag
+      - munh mein jhaag
+      - foaming at the mouth
+      - foam at the mouth
+      - foam from the mouth
+      - froth from the mouth
+      - frothing at the mouth
       - दौरा पड़
       - मिर्गी
   - id: severe_bleeding
@@ -394,6 +412,8 @@ red_flags:
     patterns:
       - bahut khoon
       - khoon ruk nahi
+      - khoon nahi ruk
+      - bleeding nahi ruk
       - khoon beh
       - khoon bah
       - khoon nikal raha
@@ -416,6 +436,17 @@ red_flags:
       - soaking pads
       - soaked a pad
       - khoon bahut badh
+      # "khoon bahut aa raha hai", "bleeding a lot": the same as "bahut khoon", word order turned round
+      - khoon bahut aa
+      - khoon bahut nikal
+      - khoon bahut beh
+      - khoon bahut bah
+      - khoon bahut gir
+      - khoon a lot
+      - lot of khoon
+      - too much khoon
+      - so much khoon
+      - khoon heavily
       - बहुत खून
       - खून की उल्टी
   - id: major_injury
@@ -556,6 +587,7 @@ red_flags:
     label: Serious burn or electric shock
     label_hinglish: Gambhir jalna ya current lagna
     label_hi: गंभीर जलना या करंट लगना
+    exclude_if_before: [nishan, nishaan, daag, scar, mark, marks]   # "burn ka nishan kala ho gaya": an old scar
     patterns:
       - current laga
       - current lag
@@ -583,12 +615,37 @@ red_flags:
                    whole arm, whole hand, whole leg, kai jagah, bahut jagah]
         requires: [pair]
         pair_with: [burn]
+      # a deep burn: the skin has gone black or charred after a burn, hot oil or boiling water
+      # (cooking oil that fell or splashed on the skin; not "baalon mein tel lagaya")
+      - group: hot
+        patterns: [garam tel, garam paani, garam doodh, garam chai, ubalta, ubalte, ubalti, boiling, hot oil,
+                   hot water, hot tea, bhaap, steam, tel gir, tel pad, tel phisal, tel chhalak, tel uchhal, tel ud,
+                   oil fell, oil spilled, oil splashed]
+        requires: [pair]
+        pair_with: [deep]
+        pair_within: 10
+      - group: deep
+        patterns: [kala ho gaya, kala ho gayi, kali ho gayi, kale ho gaye, kala pad gaya, kala pad gayi, kali pad gayi,
+                   kale pad gaye, black ho gaya, black ho gayi, turned black, gone black, charred, leathery]
+        requires: [pair]
+        pair_with: [burn, hot]
+        pair_within: 10
   - id: self_harm_risk
     label: Thoughts of self-harm or suicide
     label_hinglish: Khud ko nuksan pahunchane ke khayal
     label_hi: ख़ुद को नुकसान पहुँचाने के ख़याल
+    # "dawai ka course khatam karne ka plan", "kaam khatam karna": finishing something
+    exclude_if_before: [course, kaam, project, padhai, syllabus, series, chapter]
     patterns:
       - khudkushi
+      - marne ka mann
+      - marne ka man
+      - mar jaane ka mann
+      - mar jane ka man
+      - marne ki ichha
+      - marna chahta
+      - marna chahti
+      - want to die
       - aatmhatya
       - suicide
       - suicidal
@@ -629,6 +686,14 @@ red_flags:
       - better off without me
       - no point living
       - nas kaat
+      # the same said about someone else ("my friend wants to kill himself")
+      - kill himself
+      - kill herself
+      - end his life
+      - end her life
+      - take his own life
+      - take her own life
+      - take my own life
       # said indirectly: "you will be happy without me", "no one will be troubled because of me"
       - mere bina khush
       - mere bina behtar
@@ -638,12 +703,19 @@ red_flags:
       - आत्महत्या
       - जीना नहीं चाहता
     conditional:
-      # two of: hopeless or farewell words, the means at hand, shut away and silent
+      # two of: hopeless or farewell words, the means at hand, shut away and silent, a depression.
+      # "khatam karne ka plan hai" (a plan to end it) is here: alone it could be a plan to finish anything
       - group: words
         patterns: [bojh hoon, bojh hu, bojh ban, burden on, ab nahi hota, ab aur nahi hota, "can't take it anymore",
                    "can't go on", alvida, goodbye sab, goodbye everyone, last message, aakhri message, sabko sorry,
-                   sab se sorry, sab se maafi, maaf kar dena sab, nahi rehna, duniya chhod]
+                   sab se sorry, sab se maafi, maaf kar dena sab, nahi rehna, duniya chhod, khatam karne ka plan, khatam karne ki soch, khatam karne ki baat, khatam karna chahta,
+                   khatam karna chahti, marne ka plan, marne ki soch, zindagi khatam, plan to end, planning to end,
+                   has a plan, made a plan]
         requires: [pair]
+      - group: mood
+        patterns: [depression, depressed, depressive, hopeless]
+        requires: [pair]
+        pair_with: [words]
       - group: means
         patterns: [goliyan nikal, goliyan nikaal, goliyan jama, goliyan chhupa, goliyan ke patte, goli ke patte,
                    patte chhupa, chhupa ke rakhe, saved up pills, stockpiling, dupatta, rassi, phanda, fanda, rope,
@@ -698,6 +770,11 @@ red_flags:
                    dhundhla, blurred vision, movement band, movement kam, movement nahi, hilna band,
                    dard shuru, thaili phat, paani ki thaili, water broke, waters broke]
         requires: [pregnant]
+      # the baby's kicks or movements stopped or fewer ("baby ne kick nahi kiya", "harkat band")
+      - patterns: [kick nahi, kick band, kick kam, kicks kam, kicking band, kick feel nahi, movement feel nahi,
+                   no kicks, no kick, not kicking, stopped kicking, "hasn't kicked", "hasn't moved", not moved,
+                   harkat nahi, harkat band, harkat kam]
+        requires: [pregnant]
       # in the weeks after delivery: bleeding getting heavier, clots, fits, blurred vision
       - patterns: [khoon badh, khoon zyada, zyada khoon, thakke, clots, daura, dhundhla, blurred vision]
         requires: [pregnant, postpartum]
@@ -725,6 +802,9 @@ red_flags:
         requires: [child]
       - patterns: [weak cry, crying weak, kamzor rona, rona kamzor]
         requires: [infant, baby]
+      # a high fever in a baby under one year (the organisers' high_fever_infant)
+      - patterns: [tez bukhar, bahut bukhar, bahut tez bukhar, high fever, very high fever, bukhar bahut tez]
+        requires: [baby]
   - id: severe_headache
     label: Sudden severe headache or stiff neck with fever
     label_hinglish: Achanak tez sar dard ya bukhar ke saath gardan akadna
@@ -733,8 +813,18 @@ red_flags:
       - worst headache
       - zindagi ka sabse
     conditional:
-      - patterns: [sar dard, dard sar, headache]
-        requires: [sudden]
+      - group: head
+        patterns: [sar dard, dard sar, headache]
+        requires: [sudden, pair]
+      # a headache that struck "like being hit with a hammer" (thunderclap): a bleed in the brain until shown
+      # otherwise. A pounding headache ("sar mein hathode baj rahe") is not this: it needs the blow, "maara"
+      - group: thunder
+        patterns: [hammer maara, hammer se maara, hathoda maara, hathode se maara, hathauda maara, hathaude se maara,
+                   jaise kisi ne maara, jaise maara, hit with a hammer, hit by a hammer, hit with a bat,
+                   like being hit, like someone hit, like i got hit, thunderclap]
+        requires: [pair]
+        pair_with: [head]
+        pair_within: 10
       - patterns: [gardan akad, stiff neck, neck stiff]
         requires: [fever]
   - id: severe_abdominal_pain
@@ -809,7 +899,10 @@ red_flags:
       - low sugar
       - hypo
     conditional:
-      - patterns: [pasina, kaamp, kaanp, thartharahat, shaking, sweating, confused, behki baat]
+      # sweating, shaking, or a sudden change in behaviour (aggressive, acting strange) in a diabetic
+      - patterns: [pasina, kaamp, kaanp, thartharahat, shaking, sweating, sweat, sweaty, confused, behki baat,
+                   aggressive, behaviour weird, weird behaviour, behaviour strange, strange behaviour, acting weird,
+                   acting strange, behaving strangely, ajeeb harkat, ajeeb behave, ajeeb bartav]
         requires: [diabetic]
   - id: heat_stroke
     label: Possible heat stroke
@@ -1207,37 +1300,42 @@ services:
     patterns: [physio, physiotherapy, physiotherapist]
     care: specialist
     skill: physiotherapy
+  # a test with home sample collection (the organisers' lab_test_home, scheduled)
   - id: sample_collection
-    label: Blood test at home
-    label_hinglish: Ghar pe blood test
-    label_hi: घर पर खून की जाँच
-    patterns: [blood test, khoon ki jaanch, khoon jaanch, sample, lab test, test karwana]
-    care: paramedic
+    label: Lab test at home
+    label_hinglish: Ghar se sample / lab test
+    label_hi: घर से सैंपल / लैब टेस्ट
+    patterns: [blood test, khoon ki jaanch, khoon jaanch, sample, lab test, test karwana, cbc, thyroid, full body,
+               sugar test, home collection, sample collection, test ghar, सैंपल, टेस्ट]
+    care: lab
     skill: sample collection
   - id: vitals_check
     label: BP or sugar check at home
     label_hinglish: Ghar pe BP / sugar check
     label_hi: घर पर बीपी / शुगर जाँच
-    patterns: [bp check, blood pressure check, sugar check, bp naap, checkup ghar, health checkup]
+    patterns: [bp check, blood pressure check, sugar check, bp naap, checkup ghar, health checkup, bp sugar,
+               bp aur sugar, bp and sugar]
     care: paramedic
     skill: vitals check
   - id: checkup
-    label: Check-up
-    label_hinglish: Checkup
-    label_hi: जाँच
-    patterns: [checkup, check up, routine checkup, antenatal]
-    care: gp
+    label: Check-up at home
+    label_hinglish: Ghar pe checkup
+    label_hi: घर पर जाँच
+    patterns: [checkup, check up, check-up, routine checkup, antenatal, chekap, जांच]
+    care: paramedic
   - id: teleconsult
     label: Talk to a doctor
     label_hinglish: Doctor se baat
     label_hi: डॉक्टर से बात
-    patterns: [doctor se baat, video call, online consult, phone pe doctor, teleconsult, doctor chahiye, salah chahiye]
+    patterns: [doctor se baat, video call, online consult, phone pe doctor, teleconsult, salah chahiye,
+               consult, second opinion, talk to a doctor, doctor se salah, doctor se consult, डॉक्टर से बात,
+               डॉक्टर से सलाह, सेकंड ओपिनियन, ओपिनियन]
     care: gp
   - id: report_review
     label: Show reports to a doctor
     label_hinglish: Report dikhana
     label_hi: रिपोर्ट दिखाना
-    patterns: [report dikha, report dekh, report review, reports]
+    patterns: [report dikha, report dekh, report review, reports, रिपोर्ट]
     care: gp
 
 # Who the patient is.

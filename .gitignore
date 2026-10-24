@@ -18,7 +18,9 @@ data/external/
 vendor/wheels/*.whl
 eval/out/
 models/*.joblib
+!models/triage.joblib
 
 # Secrets
 .env
 *.key
+models/encoders/

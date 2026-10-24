@@ -1,150 +1,142 @@
 # CareCompass: care navigation and caregiver matching
 
 Team CodeHunters (Keshav Upadhyay, Harsh Kumar Sah). HackIIITD 2026, CAI problem statement.
-Repository: github.com/techkeshav23/CodeHunters_IIIT_Delhi
+Repository: github.com/techkeshav23/CodeHunters_IIIT_Delhi ·
+Live: https://carecompass.145-223-21-27.sslip.io
 
 ## 1. Approach
 
 A family member types or speaks a request in English, Hindi (Devanagari) or Hinglish.
-CareCompass returns the care type (paramedic home visit, nurse, GP teleconsult,
-specialist, emergency referral), the urgency (routine, same day, immediate), any red
-flags, a plain reason, and the three best caregivers with a reason for each. It routes;
-it never diagnoses or prescribes.
+CareCompass returns the care type (`paramedic_home_visit`, `home_nursing`, `lab_test_home`,
+`teleconsultation`, `emergency_112`), the urgency (`scheduled`, `same_day`, `emergency`),
+any red flags, a plain reason and up to three caregivers with a reason each, or one
+follow-up question when the message is too vague. Labels follow the organisers' dataset.
+It routes; it never diagnoses or prescribes.
 
-Every request goes through one pipeline, served by a stateless REST API
-(`POST /v1/triage`, the indicative JSON schema; the client sends the conversation each time):
+Every request goes through one pipeline behind a stateless REST API (`POST /v1/triage`,
+the problem statement's schema; the client sends the conversation each time):
 
-1. **Normalise.** Devanagari is transliterated to Roman (बुखार → "bukhaar") and spellings are
-   reduced to a phonetic key, so bukhaar, bukhar and bkhar meet. A table of 287 spellings
-   maps WhatsApp short forms (ni, rha, bht) and English words as speech-to-text writes them
-   in Devanagari (चेस्ट पेन, सुसाइड) onto 62 known words. Text typed without spaces
-   ("saansnahiaarahi", "chestpain") is split back into words.
-2. **Red-flag check first.** 25 red-flag types, written as 805 phrases in three languages:
-   breathing difficulty, chest pain, stroke signs, unconsciousness, seizures, heavy bleeding,
-   major injury, allergy swelling, poisoning, venomous bites, burns, self-harm, psychiatric
-   emergency, pregnancy warning signs, danger signs in babies, severe headache, severe
-   abdominal pain, dehydration, sudden confusion, low sugar, heat stroke, eye injury, BP of
-   180 or more, out-of-range device readings ("oxygen 86", "pulse 38") and a request for an
-   ambulance. Some phrases count only with context (for example "sust" in a baby, or
-   bleeding in pregnancy). Any red flag returns `emergency_referral` / `immediate` at once,
-   with no question and no caregiver matching.
-3. **Understand.** Symptoms (32 types), services asked for (14, such as injection, dressing,
-   teleconsult), who the patient is (Papa, Dadi, baby), age, pregnancy, duration and severity.
-4. **Decide.** Each symptom carries a care type and urgency for a new problem and for one
-   lasting two weeks or more; the most urgent wins. Babies, older adults, pregnancy and
-   severe pain raise urgency; a mild adult fever goes to teleconsult.
-5. **Ask only when it matters.** A question is asked only if the answer can change the
-   decision (nothing understood, a child's age when there is fever, duration when it decides
-   new versus long-standing), at most three, with tap-to-answer options in the user's
-   language. Answers are still checked for red flags ("2 din se, aur ab behosh ho gaye").
-6. **Match.** Caregivers with the right role are scored on skill or specialty fit, earliest
-   free slot within the urgency window, distance, shared language and rating (Bayesian
-   average). Distance counts for home visits and not at all for teleconsults. Caregivers of
-   another specialty, outside the visit radius or with no free slot are moved down, not
-   hidden. Reasons are built only from computed facts ("Hindi-speaking, 1.6 km away, free at
-   4 pm"), so a reason cannot be wrong about the data.
+1. **Normalise.** Devanagari is transliterated (बुखार → "bukhaar") and spellings are reduced
+   to a phonetic key, so bukhaar, bukhar and bkhar meet. 287 spellings (WhatsApp short
+   forms, English words as speech-to-text writes them in Devanagari) map onto 62 known
+   words; text typed without spaces ("saansnahiaarahi", "chestpain") is split back.
+2. **Red-flag check first.** 25 red-flag types in 800+ phrases across three languages,
+   negation-aware, some only with context ("sust" in a baby, bleeding in pregnancy). Any
+   red flag returns `emergency_112` / `emergency` at once: no question, no caregivers.
+3. **Understand.** Symptoms, services asked for (injection, dressing, lab test, teleconsult),
+   who the patient is, age, pregnancy, duration and severity.
+4. **Decide: rules and a learned model together.** The rules give a care type (or "not
+   enough to decide"). A model trained on the organisers' data (section 2) runs on every
+   request and gives probabilities over paramedic, nursing, lab, doctor, emergency and
+   follow-up. When the rules decided, the model overrides them only when it is clearly sure
+   (rules vote 0.4, picked on validation); when the rules understood nothing, the model
+   decides alone, including "ask first". Urgency follows the care type as in the
+   organisers' labels (lab tests scheduled, the rest same day) and never drops below what
+   the rules found for a baby, an older adult or severe pain.
+5. **Ask only when it matters**, at most three questions with tap-to-answer options in the
+   user's language; answers are still checked for red flags.
+6. **Match** with the organisers' recipe, which we reproduced from their labels: eligible =
+   right role (medic for visits and nursing, phlebotomist for lab tests, doctor for
+   teleconsults), active, the skill the request needs, and within the caregiver's own
+   radius for home care; score = 0.35 language + 0.30 proximity + 0.20 skill + 0.15 rating.
+   Reasons come only from computed facts ("Hindi-speaking, 2.7 km away, free 15:00–21:00").
 
-The problem statement's own example ("papa ko do din se bukhar hai aur khansi bhi")
-returns exactly the example output: `paramedic_home_visit`, `same_day`, no red flags.
+The problem statement's example ("papa ko do din se bukhar hai aur khansi bhi") returns
+`paramedic_home_visit`, `same_day`, no red flags, as in the example.
 
 ## 2. Models and APIs used
 
 | Component | What it is |
 |---|---|
-| Triage, red flags, matching | Team-written rules and lexicon (`app/data/lexicon.yaml`), Python, FastAPI |
-| Fuzzy spelling match | RapidFuzz (Levenshtein ratio), no learned model |
-| Optional learned model | TF-IDF + logistic regression (scikit-learn), blended with the rules. It can raise urgency or add an emergency, never lower the rules' level. Ready to train with `scripts/train_baseline.py`; off, because no doctor-labelled data was released |
-| Voice input / read-aloud | Browser Web Speech API (`hi-IN`, `en-IN`) and `speechSynthesis` |
+| Learned triage model | TF-IDF (character 2–5 and word 1–2 n-grams over the normalised tokens, plus tags for recognised services, symptoms and red flags) + multinomial logistic regression, scikit-learn, trained on the organisers' dataset (`scripts/train_triage.py`, `models/triage.joblib`, 206 KB). About 2 ms per message |
+| Red flags, extraction, matching | Team-written rules and lexicon (`app/data/lexicon.yaml`), Python, FastAPI |
+| Fuzzy spelling match | RapidFuzz (Levenshtein ratio) |
+| Voice / read-aloud | Browser Web Speech API (`hi-IN`, `en-IN`) and `speechSynthesis`; the Android app (Flutter, `mobile/`) uses the phone's speech services |
 | External LLMs or paid APIs | None at runtime |
 
-**Why no LLM.** We considered fine-tuning or calling a language model and chose not to.
-With no labelled clinical data we could not show that it keeps every emergency, its free
-text can drift into diagnosis, and a hosted model would send family health details to a
-third party and depend on the network during scoring. Fixed rules are slower to write but
-every decision can be traced to a phrase and tested.
+**Why this model, and not a transformer or an LLM.** We tested two multilingual transformer
+encoders (paraphrase-multilingual-MiniLM-L12-v2 and multilingual-e5-small, int8 ONNX) as
+extra features on the same split. They did not help: held-out accuracy of the model alone
+went 83% → 78%, and on 88 messages written by other people (our labelled case sets) the
+served system scored 86.4% with or without them. With 22 training situations the limit is
+the data, not the classifier, so we kept the 206 KB linear model: it trains in seconds,
+answers in ~2 ms offline, puts its probabilities in every response (`trace.model`) and
+cannot write medical text. An LLM would add seconds per answer, send family health details
+to a third party, depend on the network during scoring, and we could not show that it
+keeps every emergency.
 
 The code was written during the event with help from AI coding assistants.
 
 ## 3. Safety and privacy
 
-- **Red flags before everything.** The emergency path shows 112 (all India), 102 (Delhi
-  CATS ambulance) and 108, plus Tele-MANAS 14416 for self-harm and the AIIMS Poisons
-  Information Centre (1800-116-117) for poisoning.
-- **Negation without losing emergencies.** "saans lene mein koi dikkat nahi" and
-  "No weakness, numbness, chest pain or trouble breathing" are not red flags; "dard kam
-  nahi ho raha" (pain not easing) and "saans nahi aa rahi" (cannot breathe) are.
-  Minimisers ("bas thoda", "gas hogi") never cancel a red flag. Past or settled events,
-  other people ("padosi ko heart attack aaya tha"), "if" questions and fears ("stroke na
-  ho") are not counted; a chest pain or fall that has settled becomes a same-day check.
-- **Under-triage is the costly error.** The optional model can only raise urgency, and
-  blend settings are picked only among those that keep every labelled emergency caught.
-- **No medical advice in text.** Reasons use symptom labels only; a final filter removes
-  medicine names, doses and disease names.
-- **Robust to the organisers' files.** A caregiver file in an unexpected shape is read
-  row by row; if it cannot be read at all, the API keeps serving from the sample profiles
-  and `/health` says why.
-- **Privacy.** The API keeps no record of what users type: request text is not logged or
-  stored. Bookings live in memory on the server and in the user's browser.
+- **Red flags before everything**, and the model can add an emergency but never remove
+  one or lower urgency. The emergency screen shows 112, 102 (Delhi CATS) and 108, plus
+  Tele-MANAS 14416 for self-harm and the AIIMS Poisons Information Centre for poisoning.
+- **Negation without losing emergencies.** "saans lene mein koi dikkat nahi" is not a red
+  flag; "dard kam nahi ho raha" and "saans nahi aa rahi" are. Past or settled events,
+  other people, "if" questions and fears ("stroke na ho") are not counted.
+- **No medical advice in text**: a final filter removes medicine and disease names.
+- **Robust to data files**: odd caregiver files load row by row; an unreadable one falls
+  back to the sample profiles and `/health` says why.
+- **Privacy**: request text is not logged or stored; bookings live in server memory and
+  on the device.
 
 ## 4. Evaluation
 
-No labelled vignettes were released. Our honest measure of new data is a public benchmark
-we never tuned on; our own sets are regression tests.
+**Organisers' dataset, done honestly.** Its 340 rows hold only 66 distinct messages: 22
+situations, each in English, Hinglish and Hindi. A random split would put a message or its
+translation on both sides, so we split by situation: 6 situations (one per class) are a
+test set used once; the other 16 are validated leave-one-situation-out to pick the model's
+regularisation and the rules' vote; the deployed model is then refit on all 22.
 
-**Unseen data: CARE-Bench** (925 English patient-message prefixes, 172 urgent). 87.8% of
-urgent cases were sent to same-day or immediate care; 13.5% of non-urgent ones were
-over-triaged to emergency; 12% of urgent ones went to routine care. Its labels (info
-needed, self-care, non-urgent, urgent) differ from ours, so this is a safety check, not a
-routing score.
+| | Validation (48 messages) | Test (18 messages, unseen situations) |
+|---|---|---|
+| Model + rules, as served | 100% | 100% (English, Hinglish and Hindi each 100%) |
+| Model alone | 79% | 83% |
+| Emergency recall / false emergencies | 100% / 0% | 100% / 0% |
 
-**Regression sets** (synthetic, written for testing only; 511 cases, 313 emergencies):
+Training, validation and test agree, so the model is neither over- nor under-fitting the
+situations it has; "model alone 83%" is its honest generalisation number. Six lexicon
+phrases were added after reading this data, so the rules' share of the 100% is partly
+in-sample. End to end through the API, all 340 rows match care type, urgency and the 39
+follow-up questions. Matching reproduces the labelled caregivers and scores on all 209 rows
+that have them (NDCG@3 1.0) and returns none on all 36 non-emergency rows where the labels
+have none. One label quirk: the dataset marks every emergency `chest_pain, breathlessness`
+even for heavy bleeding or a collapse; we return the specific flag (`severe_bleeding`,
+`unconsciousness`).
 
-| Set | Cases (emergencies) | Emergency recall, first run → now | False emergencies now |
-|---|---|---|---|
-| Team tricky cases | 122 (81) | 100% | 0% |
-| Blind v1, written without seeing the lexicon | 95 (63) | 75.4% → 100% | 0% |
-| Blind v2: speech-to-text, low sugar, heat, pregnancy | 85 (41) | 39.0% → 100% | 0% |
-| Blind v3: long messages with one buried danger sign | 66 (41) | 92.7% → 100% | 0% (12% first run) |
-| Adversarial sweep (built from the misses it found) | 33 (23) | 0% → 100% | 0% |
-| Probes of "someone else", "if" and risk talk | 18 (12) | 91.7% → 100% | 0% (1 of 6 first run) |
-| Pregnancy cues (8th month, expecting, waters broke) | 13 (9) | 11.1% → 100% | 0% |
-| Review of our own fixes: look-alikes, run-together words, other apps' questions | 79 (43) | built from the bugs it found → 100% | 0% |
+**Unseen public data: CARE-Bench** (925 English patient-message prefixes, 172 urgent).
+Under the organisers' urgency policy only lab tests are "scheduled", so every urgent case
+gets at least same-day care; the informative numbers are that 53.5% of urgent cases went
+straight to emergency and 13.8% of non-urgent ones were over-triaged to emergency.
 
-Every miss was fixed and all sets run in the test suite (101 automated tests): the build
-fails if any emergency is missed, if false emergencies pass 10%, or if any labelled case is
-under-triaged. So 100% here shows coverage of what we have seen, not accuracy on new data.
-On the 62 labelled ordinary cases, care type matches every label and urgency matches 56 of
-57 (the other is one level higher than the label).
+**Regression sets** (synthetic, for testing only): 583 tricky messages. First-run recall on
+the sets a teammate wrote without seeing our rules was 75%, 39%, 93% and 73% (blind v1 to
+v4); after fixes every set catches every emergency with no false alarms, except one blind-v4
+message whose label contradicts its own category (40 of 41 caught; reported, not gated).
+All sets run in the test suite (182 tests), so their 100% shows coverage, not accuracy on
+new data. The build fails if any emergency is missed, if false emergencies pass 10%, or if
+a labelled case is routed less urgently than its label. Full numbers: `docs/RESULTS.md`.
 
-**Matching.** No expert rankings were released, so NDCG is not reported. Tests check that
-the nearest in-window caregiver who speaks the user's language comes first for a home
-visit, that teleconsults ignore distance, that the right specialist comes first (ENT, not
-"mental health"; urology, not neurology), and that a caregiver with no free slot is listed
-last. Median time inside the pipeline is under 1 ms on a laptop.
-
-To reproduce: `pytest`, `python -m eval.run_eval eval/cases/<set>.jsonl`, and
-`python -m scripts.external_carebench <CARE-Bench file>`.
+To reproduce: `pytest`, `python -m scripts.train_triage`, `python -m scripts.eval_matching`,
+`python -m eval.run_eval data/sanocare_v1/triage_dataset.jsonl --mode interactive`.
 
 ## 5. Known limitations
 
-- Routing rules were set by the team, not learned from doctor labels; borderline cases
-  may differ from the organisers' labels.
-- `care_type` values for nurse and specialist follow the problem statement's wording
-  (`nurse`, `specialist`); only `paramedic_home_visit` appears in its example.
-- Rules cover the phrasings we and our blind sets thought of; long, unusual descriptions
-  can still be missed, as the 12% of urgent CARE-Bench cases sent to routine care shows.
-- Caregiver profiles are 26 mock profiles around IIIT-Delhi; matching weights were set by
-  hand, not tuned against expert rankings.
-- English, Hindi and Hinglish only. Voice quality depends on the browser's speech service.
-- Not a medical device. It supports a routing decision and always shows a call-for-help
-  path for emergencies.
+- The organisers' data is small and templated (22 situations), so the model alone is right
+  on 83% of unseen situations; the rules carry phrasings it has not seen.
+- Rules cover the phrasings we and our blind sets thought of; on messages written by other
+  people the served system picks the organisers' care type 86% of the time.
+- Matching follows the organisers' recipe, which ignores availability except in the reason.
+- English, Hindi and Hinglish only; voice quality depends on the device's speech service.
+- Not a medical device: it supports a routing decision and always shows a call-for-help path.
 
 ## 6. Data and datasets cited
 
-- Synthetic data only; no real patient information was collected or uploaded.
+- Sanocare synthetic care-triage dataset v1 (2026), provided for the IIIT-Delhi hackathon
+  (`data/sanocare_v1/`): training and evaluation.
 - CARE-Bench v1.1 public data (Hua, Na and Ayubcha, 2026, "CARE-Bench: Benchmarking
-  Patient-Facing LLM Triage", arXiv:2608.03731; huggingface.co/datasets/ningkko/CARE-Bench).
-  Used for evaluation only, not for training, and not redistributed; its GitHub README lists
-  the data as CC BY-NC 4.0.
+  Patient-Facing LLM Triage", arXiv:2608.03731): evaluation only, not redistributed (CC BY-NC 4.0).
+- Our own test sets are synthetic; no real patient information was collected.
 - Open-source components: FastAPI, Pydantic, Uvicorn, PyYAML, RapidFuzz, scikit-learn,
-  NumPy, SciPy, React, Vite, lucide-react, Anek and Noto Sans fonts.
+  NumPy, SciPy, joblib, React, Vite, lucide-react, Flutter, Anek and Noto Sans fonts.

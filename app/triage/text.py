@@ -15,13 +15,14 @@ LANGS = ("en", "hinglish", "hi")
 
 CARE_LABELS = {
     "paramedic": {"en": "Paramedic home visit", "hinglish": "Paramedic ghar aakar check karenge", "hi": "पैरामेडिक घर आकर जाँच करेंगे"},
-    "nurse": {"en": "Nurse home visit", "hinglish": "Nurse ghar aayengi", "hi": "नर्स घर आएँगी"},
-    "gp": {"en": "Talk to a doctor (teleconsult)", "hinglish": "Doctor se phone / video par baat", "hi": "डॉक्टर से फ़ोन / वीडियो पर बात"},
-    "specialist": {"en": "Specialist doctor", "hinglish": "Specialist doctor se milna", "hi": "विशेषज्ञ डॉक्टर से मिलना"},
+    "nurse": {"en": "Home nursing", "hinglish": "Ghar pe nursing (nurse aayengi)", "hi": "घर पर नर्सिंग (नर्स आएँगी)"},
+    "lab": {"en": "Lab test at home", "hinglish": "Ghar se sample lekar lab test", "hi": "घर से सैंपल लेकर लैब टेस्ट"},
+    "gp": {"en": "Talk to a doctor (teleconsultation)", "hinglish": "Doctor se phone / video par baat", "hi": "डॉक्टर से फ़ोन / वीडियो पर बात"},
+    "specialist": {"en": "Specialist doctor (teleconsultation)", "hinglish": "Specialist doctor se baat", "hi": "विशेषज्ञ डॉक्टर से बात"},
     "emergency": {"en": "Emergency: call for help now", "hinglish": "Emergency: abhi madad bulayein", "hi": "इमरजेंसी: अभी मदद बुलाएँ"},
 }
 URGENCY_LABELS = {
-    "routine": {"en": "In the next few days", "hinglish": "Agle kuch dinon mein", "hi": "अगले कुछ दिनों में"},
+    "routine": {"en": "Scheduled", "hinglish": "Time fix karke", "hi": "समय तय करके"},
     "same_day": {"en": "Today", "hinglish": "Aaj hi", "hi": "आज ही"},
     "immediate": {"en": "Now", "hinglish": "Abhi", "hi": "अभी"},
 }
@@ -40,6 +41,8 @@ CARE_PHRASE = {
         ("gp", "routine"): "a doctor teleconsult in the next few days fits",
         ("specialist", "same_day"): "a specialist consult today fits",
         ("specialist", "routine"): "a specialist consult in the next few days fits",
+        ("lab", "routine"): "a scheduled home sample collection fits",
+        ("lab", "same_day"): "a home sample collection today fits",
     },
     "hinglish": {
         ("paramedic", "same_day"): "Aaj ek paramedic ghar aakar check karenge.",
@@ -50,6 +53,8 @@ CARE_PHRASE = {
         ("gp", "routine"): "Agle kuch dinon mein doctor se phone / video par baat karein.",
         ("specialist", "same_day"): "Aaj hi specialist doctor se milein.",
         ("specialist", "routine"): "Agle kuch dinon mein specialist doctor se milein.",
+        ("lab", "routine"): "Time fix karke ghar se sample liya jayega.",
+        ("lab", "same_day"): "Aaj ghar se sample liya jayega.",
     },
     "hi": {
         ("paramedic", "same_day"): "आज एक पैरामेडिक घर आकर जाँच करेंगे।",
@@ -60,6 +65,8 @@ CARE_PHRASE = {
         ("gp", "routine"): "अगले कुछ दिनों में डॉक्टर से फ़ोन / वीडियो पर बात करें।",
         ("specialist", "same_day"): "आज ही विशेषज्ञ डॉक्टर से मिलें।",
         ("specialist", "routine"): "अगले कुछ दिनों में विशेषज्ञ डॉक्टर से मिलें।",
+        ("lab", "routine"): "समय तय करके घर से सैंपल लिया जाएगा।",
+        ("lab", "same_day"): "आज घर से सैंपल लिया जाएगा।",
     },
 }
 EMERGENCY_TITLE = {"en": "This may be an emergency", "hinglish": "Yeh emergency ho sakti hai", "hi": "यह इमरजेंसी हो सकती है"}

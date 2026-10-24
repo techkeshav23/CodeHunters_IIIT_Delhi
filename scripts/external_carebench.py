@@ -18,7 +18,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from app.config import internal_label
+from app.config import internal_care, internal_urgency
 from app.pipeline import run
 from app.schemas import TriageRequest
 
@@ -39,7 +39,7 @@ def predict(path: Path, ask: bool = True) -> list[dict]:
         inter = run(req, mode="interactive", explain=False) if ask else None
         results.append({
             "prefix_id": r.get("prefix_id"), "gold": r.get("gold_label", "")[:2], "split": r.get("split"),
-            "care": internal_label(batch.care_type), "urgency": internal_label(batch.urgency),
+            "care": internal_care(batch.care_type), "urgency": internal_urgency(batch.urgency),
             "red_flags": batch.red_flags, "asked": inter is not None and inter.follow_up_question is not None,
             "text": " | ".join(turns)[:300],
         })

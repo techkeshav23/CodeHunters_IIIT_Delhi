@@ -59,8 +59,13 @@ def phon(token: str) -> str:
     return t
 
 
+_SCRIPT_CHANGE = re.compile(r"(?<=[A-Za-z])(?=[ऀ-ॣॱ-ॿ])|(?<=[ऀ-ॣॱ-ॿ])(?=[A-Za-z])")
+
+
 def to_roman(text: str) -> str:
     text = unicodedata.normalize("NFC", text or "").translate(_ZERO_WIDTH)
+    # a change of script is a word break: "bodyकेंपड़रही" is "body केंपड़रही"
+    text = _SCRIPT_CHANGE.sub(" ", text)
     text = transliterate(text)
     # strip accents from Latin letters (e.g. "bukhār")
     text = "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))

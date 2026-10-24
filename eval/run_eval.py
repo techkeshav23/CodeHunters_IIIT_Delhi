@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 
-from app.config import internal_label, urgency_rank
+from app.config import internal_care, internal_urgency, urgency_rank
 from app.pipeline import run
 from app.schemas import TriageRequest
 from eval.metrics import confusion, macro_f1, ndcg_at_k, per_class, percentile
@@ -36,7 +36,21 @@ def load_rows(path: Path) -> list[dict]:
             rows.append(json.loads(line))
     if len(rows) == 1 and isinstance(rows[0], list):
         rows = rows[0]
-    return rows
+    return [_flatten(r) for r in rows]
+
+
+def _flatten(row: dict) -> dict:
+    """The organisers' nested {request, response} rows as flat eval rows; a null care type
+    with a follow-up question means "should ask first"."""
+    if not isinstance(row.get("request"), dict) or not isinstance(row.get("response"), dict):
+        return row
+    req, resp = row["request"], row["response"]
+    care = resp.get("care_type") or ("followup" if resp.get("follow_up_question") else None)
+    return {"id": row.get("id"), "text": req.get("user_input"), "location": req.get("location"),
+            "history": req.get("conversation_history") or [], "language": req.get("language"),
+            "category": row.get("detected_language"), "care": care, "urgency": resp.get("urgency"),
+            "expect_emergency": care == "emergency_112",
+            "best_caregivers": [m.get("caregiver_id") for m in resp.get("matched_caregivers") or []]}
 
 
 def _maybe_json(value):
@@ -71,10 +85,10 @@ def evaluate(rows: list[dict], text_col: str = "text", id_col: str = "id", care_
         t0 = time.perf_counter()
         resp = run(req, mode=mode, policy=policy, explain=True)
         wall_ms = (time.perf_counter() - t0) * 1000
-        pred_care = internal_label(resp.care_type) or ("followup" if resp.follow_up_question else "none")
-        pred_urg = internal_label(resp.urgency) or ("followup" if resp.follow_up_question else "none")
-        gold_care = internal_label(row.get(care_col) or row.get("care_type"))
-        gold_urg = internal_label(row.get(urgency_col))
+        pred_care = internal_care(resp.care_type) or ("followup" if resp.follow_up_question else "none")
+        pred_urg = internal_urgency(resp.urgency) or ("followup" if resp.follow_up_question else "none")
+        gold_care = internal_care(row.get(care_col) or row.get("care_type"))
+        gold_urg = internal_urgency(row.get(urgency_col))
         expect_em = _bool(row.get("expect_emergency"))
         if expect_em is None and (gold_care or gold_urg):
             expect_em = gold_care == "emergency" or gold_urg == "immediate"
@@ -86,7 +100,9 @@ def evaluate(rows: list[dict], text_col: str = "text", id_col: str = "id", care_
             "difficulty": row.get("difficulty") or "normal",
             "gold_care": gold_care, "gold_urgency": gold_urg, "expect_emergency": expect_em,
             "pred_care": pred_care, "pred_urgency": pred_urg, "pred_emergency": pred_em,
-            "red_flags": resp.red_flags, "flags_any": flags_any,
+            # our flag ids (the API field uses the organisers' names where they exist)
+            "red_flags": [f["id"] for f in resp.trace.get("red_flags") or []], "api_red_flags": resp.red_flags,
+            "flags_any": flags_any,
             "follow_up": resp.follow_up_question, "follow_up_id": (resp.trace.get("follow_up") or {}).get("id"),
             "expect_followup": row.get("expect_followup"),
             "matched": [m.caregiver_id for m in resp.matched_caregivers], "gold_matches": gold_matches,

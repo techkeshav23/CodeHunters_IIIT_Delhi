@@ -1,0 +1,98 @@
+{
+ "trained_at": "2026-10-24T16:36:49",
+ "source": "C:/Users/KESHAV UPADHYAY/Desktop/IIIT Delhi/carecompass/data/sanocare_v1/triage_dataset.jsonl",
+ "rows": 340,
+ "distinct_messages": 66,
+ "situations": 22,
+ "classes": [
+  "emergency",
+  "followup",
+  "gp",
+  "lab",
+  "nurse",
+  "paramedic"
+ ],
+ "split": {
+  "method": "by situation (all three languages together)",
+  "seed": 13,
+  "test_situations": [
+   "em_chest",
+   "fu_hello",
+   "gp_second",
+   "lab_sugar",
+   "nu_im",
+   "pm_weak"
+  ],
+  "validation": "leave-one-situation-out on the other 16"
+ },
+ "settings": {
+  "rules_weight": 0.4,
+  "emergency_threshold": 0.5
+ },
+ "C": 0.5,
+ "scores": {
+  "train_fit": {
+   "accuracy": 1.0,
+   "macro_f1": 1.0,
+   "emergency_recall": 1.0,
+   "false_emergency": 0.0,
+   "n": 48
+  },
+  "validation": {
+   "accuracy": 1.0,
+   "macro_f1": 1.0,
+   "emergency_recall": 1.0,
+   "false_emergency": 0.0,
+   "n": 48
+  },
+  "validation_model_alone": {
+   "accuracy": 0.792,
+   "macro_f1": 0.708,
+   "emergency_recall": 0.333,
+   "false_emergency": 0.0,
+   "n": 48
+  },
+  "test": {
+   "accuracy": 1.0,
+   "macro_f1": 1.0,
+   "emergency_recall": 1.0,
+   "false_emergency": 0.0,
+   "n": 18
+  },
+  "test_model_alone": {
+   "accuracy": 0.833,
+   "macro_f1": 0.778,
+   "emergency_recall": 1.0,
+   "false_emergency": 0.0,
+   "n": 18
+  },
+  "test_by_language": {
+   "English": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "emergency_recall": 1.0,
+    "false_emergency": 0.0,
+    "n": 6
+   },
+   "Hinglish": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "emergency_recall": 1.0,
+    "false_emergency": 0.0,
+    "n": 6
+   },
+   "Hindi": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "emergency_recall": 1.0,
+    "false_emergency": 0.0,
+    "n": 6
+   }
+  }
+ },
+ "latency": {
+  "p50_ms": 7.77,
+  "p95_ms": 9.98
+ },
+ "note": "test = situations never seen in training or tuning; the deployed model is refit on all 22."
+}
