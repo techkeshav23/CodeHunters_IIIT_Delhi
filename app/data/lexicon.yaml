@@ -643,14 +643,26 @@ red_flags:
       - mar jaane ka mann
       - mar jane ka man
       - marne ki ichha
-      # "mann karta hai mar jaun", "dil karta hai mar jaaun": the wish, not pain hyperbole
-      - mann karta hai mar
-      - man karta hai mar
-      - mann karta hai marna
-      - man karta hai marna
-      - dil karta hai mar
-      - jee karta hai mar
-      - ji karta hai mar
+      # "mann karta hai mar jaun", "dil karta hai ki mar jaaun": the wish to die. Tied to
+      # jaun/jau/jaon because "maar" (hit) normalises to "mar": "mann karta hai thappad maar du"
+      # is not this.
+      - mann karta hai mar jaun
+      - mann karta hai mar jau
+      - mann karta hai mar jaon
+      - man karta hai mar jaun
+      - man karta hai mar jau
+      - man karta hai mar jaon
+      - dil karta hai mar jaun
+      - dil karta hai mar jau
+      - dil karta hai mar jaon
+      - jee karta hai mar jaun
+      - jee karta hai mar jau
+      - jee karta hai mar jaon
+      - ji karta hai mar jaun
+      - ji karta hai mar jau
+      - ji karta hai mar jaon
+      - =mann karta hai marna
+      - =man karta hai marna
       - marne ko jee
       - marne ka dil
       - mar jane ka dil

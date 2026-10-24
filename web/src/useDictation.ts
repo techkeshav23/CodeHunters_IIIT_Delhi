@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "./types";
-import { createRecognizer, voiceSupported, type Recognizer } from "./voice";
+import { createRecognizer, stopSpeaking, voiceSupported, type Recognizer } from "./voice";
 
 export type MicState = "idle" | "listening";
 
@@ -17,8 +17,14 @@ export function useDictation(lang: Lang, setText: (t: string) => void) {
     recRef.current?.stop();
   }, []);
 
+  // Drop whatever is still being recognised (after Send, or once the user types).
+  const abort = useCallback(() => {
+    recRef.current?.abort();
+  }, []);
+
   const start = useCallback(() => {
     if (!supported) return;
+    stopSpeaking(); // the mic must not hear the app reading its own question
     setUsedVoice(true);
     const rec = createRecognizer(lang, {
       onStart: () => setState("listening"),
@@ -38,5 +44,5 @@ export function useDictation(lang: Lang, setText: (t: string) => void) {
     return () => recRef.current?.abort();
   }, []);
 
-  return { state, supported, usedVoice, start, stop, setUsedVoice };
+  return { state, supported, usedVoice, start, stop, abort, setUsedVoice };
 }

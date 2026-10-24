@@ -77,9 +77,13 @@ export interface RecognizerCallbacks {
 // Android Chrome repeats final results in continuous mode, so phones keep the
 // one-shot mode (stops after a pause); desktop listens continuously and stops
 // itself after a short silence, so a pause mid-sentence does not cut the user off.
-const ONE_SHOT = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-const SILENCE_MS = 2200;
-const MAX_MS = 60_000;
+// ("Desktop site" on Android sends a Linux UA without "Android": a touch Linux that is not a Chromebook.)
+const ONE_SHOT =
+  typeof navigator !== "undefined" &&
+  (/Android/i.test(navigator.userAgent) ||
+    (/Linux/i.test(navigator.userAgent) && !/CrOS/i.test(navigator.userAgent) && navigator.maxTouchPoints > 0));
+const SILENCE_MS = 2000;
+const MAX_MS = 30_000;
 
 // Create a recognizer. Streams the whole transcript so far (interim + final) so
 // the user can see and fix the text before sending.
@@ -98,6 +102,7 @@ export function createRecognizer(
 
   let silence = 0;
   let cap = 0;
+  let heard = "";
   const clearTimers = () => {
     window.clearTimeout(silence);
     window.clearTimeout(cap);
@@ -132,7 +137,9 @@ export function createRecognizer(
     }
     text = text.replace(/\s+/g, " ").trim();
     if (text) cb.onTranscript(text, allFinal);
-    if (!ONE_SHOT) stopSoon(allFinal ? SILENCE_MS : SILENCE_MS + 1500);
+    // the silence clock restarts only when new words arrive, not on repeated interim results
+    if (!ONE_SHOT && (text !== heard || allFinal)) stopSoon(allFinal ? SILENCE_MS : SILENCE_MS + 1500);
+    heard = text;
   };
 
   return {
@@ -173,23 +180,33 @@ function loadVoices(): SpeechSynthesisVoice[] {
   return cachedVoices;
 }
 
-// Chrome fills the voice list asynchronously; wait briefly for it once.
-function whenVoices(): Promise<void> {
-  if (loadVoices().length) return Promise.resolve();
-  return new Promise((resolve) => {
-    const done = () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", done);
-      loadVoices();
-      resolve();
-    };
-    window.speechSynthesis.addEventListener("voiceschanged", done);
-    window.setTimeout(done, 1200);
-  });
+// speechSynthesis is an EventTarget only from Safari 16; older iOS has just the
+// onvoiceschanged property, so one listener is kept there and checked by polling.
+function onVoicesChanged(): void {
+  loadVoices();
 }
 
 if (ttsSupported()) {
   loadVoices();
-  window.speechSynthesis.addEventListener("voiceschanged", () => loadVoices());
+  const synth = window.speechSynthesis;
+  if (typeof synth.addEventListener === "function") synth.addEventListener("voiceschanged", onVoicesChanged);
+  else synth.onvoiceschanged = onVoicesChanged;
+}
+
+// Chrome fills the voice list asynchronously; wait briefly for it once.
+function whenVoices(): Promise<void> {
+  if (loadVoices().length) return Promise.resolve();
+  return new Promise((resolve) => {
+    let waited = 0;
+    const tick = () => {
+      if (loadVoices().length || waited >= 1200) resolve();
+      else {
+        waited += 100;
+        window.setTimeout(tick, 100);
+      }
+    };
+    tick();
+  });
 }
 
 // Rank voices for a locale: neural/online voices (Edge "... Online (Natural)",
@@ -223,9 +240,10 @@ export function pickVoice(locale: string): SpeechSynthesisVoice | null {
 }
 
 // Short chunks: Chrome's online voices stop after ~15 s of one utterance.
+// (No regex lookbehind: Safari before 16.4 cannot parse it.)
 function chunks(text: string): string[] {
   const out: string[] = [];
-  for (const sentence of text.split(/(?<=[.!?।])\s+/)) {
+  for (const sentence of text.replace(/([.!?।])\s+/g, "$1\n").split("\n")) {
     let rest = sentence.trim();
     while (rest.length > 180) {
       const cut = Math.max(rest.lastIndexOf(", ", 180), rest.lastIndexOf(" ", 180));
@@ -274,6 +292,13 @@ export function speak(s: Speech, opts?: { onEnd?: () => void }): void {
   ending = opts?.onEnd ?? null;
   const go = () => {
     if (gen !== generation) return; // stopped or replaced meanwhile
+    try {
+      queue();
+    } catch {
+      finish(); // never leave a button stuck on "Rokein"
+    }
+  };
+  const queue = () => {
     let voice = pickVoice(s.locale);
     let text = s.text;
     if (!voice && s.alt && !s.locale.startsWith("en") && loadVoices().length) {

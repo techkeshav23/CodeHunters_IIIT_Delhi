@@ -6,6 +6,7 @@
 // the best installed voice for the locale rather than the engine default.
 
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -18,8 +19,9 @@ import 'models.dart';
 String localeFor(Lang lang) => lang == Lang.en ? 'en-IN' : 'hi-IN';
 
 /// The API's read-aloud text when it sent one, else the on-screen text.
-Speech speechFor(Speech? spoken, String shown, Lang lang) =>
-    spoken != null ? Speech(spoken.text, spoken.locale, alt: shown) : Speech(shown, localeFor(lang));
+Speech speechFor(Speech? spoken, String shown, Lang lang) => spoken != null
+    ? Speech(spoken.text, spoken.locale, alt: shown)
+    : Speech(shown, localeFor(lang), alt: lang == Lang.en ? null : shown);
 
 const _googleTts = 'com.google.android.tts';
 const _quality = {'very high': 5, 'high': 4, 'normal': 3, 'low': 2, 'very low': 1};
@@ -27,6 +29,8 @@ const _quality = {'very high': 5, 'high': 4, 'normal': 3, 'low': 2, 'very low': 
 class Voice {
   final SpeechToText _stt = SpeechToText();
   FlutterTts? _tts;
+  Future<FlutterTts>? _ttsInit;
+  int _gen = 0; // bumped by every speak/stop, so a read-aloud still setting up can be cancelled
   final Map<String, Map<String, String>?> _voices = {};
   bool _sttReady = false;
   bool? _sttAvailable;
@@ -97,9 +101,19 @@ class Voice {
     _onDone = null;
   }
 
-  Future<FlutterTts> _ensureTts() async {
-    final existing = _tts;
-    if (existing != null) return existing;
+  /// Sets up text-to-speech early (the engine switch and voice list take a
+  /// second), so the first read-aloud starts at once.
+  void warmUp() {
+    if (kIsWeb || !Platform.isAndroid) return;
+    unawaited(_ensureTts().then((_) {}, onError: (_) {}));
+  }
+
+  Future<FlutterTts> _ensureTts() => _ttsInit ??= _initTts().catchError((Object e) {
+        _ttsInit = null;
+        throw e;
+      });
+
+  Future<FlutterTts> _initTts() async {
     final tts = FlutterTts();
     tts.setCompletionHandler(() => speaking.value = null);
     tts.setCancelHandler(() => speaking.value = null);
@@ -107,11 +121,19 @@ class Voice {
     try {
       await tts.awaitSpeakCompletion(false);
     } catch (_) {}
-    // Phone makers' own engines (Samsung, Xiaomi) often have weak Hindi voices.
+    // Phone makers' own engines (Samsung, Xiaomi) often have weak Hindi voices;
+    // Google's is kept only if its Hindi voice is installed on this phone.
     try {
       final engines = await tts.getEngines;
-      if (engines is List && engines.contains(_googleTts) && await tts.getDefaultEngine != _googleTts) {
+      final def = await tts.getDefaultEngine;
+      if (engines is List && engines.contains(_googleTts) && def != _googleTts) {
         await tts.setEngine(_googleTts).timeout(const Duration(seconds: 4));
+        final hindi = await _bestVoice(tts, 'hi-IN');
+        if (hindi == null && def is String && def.isNotEmpty) {
+          await tts.setEngine(def).timeout(const Duration(seconds: 4));
+        } else {
+          _voices['hi-IN'] = hindi;
+        }
       }
     } catch (_) {}
     _tts = tts;
@@ -161,8 +183,10 @@ class Voice {
   /// Reads [s] aloud (a touch slower than normal, like the web).
   Future<void> speak(Speech s, {String? id}) async {
     if (s.text.trim().isEmpty) return;
+    final gen = ++_gen;
     try {
       final tts = await _ensureTts();
+      if (gen != _gen) return; // stopped (or the mic opened) while setting up
       await tts.stop();
       var text = s.text;
       if (!await _useLocale(tts, s.locale)) {
@@ -172,14 +196,16 @@ class Voice {
       }
       await tts.setSpeechRate(0.47);
       await tts.setPitch(1.0);
+      if (gen != _gen) return;
       speaking.value = id ?? text;
       await tts.speak(text);
     } catch (_) {
-      speaking.value = null;
+      if (gen == _gen) speaking.value = null;
     }
   }
 
   Future<void> stopSpeaking() async {
+    _gen++;
     try {
       await _tts?.stop();
     } catch (_) {}

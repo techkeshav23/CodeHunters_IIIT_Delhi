@@ -100,6 +100,7 @@ class AppState extends ChangeNotifier {
       autoRead = p.getBool('cc_autoread') ?? true;
       largeText = p.getBool('cc_large') ?? false;
       theme = ThemePref.values.asNameMap()[p.getString('cc_theme')] ?? ThemePref.light;
+      voice.warmUp();
       final raw = p.getString('cc_bookings');
       if (raw != null) {
         final list = jsonDecode(raw);

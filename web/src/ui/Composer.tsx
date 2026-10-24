@@ -34,7 +34,7 @@ export default function Composer(p: Props) {
   const send = () => {
     const text = p.value.trim();
     if (!text || p.busy) return;
-    mic.stop();
+    mic.abort(); // a late final result must not refill the cleared box
     p.onSend(text, mic.usedVoice || sentByVoice.current);
     mic.setUsedVoice(false);
     sentByVoice.current = false;
@@ -74,7 +74,10 @@ export default function Composer(p: Props) {
             rows={1}
             value={p.value}
             placeholder={listening ? t(p.lang, "listening") : t(p.lang, p.answering ? "placeholderAnswer" : "placeholder")}
-            onChange={(e) => p.onChange(e.target.value)}
+            onChange={(e) => {
+              if (listening) mic.abort(); // typing takes over from dictation
+              p.onChange(e.target.value);
+            }}
             onKeyDown={onKey}
             lang={p.lang === "hi" ? "hi" : undefined}
           />
