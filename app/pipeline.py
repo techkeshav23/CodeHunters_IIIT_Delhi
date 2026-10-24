@@ -2,6 +2,7 @@
 extract facts, decide (or ask), match caregivers, explain."""
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -10,6 +11,7 @@ from . import config
 from .config import VERSION, api_care, api_urgency
 from .matching.ranker import rank
 from .nlp.extract import Extraction, extract
+from .nlp.normalize import to_roman
 from .schemas import MatchedCaregiver, TriageRequest, TriageResponse, TriageResponseWithTrace
 from .config import URGENCY_ORDER, urgency_rank
 from .triage import followup, text
@@ -17,7 +19,7 @@ from .triage.model import blend_care, choose_urgency, get_model
 from .triage.rules import Decision, decide
 
 USER_ROLES = {"user", "patient", "human", "customer", "client"}
-ASSISTANT_ROLES = {"assistant", "bot", "system", "agent", "ai", "app"}
+ASSISTANT_ROLES = {"assistant", "bot", "system", "agent", "ai", "app", "model", "chatbot"}
 STRUCTURED_ANSWERS = {"q_age", "q_duration", "q_breathing"}  # read via parse_answer, not as free text
 
 ASK_REASON = {
@@ -48,7 +50,9 @@ def read_history(items: list[Any]) -> list[Turn]:
     turns: list[Turn] = []
     for item in items or []:
         if isinstance(item, str):
-            qid = followup.identify(item)
+            # a bare string may be the family's own words ("umar 65 hai ... kya karein?"):
+            # only our exact question text makes it an assistant turn
+            qid = followup.identify(item, keywords=False)
             turns.append(Turn("assistant" if qid else "user", item, qid))
             continue
         if not isinstance(item, dict):
@@ -149,19 +153,36 @@ def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, 
                      specialty=d.specialty if care == d.care else None), False, "blend")
 
 
-def _adds_findings(before: list[str], answer: str, language: str | None) -> bool:
-    """Structured answers are read by parse_answer, not as free text (so "2 mahine"
-    is an age, not a duration); they join the free text only when they add a red flag,
-    a symptom or a service ("65 saal, aur bukhar bhi hai")."""
-    if not answer.strip():
-        return False
+# the age itself in an answer to the age question ("3 saal", "8 mahine ka", "५ साल")
+AGE_SPAN = re.compile(r"(\d+(\.\d+)?|ek|do|teen|char|paanch|chhe|saat|aath|nau|das|dedh|dhai|one|two|three|four|five"
+                      r"|six|seven|eight|nine|ten)\s*(saal|sal|years?|yrs?|mahine|mahina|months?|hafte|weeks?|din|days?)"
+                      r"(\s+(ka|ki|ke|old))?", re.I)
+FILLER_ANSWER = {"hai", "hain", "he", "h", "ji", "haan", "ha", "the", "is", "of", "and", "aur", "ka", "ki", "ke",
+                 "se", "kam", "zyada", "jyada", "ya", "or", "less", "more", "than", "under", "over", "above",
+                 "older", "about", "around", "lagbhag", "approx", "umar", "age"}
+
+
+def _answer_text(qid: str, answer: str, before: list[str], language: str | None) -> str | None:
+    """What of an answer to one of our fact questions also counts as free text.
+    The fact itself is read by parse_answer: a duration answer may join as it is (it says
+    the same duration); an age answer joins without its age ("3 saal, ulti bhi" adds
+    vomiting, not a 3-year illness); a yes/no answer joins only if it adds something."""
+    text = (answer or "").strip()
+    if not text:
+        return None
+    if qid == "q_duration":
+        return text
+    if qid == "q_age":
+        rest = AGE_SPAN.sub(" ", to_roman(text))
+        words = [w for w in re.findall(r"[a-z]+", rest.lower()) if w not in FILLER_ANSWER]
+        return rest if words else None
 
     def found(texts: list[str]) -> set[str]:
         if not texts:
             return set()
         ex = extract(" . ".join(texts), language)
         return {h.id for h in ex.red_flags + ex.symptoms + ex.services}
-    return bool(found(before + [answer]) - found(before))
+    return text if found(before + [text]) - found(before) else None
 
 
 def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None,
@@ -183,10 +204,10 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         if pending and pending not in answers:
             answers[pending] = turn.text
             if pending in STRUCTURED_ANSWERS:
+                extra = _answer_text(pending, turn.text, free_text, req.language)
                 pending = None
-                # an answer like "2 din se, aur ab behosh ho gaye" still carries an emergency
-                if _adds_findings(free_text, turn.text, req.language):
-                    free_text.append(turn.text)
+                if extra:  # "2 din se, aur ab behosh ho gaye" still carries an emergency
+                    free_text.append(extra)
                 continue
         pending = None
         if turn.text.strip():

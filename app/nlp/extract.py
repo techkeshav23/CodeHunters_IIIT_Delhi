@@ -15,6 +15,7 @@ _NUMBER_WORDS = {
     "paanch": 5, "five": 5, "chhe": 6, "chah": 6, "six": 6, "saat": 7, "seven": 7, "aath": 8,
     "eight": 8, "nau": 9, "nine": 9, "das": 10, "ten": 10, "gyarah": 11, "barah": 12, "twelve": 12,
     "pandrah": 15, "fifteen": 15, "bees": 20, "twenty": 20, "tees": 30, "thirty": 30,
+    "dedh": 1.5, "dhai": 2.5, "dhaai": 2.5,
 }
 _UNITS = {
     "din": 1, "dino": 1, "dinon": 1, "day": 1, "days": 1,
@@ -39,11 +40,25 @@ _DIABETIC = ["diabetic", "diabetes", "madhumeh", "insulin", "sugar ke patient", 
 _HEAT = ["dhoop", "sun", "garmi", "heat", "loo", "हीट"]
 BP_EMERGENCY = 180  # systolic reading that counts as a red flag on its own
 _PREGNANT_PATTERNS = ["pregnant", "pet se hai", "pet se hain", "garbh", "garbhavastha", "expecting",
-                      "ummeed se hai", "ummeed se hain", "trimester", "due date"]
-# "8th month", "7 va mahina", "aathva mahina": an ordinal month is a month of pregnancy
+                      "ummeed se hai", "ummeed se hain", "trimester"]
+# "expecting your call / a call / improvement / the report" is not a pregnancy
+_NOT_EXPECTING = ["call", "callback", "calls", "result", "results", "report", "reports", "reply", "response",
+                  "visit", "visitor", "visitors", "guest", "guests", "improvement", "salary", "parcel", "doctor",
+                  "your", "you", "news", "money", "payment", "message", "update", "relief", "recovery"]
+_NOT_TRIMESTER = ["exam", "exams", "test", "tests", "semester", "term", "fees", "result"]
+_PREG_PAST = ["tha", "thi", "the", "was", "were", "had"]  # "wife expecting thi pichle saal"
+# "8th month", "7 va mahina", "aathva mahina": a month of pregnancy when a woman is named
+# ("biwi 8th month mein hai"), not "mujhe 2nd month se sar dard" or "gym ka 3rd month"
 _ORDINAL_SUFFIX = ["th", "st", "nd", "rd", "va", "vaan", "vi", "ve"]
 _ORDINAL_WORDS = {"chhatha": 6, "satva": 7, "satvan": 7, "aathva": 8, "aathvan": 8, "nauva": 9, "nauvan": 9}
+_FEMALE = ["wife", "biwi", "patni", "bahu", "bhabhi", "behen", "didi", "beti", "she", "her", "mummy", "bhabi"]
 _CHILD_WORDS = ["bachcha"]  # beta/beti may be adults
+# a child word names the patient when it owns something or is owned: "bachche ko", "mera bachcha"
+_CHILD_OWNER_AFTER = ["ko", "ka", "ki", "ke", "ne", "mein", "me"]
+_CHILD_OWNER_BEFORE = ["mera", "meri", "mere", "hamara", "hamari", "humara", "chhota", "chhoti", "chhote",
+                       "my", "our", "little", "small"]
+_CHILD_NOT_AFTER = ["nahi", "hui", "hue", "hua", "bade", "badi", "bada"]  # "bachi hui dawai", "bachche bade ho gaye"
+_CHILD_VERB_SURFACE = {"bachne", "bachke", "bachkar", "bachao", "bachaao", "bachna", "bachaya", "bachana"}
 # Childbirth in the last weeks: "delivery ko 6 din hue", "delivery ke 10 din baad", "postpartum"
 _BIRTH_WORDS = ["delivery", "prasav", "c section", "cesarean", "caesarean"]
 _BIRTH_AFTER = ["baad", "hue", "hui", "hua", "ho", "after", "since", "ago", "pehle"]
@@ -104,11 +119,19 @@ def _tables() -> dict:
         "ordinal_suffix": {k(w)[0] for w in _ORDINAL_SUFFIX},
         "ordinal_words": {k(w)[0]: v for w, v in _ORDINAL_WORDS.items()},
         "along": k("along")[0],
+        "blood": k("khoon")[0],
+        "blood_test": {k(w)[0] for w in ("kami", "jaanch", "janch", "test", "report", "group", "sugar",
+                                         "badhana", "chadhana", "donate", "count")},
         "expecting": k("expecting"),
-        "not_expecting": {k(w)[0] for w in ("a", "an", "the", "call", "result", "results", "report",
-                                            "reports", "reply", "someone", "him", "her", "them")},
-        "baby": k("baby")[0],
+        "not_expecting": {k(w)[0] for w in _NOT_EXPECTING},
+        "trimester": k("trimester"),
+        "not_trimester": {k(w)[0] for w in _NOT_TRIMESTER},
+        "preg_past": {k(w)[0] for w in _PREG_PAST},
+        "female": {k(w)[0] for w in _FEMALE},
         "child": {k(w)[0] for w in _CHILD_WORDS},
+        "child_after": {k(w)[0] for w in _CHILD_OWNER_AFTER},
+        "child_before": {k(w)[0] for w in _CHILD_OWNER_BEFORE},
+        "child_not_after": {k(w)[0] for w in _CHILD_NOT_AFTER},
         "birth": [k(w) for w in _BIRTH_WORDS],
         "birth_after": {k(w)[0] for w in _BIRTH_AFTER},
         "birth_always": [k(w) for w in _BIRTH_ALWAYS],
@@ -122,7 +145,12 @@ def _tables() -> dict:
         "then_words": {k(w)[0] for w in _THEN_WORDS},
         "chal": k("chal")[0],
         "sequence": {k(w)[0] for w in ("phir", "fir", "then", "baad", "uske", "afterwards")},
-        "medicine": {k(w)[0] for w in ("dawai", "treatment", "ilaj", "course", "dose")},
+        "medicine": {k(w)[0] for w in ("dawai", "treatment", "ilaj", "course", "dose", "chemo", "dialysis",
+                                       "tb", "operation", "physio", "naukri", "job", "gym", "school", "training")},
+        "male": {k(w)[0] for w in ("papa", "pita", "beta", "bete", "bhai", "dada", "dadaji", "nana", "chacha",
+                                   "mama", "pati", "husband", "son", "father", "brother")},
+        "preg_context": {k(w)[0] for w in ("hone", "pregnant", "garbh", "delivery", "expecting", "doosra",
+                                           "dusra", "second", "pehla", "first", "tisra", "third")},
     }
 
 
@@ -177,7 +205,10 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
     n = len(tokens)
     for i, tok in enumerate(tokens):
         if tok in ("umar", "age") and i + 1 < n and tokens[i + 1].isdigit():
-            age = age if age is not None else float(tokens[i + 1])
+            # "umar 2 mahine", "age 6 weeks": the unit decides; a bare number is years
+            unit = units.get(tokens[i + 2]) if i + 2 < n else None
+            years = float(tokens[i + 1]) * (unit / 365 if unit else 1)
+            age = age if age is not None else years
             continue
         ordinal = tok in tb["ordinal_words"]
         val = tb["ordinal_words"][tok] if ordinal else _number(tok, numbers)
@@ -208,11 +239,16 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
         # "wife ka 7 month chal raha hai", "7 months along", "8th month" (month of pregnancy),
         # not "dawai 3 mahine chal rahi"; "bachche ka 8th month" is the baby's age
         if (nxt in (tb["chal"], tb["along"]) or ordinal) and 25 <= unit_days <= 31 and 1 <= val <= 10:
-            near = tokens[max(0, i - 4):i]
-            if any(t in tb["child"] for t in near):
+            near = tokens[max(0, i - 6):i]
+            woman = any(t in tb["female"] for t in near)
+            # "second baby ka 8 month chal raha", "baby hone wala hai": the pregnancy, not the baby's age
+            expecting = woman or bool(tb["preg_context"] & set(tokens))
+            if any(t in tb["child"] for t in near) and not expecting:
                 age = age if age is not None else days / 365
                 continue
-            if not any(t in tb["medicine"] for t in near):
+            other = any(t in tb["medicine"] or t in tb["male"] for t in near)  # chemo, dialysis, papa, beta
+            if (not (other and not woman) and nxt not in tb["dur_after"] and nxt not in tb["preg_past"]
+                    and (nxt in (tb["chal"], tb["along"]) or woman)):
                 preg_months = True
                 continue
         if nxt in tb["dur_after"] and nxt2 in tb["younger"]:
@@ -251,10 +287,20 @@ def _pregnant_now(tokens: list[str]) -> bool:
         pat = next((p for p in patterns if tuple(tokens[i:i + len(p)]) == p), None)
         if pat is None:
             continue
+        tb = _tables()
         before = set(tokens[max(0, i - 3):i])
         after = tokens[i + len(pat):i + len(pat) + 2]
-        if pat == _tables()["expecting"] and after[:1] and after[0] in _tables()["not_expecting"] \
-                and _tables()["baby"] not in tokens[i + 1:i + 4]:  # "expecting a call", not "expecting a baby"
+        nxt = after[0] if after else ""
+        if pat == tb["expecting"] and tb["not_expecting"] & set(tokens[i + 1:i + 4]):  # "expecting your call"
+            continue
+        if pat == tb["trimester"] and nxt in tb["not_trimester"]:  # "trimester exams"
+            continue
+        clause_after = []
+        for t in tokens[i + len(pat):i + len(pat) + 4]:
+            if t in (BOUNDARY, COMMA):
+                break
+            clause_after.append(t)
+        if any(t in tb["preg_past"] for t in clause_after):  # "expecting thi pichle saal"
             continue
         if before & _NOT or "nahi" in after:
             continue
@@ -266,11 +312,28 @@ def _pregnant_now(tokens: list[str]) -> bool:
     return False
 
 
+def _child_is_patient(tokens: list[str], surface: list[str]) -> bool:
+    """"bachche ko bukhar", "mera bachcha sust hai"; not "bachi hui dawai", "garmi se bachne",
+    "bachcha nahi hai ghar mein" or "mere bachche bade ho gaye"."""
+    tb = _tables()
+    for i, tok in enumerate(tokens):
+        if tok not in tb["child"] or (i < len(surface) and surface[i].lower() in _CHILD_VERB_SURFACE):
+            continue
+        nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
+        prev = tokens[i - 1] if i > 0 else ""
+        if nxt in tb["child_not_after"] or tb["preg_context"] & set(tokens[max(0, i - 3):i + 3]):
+            continue  # "expecting her 2nd child", "baby hone wala hai" is about a pregnancy
+        if nxt in tb["child_after"] or prev in tb["child_before"]:
+            return True
+    return False
+
+
 def _negated_next_to(tokens: list[str], h: Hit, lex: Lexicon) -> bool:
     """"tez dard nahi", "no severe pain": a negation word touching the phrase."""
     nxt = tokens[h.end] if h.end < len(tokens) else ""
     prev = tokens[h.start - 1] if h.start > 0 else ""
-    return nxt in lex.neg_after or prev in lex.neg_before
+    # not the tag "na" of "dard hai na bahut tez" ("isn't it, very bad")
+    return nxt in lex.neg_after or (prev in lex.neg_before and prev != "na")
 
 
 def _clause_ids(tokens: list[str], marks: tuple[str, ...] = (BOUNDARY, COMMA)) -> list[int]:
@@ -466,7 +529,7 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
             ex.age_years = 0.05
         elif any(h.id in ("grandparent", "elderly") for h in rel_hits):
             ex.age_group = "older_adult"
-        elif any(tok in _tables()["child"] for tok in tokens):
+        elif _child_is_patient(tokens, t.surface):
             ex.age_group = "child"
     if ex.age_years is not None:
         ex.age_group = age_group_for(ex.age_years)
@@ -484,7 +547,10 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
 
     # "chakkar, behoshi ya seene mein dard kuch nahi hai": the closing "nahi" covers the whole list
     sym_hits = lex.find(tokens, t.surface, "symptom")
-    flag_hits = lex.find(tokens, t.surface, "red_flag")
+    # "khoon ki kami / jaanch / report" is a deficiency or a test, not bleeding
+    lab = _tables()["blood_test"]
+    flag_hits = [h for h in lex.find(tokens, t.surface, "red_flag")
+                 if not (h.pattern.tokens[-1] == _tables()["blood"] and lab & set(tokens[h.end:h.end + 3]))]
     # from the text itself, not the client's language hint
     lex.negate_or_lists(sym_hits + flag_hits, tokens, english=detect_language(text) == "en")
 

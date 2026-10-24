@@ -1,0 +1,79 @@
+{"id": "rv_e01", "category": "review_emergency", "text": "jaldi batao", "expect_emergency": true, "history": ["Papa ki umar 65 hai, unke seene mein tez dard ho raha hai aur pasina aa raha hai, kya karein?"]}
+{"id": "rv_e02", "category": "review_emergency", "text": "जल्दी", "expect_emergency": true, "history": ["दादी की उम्र 80 है, वो बेहोश हो गई हैं, क्या करें?"]}
+{"id": "rv_e03", "category": "review_emergency", "text": "bolo", "expect_emergency": true, "history": ["Bete ne galti se phenyl pi liya hai, kitne din mein theek hoga?"]}
+{"id": "rv_e04", "category": "review_emergency", "text": "please tell", "expect_emergency": true, "history": ["My mother's face is drooping and she can't speak properly, how long should we wait?"]}
+{"id": "rv_e05", "category": "review_emergency", "text": "batao", "expect_emergency": true, "history": ["Bachche ko tez bukhar hai aur jhatke aa rahe hain, is age mein normal hai kya?"]}
+{"id": "rv_e06", "category": "review_emergency", "text": "biwi 8th month mein hai aur khoon aa raha hai", "expect_emergency": true}
+{"id": "rv_e07", "category": "review_emergency", "text": "aathva mahina chal raha hai, sar dard aur dhundhla dikh raha hai", "expect_emergency": true}
+{"id": "rv_e08", "category": "review_emergency", "text": "wife ka 7 va mahina hai, pet mein bahut dard", "expect_emergency": true}
+{"id": "rv_e09", "category": "review_emergency", "text": "she is 7 months along and bleeding", "expect_emergency": true}
+{"id": "rv_e10", "category": "review_emergency", "text": "my wife is expecting, third trimester, bad headache and blurred vision", "expect_emergency": true}
+{"id": "rv_e11", "category": "review_emergency", "text": "bahu ummeed se hai, spotting ho rahi hai", "expect_emergency": true}
+{"id": "rv_e12", "category": "review_emergency", "text": "garbhavastha mein khoon aa raha hai", "expect_emergency": true}
+{"id": "rv_e13", "category": "review_emergency", "text": "my water broke an hour ago", "expect_emergency": true}
+{"id": "rv_e14", "category": "review_emergency", "text": "paani ki thaili phat gayi hai", "expect_emergency": true}
+{"id": "rv_e15", "category": "review_emergency", "text": "wife 8 mahine pregnant hai, paani ki thaili phat gayi", "expect_emergency": true}
+{"id": "rv_e16", "category": "review_emergency", "text": "मेरी पत्नी 8 महीने की प्रेग्नेंट है और खून आ रहा है", "expect_emergency": true}
+{"id": "rv_e17", "category": "review_emergency", "text": "nani ko achanak kuch yaad nahi jagah aur time pata nahi", "expect_emergency": true}
+{"id": "rv_e18", "category": "review_emergency", "text": "mera bachcha bahut sust hai aur doodh nahi pi raha", "expect_emergency": true}
+{"id": "rv_e19", "category": "review_emergency", "text": "bachche ko bukhar hai aur bahut sust pada hai", "expect_emergency": true}
+{"id": "rv_b01", "category": "review_lookalike", "text": "kal raat garam tel se haath jal gaya, bachi hui burnol laga di", "expect_emergency": false}
+{"id": "rv_b02", "category": "review_lookalike", "text": "purani dawai bachi hai, papa sust lag rahe hain bukhar ke baad", "expect_emergency": false}
+{"id": "rv_b03", "category": "review_lookalike", "text": "garmi se bachne ke liye kya karein, mummy bahut sust hain aaj", "expect_emergency": false}
+{"id": "rv_b04", "category": "review_lookalike", "text": "bachcha nahi hai ghar mein, mujhe sust lag raha hai", "expect_emergency": false}
+{"id": "rv_b05", "category": "review_lookalike", "text": "mere bachche bade ho gaye, ab mujhe khansi aur seeti jaisi awaaz aati hai", "expect_emergency": false}
+{"id": "rv_b06", "category": "review_lookalike", "text": "doodh ki thaili phat gayi aur haath thoda kat gaya", "expect_emergency": false}
+{"id": "rv_b07", "category": "review_lookalike", "text": "bahar se paani ki thaili pee li thi, ab dast lag gaye hain", "expect_emergency": false}
+{"id": "rv_b08", "category": "review_lookalike", "text": "my water bottle broke, glass cut my hand, bleeding a bit", "expect_emergency": false}
+{"id": "rv_b09", "category": "review_lookalike", "text": "the water pipe broke and I slipped, knee pain", "expect_emergency": false}
+{"id": "rv_b10", "category": "review_lookalike", "text": "mujhe 2nd month se sar dard hai", "expect_emergency": false}
+{"id": "rv_b11", "category": "review_lookalike", "text": "4th month se papa ko pairo mein sujan hai", "expect_emergency": false}
+{"id": "rv_b12", "category": "review_lookalike", "text": "chemo ka 2nd month hai mummy ka, sar dard ho raha hai", "expect_emergency": false}
+{"id": "rv_b13", "category": "review_lookalike", "text": "pichhle saal 8th month mein delivery hui thi, ab sar dard hai", "expect_emergency": false}
+{"id": "rv_b14", "category": "review_lookalike", "text": "credit card ki due date hai kal, tension se sar dard ho raha hai", "expect_emergency": false}
+{"id": "rv_b15", "category": "review_lookalike", "text": "garbhavastha ke dauraan kya khana chahiye", "expect_emergency": false}
+{"id": "rv_b16", "category": "review_lookalike", "text": "गर्भावस्था के दौरान क्या खाना चाहिए", "expect_emergency": false}
+{"id": "rv_b17", "category": "review_lookalike", "text": "wife expecting hai, doctor ne bola khoon ki kami hai iron lo", "expect_emergency": false}
+{"id": "rv_b18", "category": "review_lookalike", "text": "expecting your call doctor, papa ko sar dard hai", "expect_emergency": false}
+{"id": "rv_b19", "category": "review_lookalike", "text": "trimester exams chal rahe hain, sar dard ho raha hai", "expect_emergency": false}
+{"id": "rv_b20", "category": "review_lookalike", "text": "meri wife expecting thi pichle saal, abhi uske sar mein dard hai", "expect_emergency": false}
+{"id": "rv_b21", "category": "review_lookalike", "text": "I am expecting a call from the clinic, mild headache since morning", "expect_emergency": false}
+{"id": "rv_m01", "category": "review_multiturn", "text": "2 din se bukhar hai", "history": [{"role": "user", "content": "bete ko bukhar hai"}, {"role": "assistant", "content": "Bachche ki umar kitni hai?", "question_id": "q_age"}], "expect_emergency": false}
+{"id": "rv_m02", "category": "review_multiturn", "text": "2 mahine se", "history": [{"role": "user", "content": "mummy ko bukhar aur khansi hai"}, {"role": "assistant", "content": "Kab se hai aur unki umar kya hai?"}], "expect_emergency": false}
+{"id": "rv_m03", "category": "review_multiturn", "text": "3 saal, ulti bhi kar raha hai", "history": [{"role": "user", "content": "bachche ko dast ho rahe hain"}, {"role": "assistant", "content": "How old is the child?"}], "expect_emergency": false}
+{"id": "rv_m04", "category": "review_multiturn", "text": "umar 2 mahine hai", "history": [{"role": "user", "content": "beti ko bukhar hai"}, {"role": "assistant", "content": "Bachche ki umar kitni hai?", "question_id": "q_age"}], "expect_emergency": true}
+{"id": "rv_m05", "category": "review_multiturn", "text": "dedh mahine ki hai", "history": [{"role": "user", "content": "beti ko bukhar hai"}, {"role": "assistant", "content": "Bachche ki umar kitni hai?", "question_id": "q_age"}], "expect_emergency": true}
+{"id": "rv_m06", "category": "review_multiturn", "text": "ho rahi hai", "history": [{"role": "user", "content": "papa ko bukhar aur khansi hai, 3 din se"}, {"role": "assistant", "content": "Kya saans lene mein dikkat ho rahi hai?", "question_id": "q_breathing"}], "expect_emergency": true}
+{"id": "rv_m07", "category": "review_multiturn", "text": "nahi", "history": [{"role": "user", "content": "papa ko 2 din se bukhar hai"}, {"role": "model", "content": "Kya unhe saans lene mein dikkat hai?"}], "expect_emergency": false}
+{"id": "rv_m08", "category": "review_multiturn", "text": "2 mahine", "history": [{"role": "user", "content": "bachche ko bukhar hai"}, {"role": "assistant", "content": "Bachche ki umar kya hai?"}], "expect_emergency": true}
+{"id": "rv2_e01", "category": "review_emergency", "text": "papa ko chot lagi bahut khoon nikala", "expect_emergency": true}
+{"id": "rv2_e02", "category": "review_emergency", "text": "ulti me khoon nikala abhi", "expect_emergency": true}
+{"id": "rv2_e03", "category": "review_emergency", "text": "bete ne sikka nigala abhi", "expect_emergency": true}
+{"id": "rv2_e04", "category": "review_emergency", "text": "2 saal ki beti ne battery nigala", "expect_emergency": true}
+{"id": "rv2_e05", "category": "review_emergency", "text": "bhai ne saari goliyan nikaali hain kamra band kar liya", "expect_emergency": true}
+{"id": "rv2_e06", "category": "review_emergency", "text": "बहुत खून निकाला", "expect_emergency": true}
+{"id": "rv2_e07", "category": "review_emergency", "text": "papa ki zubaan ladkhadani lagi achanak", "expect_emergency": true}
+{"id": "rv2_e08", "category": "review_emergency", "text": "second baby ka 8 month chal raha hai, khoon aa raha hai", "expect_emergency": true}
+{"id": "rv2_e09", "category": "review_emergency", "text": "baby hone wala hai 9 mahina chal raha hai paani gir raha hai", "expect_emergency": true}
+{"id": "rv2_e10", "category": "review_emergency", "text": "wife ko baby hone wala hai 8 month chal raha sar dard aur dhundhla dikh raha", "expect_emergency": true}
+{"id": "rv2_e11", "category": "review_emergency", "text": "biwi ke pet me bachcha hai 7 month chal raha hai ab khoon aa raha hai", "expect_emergency": true}
+{"id": "rv2_e12", "category": "review_emergency", "text": "दूसरा बच्चा 8 महीने चल रहा है, खून आ रहा है", "expect_emergency": true}
+{"id": "rv2_e13", "category": "review_emergency", "text": "pet me dard hai na bahut tez, ulti bhi ho rahi", "expect_emergency": true}
+{"id": "rv2_e14", "category": "review_emergency", "text": "papa ka bp badh gaya hai sar me dard hai na bahut tez", "expect_emergency": true}
+{"id": "rv2_e15", "category": "review_emergency", "text": "my wife is expecting a girl and she is bleeding", "expect_emergency": true}
+{"id": "rv2_e16", "category": "review_emergency", "text": "she is expecting her 2nd child and is bleeding heavily", "expect_emergency": true}
+{"id": "rv2_e17", "category": "review_emergency", "text": "saansnahiaaraheinbehoshhogayehain", "expect_emergency": true}
+{"id": "rv2_e18", "category": "review_emergency", "text": "papa ko chestpain ho raha hai", "expect_emergency": true}
+{"id": "rv2_e19", "category": "review_emergency", "text": "saansnahi aa rahi", "expect_emergency": true}
+{"id": "rv2_e_or", "category": "review_emergency", "text": "my 2 month old baby has fever 1 or 2 days, no vomiting", "language": "hinglish", "expect_emergency": true}
+{"id": "rv2_b01", "category": "review_lookalike", "text": "dadi ko drip lagani hai", "expect_emergency": false}
+{"id": "rv2_b02", "category": "review_lookalike", "text": "dadi ki dressing badalni hai", "expect_emergency": false}
+{"id": "rv2_b03", "category": "review_lookalike", "text": "papa ko injection lagani hai ghar pe", "expect_emergency": false}
+{"id": "rv2_b04", "category": "review_lookalike", "text": "papa ka chemo ka 3rd month chal raha hai, sar dard hai", "expect_emergency": false}
+{"id": "rv2_b05", "category": "review_lookalike", "text": "TB ka 6th month chal raha hai papa ka, pet mein dard", "expect_emergency": false}
+{"id": "rv2_b06", "category": "review_lookalike", "text": "bete ka 7 va mahina chal raha hai, sar dard kar raha hai", "expect_emergency": false}
+{"id": "rv2_b07", "category": "review_lookalike", "text": "naukri ka 2nd month chal raha hai, sar dard rehta hai", "expect_emergency": false}
+{"id": "rv2_b08", "category": "review_lookalike", "text": "Papa has stomach pain since 2 days, we were expecting improvement with medicine but no change", "expect_emergency": false}
+{"id": "rv2_b09", "category": "review_lookalike", "text": "baby ki vaccine due date aaj hai, pet dard se ro raha hai", "expect_emergency": false}
+{"id": "rv2_b10", "category": "review_lookalike", "text": "papa ko pet dard hai, expecting doctor visit today", "expect_emergency": false}
+{"id": "rv2_b11", "category": "review_lookalike", "text": "4 year old son, fever 2 or 3 days, no rash", "expect_emergency": false}

@@ -84,7 +84,7 @@ Safety logic:
 
 `eval/run_eval.py` reports macro-F1 for care type and urgency, emergency recall,
 false alarms, under-triage, NDCG@3 for matching (when labels exist) and latency.
-`eval/cases/` holds 432 synthetic tricky cases (270 emergencies): casual
+`eval/cases/` holds 511 synthetic tricky cases (313 emergencies): casual
 emergencies, negations, Devanagari, typos, run-together words, babies, pregnancy,
 mental health, other people's or past events, and look-alikes. They are for
 testing only, not training, and their care/urgency labels are the team's own,
@@ -96,6 +96,7 @@ not doctors'.
 | `redteam_blind_v1`, `_v2`, `_v3` | 95, 85, 66 | second team member, without seeing the lexicon (first runs caught 75%, 39% and 93% of emergencies) |
 | `redteam_sweep_v1` | 33 | adversarial sweep, built from the misses it found |
 | `redteam_probe_v1`, `redteam_pregnancy_v1` | 18, 13 | probes of suppression rules and pregnancy cues |
+| `redteam_review_v1` | 79 | review of our own fixes (look-alikes, run-together words, other apps' questions) |
 
 Every miss was fixed and all sets are in the test suite, so they are regression
 sets now. `pytest` fails if any emergency is missed, if false emergencies pass
@@ -111,7 +112,7 @@ CC BY-NC 4.0 per its GitHub README, so it is used for evaluation only and not in
 ```
 
 On 24 Oct 2026: 87.8% of CARE-Bench "urgent care" cases were sent to same-day or
-immediate care, and 13.7% of non-urgent cases were over-triaged to emergency.
+immediate care, and 13.5% of non-urgent cases were over-triaged to emergency.
 CARE-Bench labels (info needed, self-care, non-urgent, urgent) differ from ours,
 so this is a safety check, not a routing score.
 

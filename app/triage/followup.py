@@ -13,6 +13,10 @@ from .rules import Decision
 YES = {"haan", "ha", "haa", "han", "hanji", "haanji", "ji", "yes", "y", "yeah", "yep", "sahi", "bilkul"}
 NO = {"nahi", "nahin", "nai", "nhi", "na", "no", "n", "nope", "nahee"}
 UNKNOWN = {"pata nahi", "pta nahi", "maloom nahi", "don't know", "dont know", "not sure", "unknown", "pata nahin"}
+BREATHING_ECHO = re.compile(r"\b(ho rahi|ho raha|ho rahe|hoti|thodi|thoda|a little|little bit|having|kabhi kabhi"
+                            r"|he is|she is|phool|fool)\b")
+NEGATED = re.compile(r"\b(nahi|nahin|nhi|no|not|na)\b")
+DURATION_MARKER = re.compile(r"\b(se|since|from|pehle|ago|for|gaye|hue|kal|aaj|subah|raat|last|pichle|pichhle)\b")
 
 QUESTIONS: dict[str, dict] = {
     "q_main_symptom": {
@@ -93,25 +97,29 @@ def question(qid: str, language: str) -> Question:
 
 # other apps' wording of the same questions ("How old is she?", "Kab se hai?")
 QUESTION_WORDS = {
-    "q_age": re.compile(r"\b(how old|age|umar|umr|kitne saal|kitni saal)\b|उम्र|उमर"),
+    "q_age": re.compile(r"\b(how old|age|umar|umr|kitne saal (ka|ki|ke))\b|उम्र|उमर"),
     "q_duration": re.compile(r"\b(how long|since when|how many days|kab se|kitne din|kitne dino|kitne samay)\b"
                              r"|कब से|कितने दिन"),
+    "q_breathing": re.compile(r"\b(saans|sans|breath\w*)\b|सांस|साँस"),
 }
+# a question about something else: "Kitne saal se sugar hai?", "How long has he been diabetic?"
+OTHER_SUBJECT = re.compile(r"\b(sugar|diabet\w*|bp|blood pressure|dawai|dawa|medicine\w*|tablet\w*|goli|insulin"
+                           r"|treatment|ilaj|operation|pregnan\w*)\b|दवा|शुगर")
 
 
-def identify(text: str, question_id: str | None = None) -> str | None:
-    """Which bank question an assistant turn was (by id, else by exact text, else by its
-    words for the two questions whose answers are read as facts)."""
+def identify(text: str, question_id: str | None = None, keywords: bool = True) -> str | None:
+    """Which bank question an assistant turn was: by id, else by exact text, else (for turns
+    known to come from the assistant) by its words, when exactly one of our questions fits."""
     if question_id in QUESTIONS:
         return question_id
     norm = (text or "").strip().lower()
     for qid, q in QUESTIONS.items():
         if any(norm == t.lower() for t in q["text"].values()):
             return qid
-    if norm.endswith("?"):
-        for qid, words in QUESTION_WORDS.items():
-            if words.search(norm):
-                return qid
+    if keywords and norm.endswith("?") and not OTHER_SUBJECT.search(norm):
+        hits = [qid for qid, words in QUESTION_WORDS.items() if words.search(norm)]
+        if len(hits) == 1:  # "Kab se hai aur umar kya hai?" asks two things: read the answer as text
+            return hits[0]
     return None
 
 
@@ -143,6 +151,8 @@ def parse_answer(qid: str, answer: str) -> dict:
     value = _option_value(qid, answer)
     if qid == "q_breathing":
         v = value or yes_no(answer)
+        if v is None and BREATHING_ECHO.search(to_roman(answer).lower()) and not NEGATED.search(to_roman(answer).lower()):
+            v = "yes"  # "ho rahi hai", "thodi si", "a little"
         return {"breathing": {"yes": "present", "no": "absent"}.get(v or "", "not_reported")}
     if qid == "q_duration":
         if value in DURATION_VALUES:
@@ -155,7 +165,8 @@ def parse_answer(qid: str, answer: str) -> dict:
         ex = extract(answer)
         if ex.age_years is not None:
             return {"age_years": ex.age_years}
-        if ex.duration_days is not None:  # "2 mahine" read as a duration: here it is the age
+        # "2 mahine" read as a duration is the age here; "2 din se" or "kal se" is still a duration
+        if ex.duration_days is not None and not DURATION_MARKER.search(to_roman(answer).lower()):
             return {"age_years": ex.duration_days / 365}
         bare = re.fullmatch(r"\s*(\d{1,3})\s*", to_roman(answer))
         return {"age_years": float(bare.group(1))} if bare and int(bare.group(1)) <= 120 else {}

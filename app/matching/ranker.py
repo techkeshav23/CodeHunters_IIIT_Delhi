@@ -27,21 +27,22 @@ LANG_HI = {"Hindi": "हिंदी", "English": "अंग्रेज़ी",
 # words that name each specialty in a caregiver's role, specialty or skills;
 # "*" marks a stem ("cardi*" matches cardiology and cardiac), the rest are whole words
 SPECIALTY_ALIASES = {
-    "paediatrics": ("paediatr*", "pediatr*", "child*"),
-    "gynaecology": ("gynaec*", "gynec*", "obstet*", "pregnan*", "women's health", "maternity"),
+    "paediatrics": ("paediatr*", "pediatr*", "paeds", "peds", "child*"),
+    "gynaecology": ("gynae*", "gyne*", "gynec*", "obstet*", "obg", "obs", "pregnan*", "women's health", "maternity"),
     "orthopaedics": ("orthopaed*", "orthoped*", "ortho", "bone*", "joint*"),
     "physiotherapy": ("physio*",),
     "cardiology": ("cardi*", "heart"),
-    "dermatology": ("dermat*", "skin"),
-    "psychiatry": ("psychiatr*", "psycholog*", "mental health", "counsel*"),
+    "dermatology": ("derma*", "skin"),
+    "psychiatry": ("psych*", "mental health"),
     "neurology": ("neuro*",),
     "gastroenterology": ("gastro*", "digestive", "stomach", "hepat*"),
-    "urology": ("urolog*", "kidney*"),
+    "urology": ("uro*", "kidney*"),
     "ophthalmology": ("ophthalm*", "eye*"),
-    "ent": ("ent", "ear nose", "ear", "otolaryng*", "otorhino*"),
+    "ent": ("ent", "ear nose", "otolaryng*", "otorhino*"),
     "dental": ("dent*", "tooth", "teeth", "oral"),
 }
 SPECIALIST_ROLE = re.compile(r"(ologist|iatrist|iatrician|dentist|surgeon|therapist)\b")
+NOT_SPECIALIST = re.compile(r"technolog|technician|attendant|assistant|\banm\b|\basha\b|aide")
 
 
 @dataclass
@@ -73,6 +74,8 @@ def _role_ok(cg: Caregiver, care: str) -> bool:
         return False
     # "Cardiologist", "Dentist", or a doctor with a named specialty (not a nurse or paramedic)
     home_roles = config.ROLES_FOR_CARE["nurse"] + config.ROLES_FOR_CARE["paramedic"]
+    if NOT_SPECIALIST.search(cg.role):  # "ECG technologist", "ANM"
+        return False
     return bool(SPECIALIST_ROLE.search(cg.role)) or (
         bool(cg.specialty) and cg.specialty not in ("general", "general medicine", "none")
         and not any(r in cg.role for r in home_roles))
@@ -81,7 +84,11 @@ def _role_ok(cg: Caregiver, care: str) -> bool:
 def _specialty_ok(cg: Caregiver, specialty: str | None) -> bool:
     if not specialty:
         return True
-    hay = " ".join([cg.role, cg.specialty or ""] + cg.skills)
+    if "physio" in cg.role:  # a physiotherapist's "cardiac rehab" skill does not make a cardiologist
+        return specialty == "physiotherapy"
+    # the declared specialty decides; skills only when there is none ("family planning counselling"
+    # in a gynaecologist's skills is not psychiatry)
+    hay = " ".join([cg.role, cg.specialty] if cg.specialty else [cg.role] + cg.skills)
     for name in SPECIALTY_ALIASES.get(specialty, (specialty + "*",)):
         stem = name.endswith("*")
         if re.search(r"\b" + re.escape(name.rstrip("*")) + ("" if stem else r"\b"), hay):
@@ -205,6 +212,11 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
             parts_en.append("no free slot listed")
             parts_hl.append("abhi koi free slot nahi")
             parts_hi.append("अभी कोई खाली समय नहीं")
+        if wrong_specialty:
+            other = cg.specialty or cg.role
+            parts_en.append(f"other department ({other})")
+            parts_hl.append(f"doosra vibhag ({other})")
+            parts_hi.append(f"दूसरा विभाग ({other})")
         if matched_skills:
             parts_en.append(f"{matched_skills[0]} experience")
             parts_hl.append(f"{matched_skills[0]} ka anubhav")

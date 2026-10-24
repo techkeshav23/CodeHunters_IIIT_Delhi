@@ -67,7 +67,7 @@ three months is an emergency, so it asks the age."
 
 ### 2:25 to 2:50. For the judges
 **Do:** open **Kaise kaam karta hai** in the sidebar.
-**Show:** the steps, "432 mushkil test messages, har emergency pakdi", 87.8% on
+**Show:** the steps, "511 mushkil test messages, har emergency pakdi", 87.8% on
 CARE-Bench, and the last API request and response with the time in ms.
 **Say:** "This is the exact API call behind the screen: the problem statement's JSON
 schema, answered in a few milliseconds, with no outside AI service."
@@ -92,7 +92,7 @@ emergency path you cannot miss."
   could not prove an LLM keeps every emergency, its text can drift into diagnosis, and a
   hosted model would send family health details outside. We built a normaliser for
   Hinglish, Devanagari and speech-to-text, a negation-aware red-flag engine and a scoring
-  ranker, and tested them on 432 tricky messages and an unseen public benchmark.
+  ranker, and tested them on 511 tricky messages and an unseen public benchmark.
   A learned model is wired in but off until doctor-labelled data exists, and it can only
   raise urgency.
 - **"How do you know it generalises?"** CARE-Bench, which we never tuned on: 87.8% of

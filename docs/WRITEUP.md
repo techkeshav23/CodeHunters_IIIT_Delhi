@@ -92,12 +92,12 @@ No labelled vignettes were released. Our honest measure of new data is a public 
 we never tuned on; our own sets are regression tests.
 
 **Unseen data: CARE-Bench** (925 English patient-message prefixes, 172 urgent). 87.8% of
-urgent cases were sent to same-day or immediate care; 13.7% of non-urgent ones were
+urgent cases were sent to same-day or immediate care; 13.5% of non-urgent ones were
 over-triaged to emergency; 12% of urgent ones went to routine care. Its labels (info
 needed, self-care, non-urgent, urgent) differ from ours, so this is a safety check, not a
 routing score.
 
-**Regression sets** (synthetic, written for testing only; 432 cases, 270 emergencies):
+**Regression sets** (synthetic, written for testing only; 511 cases, 313 emergencies):
 
 | Set | Cases (emergencies) | Emergency recall, first run → now | False emergencies now |
 |---|---|---|---|
@@ -108,8 +108,9 @@ routing score.
 | Adversarial sweep (built from the misses it found) | 33 (23) | 0% → 100% | 0% |
 | Probes of "someone else", "if" and risk talk | 18 (12) | 91.7% → 100% | 0% (1 of 6 first run) |
 | Pregnancy cues (8th month, expecting, waters broke) | 13 (9) | 11.1% → 100% | 0% |
+| Review of our own fixes: look-alikes, run-together words, other apps' questions | 79 (43) | built from the bugs it found → 100% | 0% |
 
-Every miss was fixed and all sets run in the test suite (96 automated tests): the build
+Every miss was fixed and all sets run in the test suite (101 automated tests): the build
 fails if any emergency is missed, if false emergencies pass 10%, or if any labelled case is
 under-triaged. So 100% here shows coverage of what we have seen, not accuracy on new data.
 On the 62 labelled ordinary cases, care type matches every label and urgency matches 56 of

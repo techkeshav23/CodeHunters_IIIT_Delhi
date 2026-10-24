@@ -89,6 +89,8 @@ def _float(v) -> float | None:
 
 
 def normalise(d: dict, index: int = 0) -> Caregiver:
+    # "Caregiver ID", " role", "Lat-itude" -> caregiver_id, role, lat_itude
+    d = {re.sub(r"[\s\-]+", "_", str(k).strip().lower()): v for k, v in d.items()}
     loc = _decoded(d.get("location"))
     loc = loc if isinstance(loc, dict) else {}
     slots = _decoded(_first(d, "availability", "availability_slots", "slots", "available_slots", default=[]))
@@ -119,21 +121,34 @@ def _read(path: Path) -> list[dict]:
     suffix = path.suffix.lower()
     if suffix == ".csv":
         with path.open(encoding="utf-8-sig", newline="") as fh:
-            return list(csv.DictReader(fh))
+            return list(csv.DictReader(fh, skipinitialspace=True))
     text = path.read_text(encoding="utf-8-sig")
     if suffix == ".jsonl":
         return [json.loads(line) for line in text.splitlines() if line.strip()]
-    data = json.loads(text)
-    if isinstance(data, dict):
-        named = _first(data, "caregivers", "profiles", "data", "items", "records")
-        if isinstance(named, list):
-            return named
-        lists = [v for v in data.values() if isinstance(v, list)]
-        if lists:
-            return lists[0]
-        # {"CG_001": {...}, "CG_002": {...}}: the key is the id
-        return [{"caregiver_id": k, **v} for k, v in data.items() if isinstance(v, dict)]
-    return list(data)
+    return _records(json.loads(text))
+
+
+_RECORD_KEYS = {"role", "name", "skills", "caregiver_id", "id", "type", "designation", "languages"}
+
+
+def _records(data, depth: int = 0) -> list[dict]:
+    """The caregiver rows inside whatever wraps them: a list, {"caregivers": [...]},
+    {"data": {"caregivers": [...]}}, or {"CG_001": {...}} keyed by id."""
+    if isinstance(data, list):
+        return data
+    if not isinstance(data, dict) or depth > 3:
+        return []
+    named = [data[k] for k in ("caregivers", "caregiver_profiles", "profiles", "data", "items", "records") if k in data]
+    for value in named + [v for v in data.values() if v not in named]:
+        if isinstance(value, list) and any(isinstance(x, dict) for x in value):
+            return value
+    for value in named + [v for v in data.values() if v not in named]:
+        if isinstance(value, dict):
+            found = _records(value, depth + 1)
+            if found:
+                return found
+    rows = [{"caregiver_id": k, **v} for k, v in data.items() if isinstance(v, dict) and _RECORD_KEYS & set(v)]
+    return rows
 
 
 def _load_rows(path: Path) -> list[Caregiver]:
@@ -166,9 +181,9 @@ def load() -> tuple[list[Caregiver], str]:
     path, kind = source_path()
     try:
         rows = _load_rows(path)
-        if rows or path == DEV_SAMPLE:
+        if path == DEV_SAMPLE or any(r.role for r in rows):
             return rows, kind
-        error = "no caregiver rows found"
+        error = "no caregiver rows with a role found"
     except Exception as e:
         error = f"{type(e).__name__}: {e}"
     log.error("could not load caregivers from %s (%s); using the dev sample", path, error)

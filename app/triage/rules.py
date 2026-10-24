@@ -72,13 +72,10 @@ def decide(ex: Extraction) -> Decision:
     care, urgency, specialty, rule = best
     confidence = 0.7 if len(symptoms) + len(services) >= 1 else 0.3
 
-    # age and severity raise urgency for new problems
-    # (not for a child over 2 whose problem is called mild: "halki sardi", playing and feeding well)
-    mild_child = (ex.age_group == "child" and (ex.age_years is None or ex.age_years >= 2)
-                  and "mild" in ex.severity and "severe" not in ex.severity)
-    # a requested service ("dressing karwani hai") is booked for its own sake, not raised for age
-    if (not chronic and symptoms and ex.age_group in ("infant", "child", "older_adult") and not mild_child
-            and not rule.startswith("service_")):
+    # age and severity raise urgency for new problems; an older adult's requested service
+    # ("dressing karwani hai") is booked for its own sake, but a baby or child is always seen sooner
+    service_only = rule.startswith("service_") and ex.age_group == "older_adult"
+    if not chronic and symptoms and ex.age_group in ("infant", "child", "older_adult") and not service_only:
         urgency = _bump(urgency, "same_day")
         rule += f"+{ex.age_group}"
     if not chronic and "severe" in ex.severity:

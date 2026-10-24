@@ -68,6 +68,7 @@ aliases:
   temperature: [temprechar, tempreechar, temparechar, tempchar]
   throat: [throt, throt]
   mild: [maild, maaild]
+  dauran: [dauraan, douran, duraan]  # "ke dauraan" (during), not "daura" (fit)
   zyada: [jyada, jyaada, zyaada, jada]
   tez: [tej, high]
   achanak: [achaanak, suddenly, sudden]
@@ -682,17 +683,20 @@ red_flags:
       - labour dard
       - labor dard
       - delivery dard
-      # waters breaking only happens in pregnancy, so it needs no other cue
-      - thaili phat
-      - paani ki thaili
-      - water broke
-      - waters broke
-      - water has broke
-      - waters have broke
+      # waters breaking, said in a way that only fits pregnancy ("=" means no words in between,
+      # so "my water bottle broke" and "doodh ki thaili phat gayi" do not count)
+      - =paani ki thaili phat
+      - =my water broke
+      - =my waters broke
+      - =her water broke
+      - =her waters broke
+      - =waters have broke
     conditional:
-      - patterns: [khoon, spotting, pet dard, dard pet, paani gir, paani nikal, daura, sar dard, sujan,
+      - patterns: [khoon aa, khoon aaya, khoon aayi, khoon nikal, khoon nikla, khoon nikli, khoon gir,
+                   khoon gira, khoon beh, khoon ja, khoon dikh, bleeding, spotting,
+                   pet dard, dard pet, paani gir, paani nikal, daura, sar dard, sujan,
                    dhundhla, blurred vision, movement band, movement kam, movement nahi, hilna band,
-                   dard shuru]
+                   dard shuru, thaili phat, paani ki thaili, water broke, waters broke]
         requires: [pregnant]
       # in the weeks after delivery: bleeding getting heavier, clots, fits, blurred vision
       - patterns: [khoon badh, khoon zyada, zyada khoon, thakke, clots, daura, dhundhla, blurred vision]
