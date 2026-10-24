@@ -221,7 +221,7 @@ const S = {
   tapToCall: { hinglish: "Call karne ke liye dabayein", hi: "कॉल करने के लिए दबाएँ", en: "Tap to call" },
 
   // how it works
-  howTitle: { hinglish: "CareCompass kaise kaam karta hai", hi: "CareCompass कैसे काम करता है", en: "How CareCompass works" },
+  howTitle: { hinglish: "Raahat kaise kaam karta hai", hi: "राहत कैसे काम करता है", en: "How Raahat works" },
   howSub: {
     hinglish: "Har message lagbhag 50 millisecond mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.",
     hi: "हर संदेश लगभग 50 मिलीसेकंड में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।",

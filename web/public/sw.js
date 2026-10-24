@@ -17,7 +17,8 @@ const CACHE = CACHE_PREFIX + BUILD_ID;
 const PUBLIC_FILES = [
   "/index.html",
   "/manifest.webmanifest",
-  "/favicon.svg",
+  "/favicon.png",
+  "/logo-mark.png",
   "/icon-192.png",
   "/icon-512.png",
   "/icon-maskable-512.png",

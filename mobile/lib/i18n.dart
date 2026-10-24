@@ -357,7 +357,7 @@ const Map<K, (String, String, String)> _strings = {
   K.sosSignsTitle: ('In lakshanon par turant call', 'इन लक्षणों पर तुरंत कॉल', 'Call at once for'),
   K.sosNumbersTitle: ('Helpline numbers', 'हेल्पलाइन नंबर', 'Helplines'),
   K.tapToCall: ('Call karne ke liye dabayein', 'कॉल करने के लिए दबाएँ', 'Tap to call'),
-  K.howTitle: ('CareCompass kaise kaam karta hai', 'CareCompass कैसे काम करता है', 'How CareCompass works'),
+  K.howTitle: ('Raahat kaise kaam karta hai', 'राहत कैसे काम करता है', 'How Raahat works'),
   K.howSub: (
     'Har message lagbhag 50 millisecond mein in kadmon se guzarta hai. Har faisle ka kaaran dikhaya jata hai.',
     'हर संदेश लगभग 50 मिलीसेकंड में इन कदमों से गुज़रता है। हर फ़ैसले का कारण दिखाया जाता है।',

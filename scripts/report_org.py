@@ -92,7 +92,7 @@ def build(results: list[dict], raw: list[dict], meta: dict | None, info: dict) -
     L: list[str] = []
     w = L.append
 
-    w("# CareCompass results on the organisers' dataset")
+    w("# Raahat results on the organisers' dataset")
     w("")
     w(f"- Date: {info['date']}")
     w(f"- Git commit: {info['commit']}{' (working tree has uncommitted changes)' if info['dirty'] else ''}")

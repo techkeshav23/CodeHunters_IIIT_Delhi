@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launch screen: chuna background with the compass mark, until Flutter draws. -->
+<!-- Launch screen: chuna background with the Raahat logo, until Flutter draws. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/cc_bg" />
     <item>

@@ -1,4 +1,4 @@
-"""CareCompass API. Run: uvicorn app.main:app --port 8000"""
+"""Raahat API (CareCompass problem statement). Run: uvicorn app.main:app --port 8000"""
 from __future__ import annotations
 
 import secrets
@@ -17,7 +17,7 @@ from .triage.model import get_model
 from .triage.student import get_student
 
 app = FastAPI(
-    title="CareCompass API",
+    title="Raahat API",
     version=config.VERSION,
     description="Care navigation and caregiver matching for English, Hindi and Hinglish requests. "
                 "Routing support only: no diagnosis, no prescriptions.",

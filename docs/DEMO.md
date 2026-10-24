@@ -26,7 +26,7 @@ and in the web app on 24 Oct; the outcomes are what they returned.
 **Show:** the start screen, "Batayein, kya taklif hai?", the mic, the chips, the red
 **112 par call** in the sidebar.
 **Say:** "A family member describes the problem in Hindi, English or Hinglish, by typing
-or speaking. CareCompass says what care fits, how soon, and who should come."
+or speaking. Raahat says what care fits, how soon, and who should come."
 
 ### 0:15 to 1:00. The problem statement's own example
 **Do:** click the example **Papa ko do din se bukhar hai aur khansi bhi**.

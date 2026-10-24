@@ -1,11 +1,11 @@
-# CareCompass: care navigation and caregiver matching
+# Raahat: care navigation and caregiver matching
 
-Team CodeHunters (Keshav Upadhyay, Harsh Kumar Sah), HackIIITD 2026, CAI problem statement.
+Team CodeHunters (Keshav Upadhyay, Harsh Kumar Sah), HackIIITD 2026, CAI problem statement "CareCompass". Raahat (राहत, relief) is our product name.
 Code: github.com/techkeshav23/CodeHunters_IIIT_Delhi · Live: https://carecompass.145-223-21-27.sslip.io
 
 ## 1. Approach
 
-A family member types or speaks a need in English, Hindi or Hinglish. CareCompass returns
+A family member types or speaks a need in English, Hindi or Hinglish. Raahat returns
 the care type, the urgency, any red flags, a plain reason and up to three caregivers, each
 with a reason. When the need is unclear it asks a follow-up question. It routes; it never
 diagnoses or prescribes. It is one stateless REST API (`POST /v1/triage`, the problem

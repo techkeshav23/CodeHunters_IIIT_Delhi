@@ -1,5 +1,5 @@
 name: carecompass
-description: "CareCompass: care triage and caregiver matching (thin Android client)"
+description: "Raahat: care triage and caregiver matching (thin Android client)"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -25,6 +25,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo_mark.png
 
   # Fonts are the same files the web app ships (fontsource, OFL), converted
   # from WOFF to TTF so the app needs no network to look right.

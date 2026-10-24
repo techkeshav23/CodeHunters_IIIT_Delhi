@@ -27,7 +27,7 @@ interface NavProps {
 export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount }: NavProps) {
   const statusKey: Key = backend === "ok" ? "serviceOk" : backend === "bad" ? "serviceBad" : backend === "mock" ? "serviceMock" : "serviceWait";
   return (
-    <aside className="sidebar" aria-label="CareCompass">
+    <aside className="sidebar" aria-label="Raahat">
       <Brand onClick={() => onView("check")} />
       <nav className="nav">
         {ITEMS.map((it) => (
@@ -78,7 +78,7 @@ export function TopBar({ lang, onLang, onView }: Pick<NavProps, "lang" | "onLang
       <button type="button" className="brand" onClick={() => onView("check")} style={{ border: 0, background: "none", padding: 0 }}>
         <BrandMark size={32} />
         <span className="brand__name">
-          Care<span>Compass</span>
+          <span>Raahat</span>
         </span>
       </button>
       <div className="topbar__right">
@@ -101,7 +101,7 @@ export function TopBar({ lang, onLang, onView }: Pick<NavProps, "lang" | "onLang
 
 export function BottomNav({ view, lang, onView }: Pick<NavProps, "view" | "lang" | "onView">) {
   return (
-    <nav className="bottomnav" aria-label="CareCompass">
+    <nav className="bottomnav" aria-label="Raahat">
       {ITEMS.map((it) => (
         <button
           key={it.id}

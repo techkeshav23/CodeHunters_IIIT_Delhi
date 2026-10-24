@@ -1,11 +1,11 @@
 {
-    "name": "CareCompass",
-    "short_name": "CareCompass",
+    "name": "Raahat",
+    "short_name": "Raahat",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#eef4f0",
     "theme_color": "#0d5a50",
-    "description": "CareCompass: care triage and caregiver matching",
+    "description": "Raahat: care triage and caregiver matching",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

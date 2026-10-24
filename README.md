@@ -1,8 +1,12 @@
-# CareCompass
+# Raahat (राहत)
+
+![Raahat logo](web/public/icon-192.png)
+
+*Ek message, aur raahat ghar tak.* Our product for the CareCompass problem statement.
 
 Care navigation and caregiver matching for HackIIITD 2026 (problem statement by
 CAI, IIIT-Delhi). A family member types or speaks a health problem in English,
-Hindi or Hinglish; CareCompass decides **what care fits** (paramedic home visit,
+Hindi or Hinglish; Raahat decides **what care fits** (paramedic home visit,
 nurse, GP teleconsult, specialist or emergency), **how urgent it is** (routine,
 same day, immediate) and **who should go** (ranked caregivers with a reason for
 each). Any red-flag symptom skips matching and goes straight to call-for-help.

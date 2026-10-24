@@ -1,4 +1,4 @@
-# CareCompass results on the organisers' dataset
+# Raahat results on the organisers' dataset
 
 - Date: 2026-10-24 16:39
 - Git commit: 50d893a (working tree has uncommitted changes)

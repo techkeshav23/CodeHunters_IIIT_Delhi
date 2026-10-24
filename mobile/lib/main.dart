@@ -32,7 +32,7 @@ class CareCompassApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: state,
         builder: (context, _) => MaterialApp(
-          title: 'CareCompass',
+          title: 'Raahat',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),

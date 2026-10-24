@@ -1,4 +1,4 @@
-# CareCompass API
+# Raahat API (CareCompass problem statement)
 
 Base URL (local): `http://localhost:8000`; live: `https://carecompass.145-223-21-27.sslip.io`.
 Interactive docs: `/docs`.
