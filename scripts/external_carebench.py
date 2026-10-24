@@ -25,14 +25,9 @@ from app.schemas import TriageRequest
 LOC = {"lat": 28.5459, "lng": 77.2732}
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("path", type=Path)
-    ap.add_argument("--show", type=int, default=25, help="urgent cases we under-triaged to print")
-    ap.add_argument("--out", type=Path, default=Path("eval/out/carebench_results.jsonl"))
-    args = ap.parse_args(argv)
-
-    rows = [json.loads(line) for line in args.path.read_text(encoding="utf-8").splitlines() if line.strip()]
+def predict(path: Path, ask: bool = True) -> list[dict]:
+    """Our batch decision for every prefix; with `ask`, also whether interactive mode asks first."""
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     results = []
     for r in rows:
         turns = [str(t) for t in r.get("input_patient_turns") or []]
@@ -41,13 +36,32 @@ def main(argv: list[str] | None = None) -> int:
         history = [{"role": "user", "content": t} for t in turns[:-1]]
         req = TriageRequest(user_input=turns[-1], language="en", location=LOC, conversation_history=history)
         batch = run(req, mode="batch")
-        inter = run(req, mode="interactive", explain=False)
+        inter = run(req, mode="interactive", explain=False) if ask else None
         results.append({
             "prefix_id": r.get("prefix_id"), "gold": r.get("gold_label", "")[:2], "split": r.get("split"),
             "care": internal_label(batch.care_type), "urgency": internal_label(batch.urgency),
-            "red_flags": batch.red_flags, "asked": inter.follow_up_question is not None,
+            "red_flags": batch.red_flags, "asked": inter is not None and inter.follow_up_question is not None,
             "text": " | ".join(turns)[:300],
         })
+    return results
+
+
+def safety_rates(results: list[dict]) -> dict:
+    """Urgent (1B) cases sent to same-day or immediate care, and false emergencies on the rest."""
+    urgent = [x for x in results if x["gold"] == "1B"]
+    rest = [x for x in results if x["gold"] != "1B"]
+    return {"urgent_recall": sum(x["urgency"] in ("same_day", "immediate") for x in urgent) / max(1, len(urgent)),
+            "false_emergency_rate": sum(x["urgency"] == "immediate" for x in rest) / max(1, len(rest))}
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("path", type=Path)
+    ap.add_argument("--show", type=int, default=25, help="urgent cases we under-triaged to print")
+    ap.add_argument("--out", type=Path, default=Path("eval/out/carebench_results.jsonl"))
+    args = ap.parse_args(argv)
+
+    results = predict(args.path)
 
     by_gold: dict[str, list[dict]] = {}
     for x in results:

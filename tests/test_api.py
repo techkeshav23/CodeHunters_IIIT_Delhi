@@ -102,3 +102,16 @@ def test_typed_age_answers(client):
         return post(client, answer, history, explain=True)
     assert age_answer("2 mahine")["urgency"] == "immediate"
     assert age_answer("7")["trace"]["understood"]["patient"]["age_years"] == 7
+
+
+def test_other_apps_question_wording(client):
+    # no question_id and not our exact text: the answer is still read as an age or a duration
+    r = post(client, "2 mahine", [{"role": "user", "content": "bachche ko bukhar hai"},
+                                  {"role": "assistant", "content": "Bachche ki umar kya hai?"}], explain=True)
+    assert r["red_flags"] == ["infant_danger_sign"]
+    r = post(client, "65", [{"role": "user", "content": "Papa ko chakkar aa rahe hain"},
+                            {"role": "assistant", "content": "How old is the patient?"}], explain=True)
+    assert r["trace"]["understood"]["patient"]["age_years"] == 65
+    r = post(client, "3 din se, aur ulti bhi", [{"role": "user", "content": "Papa ko bukhar hai"},
+                                               {"role": "assistant", "content": "Kab se hai?"}], explain=True)
+    assert [s["id"] for s in r["trace"]["understood"]["symptoms"]] == ["fever", "vomiting"]

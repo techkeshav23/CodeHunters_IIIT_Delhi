@@ -97,3 +97,28 @@ def test_age_vs_duration():
     assert ex.age_years == 70 and ex.duration_days == 3 and ex.age_group == "older_adult"
     ex = extract("2 mahine se ghutne mein dard hai")
     assert ex.age_years is None and ex.duration_days == 60
+
+
+@pytest.mark.parametrize("text, flag", [
+    ("papa ko chestpain ho raha hai", "chest_pain"),
+    ("saansnahi aa rahi", "breathing_difficulty"),
+    ("breathingproblem ho rahi hai", "breathing_difficulty"),
+    ("behoshhogaye papa", "unconscious"),
+])
+def test_joined_words_are_split(text, flag):
+    assert flag in flags(text)
+
+
+def test_names_and_plain_words_are_not_split():
+    assert extract("sunita ko kamla ne bulaya, hospital jana hai").tokens[:5] == ["sunita", "ko", "kamla", "ne", "bulaya"]
+
+
+def test_negated_severity_and_spoken_cough():
+    assert "severe" not in extract("acidity hai, koi tez dard nahi").severity
+    assert "sudden_confusion" in flags("nani ko achanak kuch yaad nahi jagah aur time pata nahi")  # "nahi" is the symptom's
+    assert "cough" in extract("माइल्ड कफ है").symptom_ids()  # mild kaf hai
+
+
+def test_or_lists_do_not_depend_on_the_language_hint():
+    for hint in ("auto", "hinglish", "en"):
+        assert extract("no fever or chest pain, just a mild cough", hint).red_flags == []

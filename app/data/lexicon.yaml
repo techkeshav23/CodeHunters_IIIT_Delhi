@@ -21,7 +21,7 @@ aliases:
   ulti: [ulty, ultiyan, ultiya, vomit, vomits, vomiting, vomitting]
   behosh: [behos, beyhosh, behoshi, unconscious, unresponsive]
   bukhar: [bukar, bkhar, bukhaar, fever, feverish, jwar, jvar]
-  khansi: [khasi, kansi, khaasi, cough, coughing, coughs]
+  khansi: [khasi, kansi, khaasi, cough, coughing, coughs, kaf, kof, coff]  # कफ from speech-to-text
   chakkar: [chakar, dizzy, dizziness, giddy, giddiness, vertigo]
   mirgi: [epilepsy]
   lakwa: [laqwa, lakva, paralysis, paralysed, paralyzed, falij]
@@ -68,7 +68,6 @@ aliases:
   temperature: [temprechar, tempreechar, temparechar, tempchar]
   throat: [throt, throt]
   mild: [maild, maaild]
-  cough_word: [kaf, kof, coff]
   zyada: [jyada, jyaada, zyaada, jada]
   tez: [tej, high]
   achanak: [achaanak, suddenly, sudden]
@@ -895,7 +894,7 @@ symptoms:
     label: Cough
     label_hinglish: Khansi
     label_hi: खांसी
-    patterns: [khansi, balgam, cough_word, खांसी]
+    patterns: [khansi, balgam, खांसी]
     acute: [gp, routine]
     chronic: [gp, routine]
     respiratory: true

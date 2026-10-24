@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 from .lexicon import Hit, Lexicon, Pattern, get_lexicon
-from .normalize import BOUNDARY, COMMA, Text, analyse, phon, tokenize
+from .normalize import BOUNDARY, COMMA, Text, analyse, detect_language, phon, tokenize
 
 # Natural spellings; turned into canonical tokens once (see _tables).
 _NUMBER_WORDS = {
@@ -266,6 +266,13 @@ def _pregnant_now(tokens: list[str]) -> bool:
     return False
 
 
+def _negated_next_to(tokens: list[str], h: Hit, lex: Lexicon) -> bool:
+    """"tez dard nahi", "no severe pain": a negation word touching the phrase."""
+    nxt = tokens[h.end] if h.end < len(tokens) else ""
+    prev = tokens[h.start - 1] if h.start > 0 else ""
+    return nxt in lex.neg_after or prev in lex.neg_before
+
+
 def _clause_ids(tokens: list[str], marks: tuple[str, ...] = (BOUNDARY, COMMA)) -> list[int]:
     """Clause number for each token; commas and sentence ends start a new clause.
     With marks=(BOUNDARY,) it numbers sentences instead."""
@@ -466,8 +473,11 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
 
     ex.pregnant = True if preg_months or _pregnant_now(tokens) else None
 
-    # modifiers, kept with positions so "severe" applies only near a symptom
-    mod_hits = lex.find(tokens, t.surface, "modifier")
+    # modifiers, kept with positions so "severe" applies only near a symptom;
+    # "koi tez dard nahi" is not severe (only a negation right next to it: in
+    # "achanak kuch yaad nahi" the "nahi" belongs to the symptom, not to "achanak")
+    mod_hits = [h for h in lex.find(tokens, t.surface, "modifier")
+                if not (h.id == "severe" and _negated_next_to(tokens, h, lex))]
     for h in mod_hits:
         if h.id not in _CONTEXT_ONLY:
             ex.severity.add(h.id)
@@ -475,7 +485,8 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     # "chakkar, behoshi ya seene mein dard kuch nahi hai": the closing "nahi" covers the whole list
     sym_hits = lex.find(tokens, t.surface, "symptom")
     flag_hits = lex.find(tokens, t.surface, "red_flag")
-    lex.negate_or_lists(sym_hits + flag_hits, tokens, english=t.language == "en")
+    # from the text itself, not the client's language hint
+    lex.negate_or_lists(sym_hits + flag_hits, tokens, english=detect_language(text) == "en")
 
     # symptoms and services
     for h in sym_hits:

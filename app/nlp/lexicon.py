@@ -196,8 +196,9 @@ class Lexicon:
             self._seg_cache = {w for w in words if w and not w.isdigit() and w not in (BOUNDARY, COMMA)}
         return self._seg_cache
 
-    def _segment(self, word: str) -> list[str] | None:
-        """Split a run-together word into known words; None if it does not split cleanly."""
+    def _segment(self, word: str, exact: bool = False) -> list[str] | None:
+        """Split a run-together word into known words; None if it does not split cleanly.
+        `exact`: every letter must belong to a known word of 2+ letters ("chestpain", "seenemein")."""
         n, vocab = len(word), self._seg_words
         best: list[tuple[float, list[str]] | None] = [None] * (n + 1)
         best[0] = (0.0, [])
@@ -207,10 +208,12 @@ class Lexicon:
             score, parts = best[i]
             for j in range(i + 1, min(n, i + 16) + 1):
                 piece = word[i:j]
-                if phon(piece) in vocab and (len(piece) > 1 or piece == "a"):
+                if phon(piece) in vocab and (len(piece) > 1 or (piece == "a" and not exact)):
                     cand = (score + len(piece) ** 2, parts + [piece])
                     if best[j] is None or cand[0] > best[j][0]:
                         best[j] = cand
+            if exact:
+                continue
             cand = (score - 3, parts + ["\0" + word[i]])  # skip one unknown character
             if best[i + 1] is None or cand[0] > best[i + 1][0]:
                 best[i + 1] = cand
@@ -218,6 +221,11 @@ class Lexicon:
             return None
         parts = best[n][1]
         unknown = sum(1 for p in parts if p.startswith("\0"))
+        if exact:
+            # two or three whole words, at least one of them from the lexicon itself
+            ok = 2 <= len(parts) <= 3 and any(len(p) >= 3 and (phon(p) in self.vocab or phon(p) in self.alias)
+                                              for p in parts)
+            return parts if ok else None
         if unknown > 0.15 * n or sum(1 for p in parts if not p.startswith("\0")) < 3:
             return None
         merged: list[str] = []
@@ -235,8 +243,9 @@ class Lexicon:
         out_t: list[str] = []
         out_s: list[str] = []
         for tok, surf in zip(tokens, surface):
-            if len(surf) >= min_len and tok not in self.vocab and tok not in self.alias and surf.isalpha():
-                parts = self._segment(surf)
+            if len(surf) >= 6 and tok not in self.vocab and tok not in self.alias and surf.isalpha():
+                # shorter runs ("chestpain", "saansnahi") must split into whole words
+                parts = (self._segment(surf) if len(surf) >= min_len else None) or self._segment(surf, exact=True)
                 if parts:
                     out_t += [phon(p) for p in parts]
                     out_s += parts

@@ -149,13 +149,19 @@ def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, 
                      specialty=d.specialty if care == d.care else None), False, "blend")
 
 
-def _adds_red_flag(before: list[str], answer: str, language: str | None) -> bool:
+def _adds_findings(before: list[str], answer: str, language: str | None) -> bool:
     """Structured answers are read by parse_answer, not as free text (so "2 mahine"
-    is an age, not a duration); they join the free text only when they add a red flag."""
+    is an age, not a duration); they join the free text only when they add a red flag,
+    a symptom or a service ("65 saal, aur bukhar bhi hai")."""
     if not answer.strip():
         return False
-    base = {h.id for h in extract(" . ".join(before), language).red_flags} if before else set()
-    return bool({h.id for h in extract(" . ".join(before + [answer]), language).red_flags} - base)
+
+    def found(texts: list[str]) -> set[str]:
+        if not texts:
+            return set()
+        ex = extract(" . ".join(texts), language)
+        return {h.id for h in ex.red_flags + ex.symptoms + ex.services}
+    return bool(found(before + [answer]) - found(before))
 
 
 def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None,
@@ -179,7 +185,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             if pending in STRUCTURED_ANSWERS:
                 pending = None
                 # an answer like "2 din se, aur ab behosh ho gaye" still carries an emergency
-                if _adds_red_flag(free_text, turn.text, req.language):
+                if _adds_findings(free_text, turn.text, req.language):
                     free_text.append(turn.text)
                 continue
         pending = None

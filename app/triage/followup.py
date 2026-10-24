@@ -91,14 +91,27 @@ def question(qid: str, language: str) -> Question:
                     options=[{"value": v, "label": labels[lang]} for v, labels in q["options"]])
 
 
+# other apps' wording of the same questions ("How old is she?", "Kab se hai?")
+QUESTION_WORDS = {
+    "q_age": re.compile(r"\b(how old|age|umar|umr|kitne saal|kitni saal)\b|उम्र|उमर"),
+    "q_duration": re.compile(r"\b(how long|since when|how many days|kab se|kitne din|kitne dino|kitne samay)\b"
+                             r"|कब से|कितने दिन"),
+}
+
+
 def identify(text: str, question_id: str | None = None) -> str | None:
-    """Which bank question an assistant turn was (by id, else by exact text)."""
+    """Which bank question an assistant turn was (by id, else by exact text, else by its
+    words for the two questions whose answers are read as facts)."""
     if question_id in QUESTIONS:
         return question_id
     norm = (text or "").strip().lower()
     for qid, q in QUESTIONS.items():
         if any(norm == t.lower() for t in q["text"].values()):
             return qid
+    if norm.endswith("?"):
+        for qid, words in QUESTION_WORDS.items():
+            if words.search(norm):
+                return qid
     return None
 
 
