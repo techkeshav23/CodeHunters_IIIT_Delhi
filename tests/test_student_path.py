@@ -236,17 +236,19 @@ def test_low_confidence_in_the_default_policy_uses_the_rules(client, student):
 # ---- conversational policy ------------------------------------------------------
 
 def test_conversational_flow_rules_only(client, no_student):
-    """Danger signs first, then how long, then who; at most three questions."""
+    """The danger check for this complaint first, then how long (naming it), then the
+    relative's age; at most three questions."""
     h = [{"role": "user", "content": "papa ko bukhar hai"}]
     r = post(client, "papa ko bukhar hai", policy="conversational")
-    assert r["trace"]["follow_up"]["id"] == "q_danger"
+    assert r["trace"]["follow_up"]["id"] == "q_danger_breathing"  # fever: the breathing check
     assert [o["label"] for o in r["trace"]["follow_up"]["options"]] == ["Haan", "Nahi"]
-    r = post(client, "Nahi", h + [turn("q_danger")], policy="conversational")
+    r = post(client, "Nahi", h + [turn("q_danger_breathing")], policy="conversational")
     assert r["trace"]["follow_up"]["id"] == "q_duration"
-    h2 = h + [turn("q_danger"), {"role": "user", "content": "Nahi"}, turn("q_duration")]
+    assert r["follow_up_question"] == "Bukhar kitne din se hai?"
+    h2 = h + [turn("q_danger_breathing"), {"role": "user", "content": "Nahi"}, turn("q_duration")]
     r = post(client, "2 din se", h2, policy="conversational")
-    assert r["trace"]["follow_up"]["id"] == "q_who" and r["trace"]["follow_up"]["asked_so_far"] == 3
-    h3 = h2 + [{"role": "user", "content": "2 din se"}, turn("q_who")]
+    assert r["trace"]["follow_up"]["id"] == "q_their_age" and r["trace"]["follow_up"]["asked_so_far"] == 3
+    h3 = h2 + [{"role": "user", "content": "2 din se"}, turn("q_their_age")]
     r = post(client, "60 saal ya zyada", h3, policy="conversational")
     assert r["follow_up_question"] is None
     assert (r["care_type"], r["urgency"]) == ("paramedic_home_visit", "same_day")
@@ -293,7 +295,7 @@ def test_danger_dont_know_is_unknown(client, no_student):
     r = post(client, "pata nahi", [{"role": "user", "content": "papa ko bukhar hai"}, turn("q_danger")],
              policy="conversational")
     assert r["care_type"] is None and r["trace"]["follow_up"]["id"] == "q_duration"
-    assert followup.parse_answer("q_danger", "pata nahi") == {"danger": "unknown"}
+    assert followup.parse_answer("q_danger", "pata nahi")["danger"] == "unknown"
 
 
 def test_conversational_unclear_then_default(client, no_student):
@@ -530,3 +532,16 @@ def test_llm_ask_request_and_parsing(monkeypatch):
     monkeypatch.setattr(llm_fallback, "_client", lambda: answer())
     llm_fallback.ask("x")
     assert sent["model"] == "claude-sonnet-5-5"
+
+
+def test_danger_check_fits_the_complaint(client, no_student):
+    cases = {"mummy ko subah se ulti aur dast ho rahe hain": "q_danger_dehydration",
+             "pet mein dard hai": "q_danger_abdomen", "sar mein bahut dard hai": "q_danger_stroke",
+             "mann bahut udaas rehta hai": "q_danger_mind"}
+    for text_, qid in cases.items():
+        r = post(client, text_, policy="conversational")
+        assert r["trace"]["follow_up"]["id"] == qid, (text_, r["trace"]["follow_up"])
+    # a "Haan" raises that check's red flag, not a generic one
+    r = post(client, "Haan", [{"role": "user", "content": "sar mein bahut dard hai"}, turn("q_danger_stroke")],
+             policy="conversational")
+    assert r["care_type"] == "emergency_112" and r["red_flags"] == ["stroke_symptoms"]

@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 USER_ROLES = {"user", "patient", "human", "customer", "client"}
 ASSISTANT_ROLES = {"assistant", "bot", "system", "agent", "ai", "app", "model", "chatbot"}
 # read via parse_answer, not as free text
-STRUCTURED_ANSWERS = {"q_age", "q_duration", "q_breathing", "q_danger", "q_who"}
+STRUCTURED_ANSWERS = {"q_age", "q_duration", "q_breathing", "q_who", "q_their_age"} | followup.DANGER_IDS
 CARE_KEYS = ("paramedic", "nurse", "lab", "gp", "specialist")  # a decision (not emergency, not "ask")
 OUT_OF_SCOPE = "out_of_scope"
 VULNERABLE = ("infant", "elderly", "pregnant")
@@ -175,6 +175,10 @@ def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, 
     return (Decision(care, urgency, round(p, 2), d.rule + "+model", needs=[n for n in d.needs if n != "main_symptom"],
                      specialty=d.specialty if care in (d.care, "gp") else None), False, "model", probs)
 
+for _q in followup.DANGER_IDS - {"q_danger"}:  # the targeted danger checks share the general reason
+    ASK_REASON[_q] = ASK_REASON["q_danger"]
+ASK_REASON["q_their_age"] = ASK_REASON["q_who"]
+
 
 # ---- model-first route (the fine-tuned model is loaded) ----------------------
 
@@ -214,9 +218,10 @@ def _model_emergency(so: StudentOutput, ex: Extraction) -> bool:
     if so.says_emergency:
         return True
     sure = so.top_care == "emergency" and so.care.get("emergency", 0.0) >= MODEL_SURE_EMERGENCY
-    if sure and "fever" in ex.symptom_ids() and ex.age_years is None:
-        # "beti ko bukhar hai": the model reads a child's fever as a baby's; the age decides
-        # (under 3 months is an emergency in the rules), so it is asked instead
+    if sure and ex.symptom_ids():
+        # an everyday complaint the words name (fever, vomiting, loose motions, pain): the model
+        # over-reads these ("beti ko bukhar hai" as a baby's fever, "ulti aur dast" as
+        # dehydration), so the danger check for that complaint (or the age) is asked instead
         return False
     return sure and not ex.negated_flags
 
@@ -285,15 +290,15 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     p_care = so.care.get("gp" if care == "specialist" else care, 0.0)
     qid = None
     if interactive:
-        if (so.care.get("emergency", 0.0) >= 0.5 and "q_danger" not in asked and "age" not in needs
-                and len(asked) < config.MAX_FOLLOWUPS):
+        if (policy == "conversational" and so.care.get("emergency", 0.0) >= 0.5 and not followup.danger_asked(asked)
+                and "age" not in needs and len(asked) < config.MAX_FOLLOWUPS):
             # the model senses danger but no red flag is named: ask about danger signs first
             # (a "Haan" goes to the emergency path) rather than calling 112 on the model alone
-            qid = "q_danger"
+            qid = followup.danger_qid(ex)  # the danger check that fits the complaint
             fired.add("model_emergency")
         else:
             qid = followup.choose(ex, Decision(decided, None, p_care, rule, needs=needs), asked, policy,
-                                  service=service, who=so.top_who)
+                                  service=service, who=who)  # words first, then the model
         if (qid is None and ask_unsure and "q_main_symptom" not in asked
                 and len(asked) < config.MAX_FOLLOWUPS):
             qid = "q_main_symptom"  # unsure and nothing else to ask: what is needed?
@@ -348,13 +353,14 @@ def _who(ex: Extraction, so: StudentOutput | None) -> str:
         return group
     if ex.age_group == "adult":
         return "self" if ex.relation == "self" else "adult"
-    if so is not None:
-        return so.top_who
-    if ex.relation == "self":
+    if ex.relation == "self":  # "mujhe ...": the words say who, whatever the model reads in a short answer
         return "self"
+    guess = so.top_who if so is not None else "unknown"
+    if ex.relation == "child":
+        return guess if guess in ("child", "infant") else "child"
     if ex.relation in ("father", "mother", "wife", "husband"):
-        return "adult"
-    return "child" if ex.relation == "child" else "unknown"
+        return guess if guess in ("adult", "elderly", "pregnant") else "adult"
+    return guess
 
 
 def _intake_items(ex: Extraction, so: StudentOutput | None) -> list[tuple[str, dict[str, str]]]:
@@ -424,9 +430,9 @@ def _answer_text(qid: str, answer: str, before: list[str], language: str | None)
         return None
     if qid == "q_duration":
         return text
-    if qid == "q_who" and followup.option_value(qid, text):  # a tapped option is only the fact
+    if qid in ("q_who", "q_their_age") and followup.option_value(qid, text):  # a tapped option is only the fact
         return None
-    if qid in ("q_age", "q_who"):  # "mere papa, 72 saal" joins as "mere papa"
+    if qid in ("q_age", "q_who", "q_their_age"):  # "mere papa, 72 saal" joins as "mere papa"
         rest = AGE_SPAN.sub(" ", to_roman(text))
         words = [w for w in re.findall(r"[a-z]+", rest.lower()) if w not in FILLER_ANSWER]
         return rest if words else None
@@ -487,9 +493,11 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         breathing = "present"
     elif facts.get("breathing") == "absent" and breathing != "present":
         breathing = "absent"
-    # "Haan" to the danger-signs question is an emergency; "Nahi" also answers the breathing check
-    if facts.get("danger") == "present" and "possible_emergency" not in flag_ids:
-        flag_ids.append("possible_emergency")
+    # "Haan" to a danger check is an emergency with that check's red flag; "Nahi" also answers
+    # the breathing check
+    danger_flag = facts.get("danger_flag", "possible_emergency")
+    if facts.get("danger") == "present" and danger_flag not in flag_ids:
+        flag_ids.append(danger_flag)
     elif facts.get("danger") == "absent" and breathing == "not_reported":
         breathing = "absent"
 
@@ -531,7 +539,9 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
                     matched_caregivers=[])
         # what in the words (or which answer) raised each flag; nothing to quote for the model's own
         evidence = {"breathing_difficulty": answers.get("q_breathing", ""),
-                    "possible_emergency": answers.get("q_danger", "")} | {h.id: h.evidence for h in ex.red_flags}
+                    "possible_emergency": answers.get("q_danger", "")}
+        evidence |= {followup.DANGER_FLAG[q]: a for q, a in answers.items() if q in followup.DANGER_IDS}
+        evidence |= {h.id: h.evidence for h in ex.red_flags}
         trace.update({
             "checks": _checks(ex, breathing, flags, language),
             "red_flags": [{"id": f, "label": lex[f].label, "label_local": lex[f].label_for(language),
@@ -578,7 +588,9 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
                               "version": get_model().meta.get("trained_at") if get_model() else None}
         qid = followup.choose(ex, d, asked, policy, service=_is_service(ex, d.care)) if interactive else None
     if qid:
-        q = followup.question(qid, language)
+        main = ex.symptoms[0].entry if ex.symptoms else None  # names the complaint in "kitne din se?"
+        topic = {"en": main.label, "hinglish": main.label_hinglish, "hi": main.label_hi} if main else None
+        q = followup.question(qid, language, topic)
         resp = dict(follow_up_question=q.text, care_type=None, urgency=None, red_flags=[],
                     reasoning=ASK_REASON[qid]["en" if out_lang == "en" else text.lang_of(language)],
                     matched_caregivers=[])
@@ -590,7 +602,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "follow_up": {"id": q.id, "text": q.text, "kind": q.kind, "options": q.options,
                           "asked_so_far": len(asked) + 1, "max": config.MAX_FOLLOWUPS},
             "emergency": None, "caregivers": [],
-            "speech": text.speech([followup.question(qid, sl).text], language),
+            "speech": text.speech([followup.question(qid, sl, topic).text], language),
             "guardrails": text.guardrails(fired, language),
         })
         return _finish(resp, trace, t0, explain)

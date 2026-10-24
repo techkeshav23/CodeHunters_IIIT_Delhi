@@ -6,8 +6,10 @@ Policies:
   to decide (what the problem is, a child's age, sometimes how long).
 - safety: minimal plus a breathing check for fever and cough.
 - conversational (web and app): a short check-up of at most MAX_FOLLOWUPS questions. For a
-  symptom: danger signs first, then how long, then who it is for; a service request
-  (injection, dressing, lab test) is booked without them."""
+  symptom: the danger check for THAT complaint first (fever -> breathing, loose motions ->
+  dehydration, a fall -> head injury or bleeding, headache -> stroke signs, ...), then how
+  long (naming the complaint), then who it is for (only the age when a relative is named);
+  a service request (injection, dressing, lab test) is booked without them."""
 from __future__ import annotations
 
 import re
@@ -100,6 +102,115 @@ QUESTIONS: dict[str, dict] = {
             ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
         ],
     },
+    # the danger check that fits the complaint; a "Haan" raises the matching red flag
+    "q_danger_breathing": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Along with this, is breathing hard or fast, or are the lips turning blue?",
+            "hinglish": "Iske saath kya saans phool rahi hai, tez chal rahi hai, ya hoth neele pad rahe hain?",
+            "hi": "इसके साथ क्या साँस फूल रही है, तेज़ चल रही है, या होंठ नीले पड़ रहे हैं?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_dehydration": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Is even water not staying down, is urine much less, or is there unusual drowsiness?",
+            "hinglish": "Kya paani bhi nahi ruk raha, peshab bahut kam ho gaya hai, ya bahut susti hai?",
+            "hi": "क्या पानी भी नहीं रुक रहा, पेशाब बहुत कम हो गया है, या बहुत सुस्ती है?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_injury": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Was there a hit to the head, any fainting or vomiting, or bleeding that will not stop?",
+            "hinglish": "Kya sar par chot lagi, behoshi ya ulti hui, ya khoon ruk nahi raha?",
+            "hi": "क्या सिर पर चोट लगी, बेहोशी या उल्टी हुई, या खून रुक नहीं रहा?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_stroke": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Did it start suddenly and very badly, or is there weakness on one side or trouble speaking?",
+            "hinglish": "Kya achanak bahut tez shuru hua, ya ek taraf kamzori ya bolne mein dikkat hai?",
+            "hi": "क्या अचानक बहुत तेज़ शुरू हुआ, या एक तरफ़ कमज़ोरी या बोलने में दिक्कत है?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_abdomen": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Is the pain very severe, or is there blood in the vomit or black stool?",
+            "hinglish": "Kya dard bahut tez hai, ya ulti mein khoon ya kaala mal aa raha hai?",
+            "hi": "क्या दर्द बहुत तेज़ है, या उल्टी में खून या काला मल आ रहा है?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_chest": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Is there chest pain or pressure, sweating, or breathlessness with it?",
+            "hinglish": "Kya saath mein seene mein dard ya dabav, pasina, ya saans phoolna hai?",
+            "hi": "क्या साथ में सीने में दर्द या दबाव, पसीना, या साँस फूलना है?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_pregnancy": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Is there any bleeding, severe belly pain, or are the baby's movements less than usual?",
+            "hinglish": "Kya khoon aa raha hai, pet mein tez dard hai, ya baby ki halchal kam lag rahi hai?",
+            "hi": "क्या खून आ रहा है, पेट में तेज़ दर्द है, या बच्चे की हलचल कम लग रही है?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_danger_mind": {
+        "kind": "yes_no",
+        "text": {
+            "en": "Are there any thoughts of hurting yourself or of not wanting to live?",
+            "hinglish": "Kya khud ko nuksan pahunchane ya jeene ka mann na hone jaise khayal aate hain?",
+            "hi": "क्या ख़ुद को नुकसान पहुँचाने या जीने का मन न होने जैसे ख़याल आते हैं?",
+        },
+        "options": [
+            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
+            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+        ],
+    },
+    "q_their_age": {
+        "kind": "choice",
+        "text": {
+            "en": "How old are they?",
+            "hinglish": "Unki umar kitni hai?",
+            "hi": "उनकी उम्र कितनी है?",
+        },
+        "options": [
+            ("adult", {"en": "Under 60", "hinglish": "60 saal se kam", "hi": "60 साल से कम"}),
+            ("elderly", {"en": "60 or older", "hinglish": "60 saal ya zyada", "hi": "60 साल या ज़्यादा"}),
+        ],
+    },
     "q_who": {
         "kind": "choice",
         "text": {
@@ -137,6 +248,24 @@ QUESTIONS: dict[str, dict] = {
         ],
     },
 }
+# targeted danger checks: which red flag a "Haan" raises, and the complaints each one fits
+# (checked in this order; the first that fits is asked, else the general q_danger)
+DANGER_FLAG = {"q_danger": "possible_emergency", "q_danger_breathing": "breathing_difficulty",
+               "q_danger_dehydration": "severe_dehydration", "q_danger_injury": "possible_emergency",
+               "q_danger_stroke": "stroke_signs", "q_danger_abdomen": "severe_abdominal_pain",
+               "q_danger_chest": "chest_pain", "q_danger_pregnancy": "pregnancy_emergency",
+               "q_danger_mind": "self_harm_risk"}
+DANGER_IDS = set(DANGER_FLAG)
+DANGER_FOR = [
+    ("q_danger_mind", {"mental_health"}),
+    ("q_danger_dehydration", {"vomiting", "diarrhoea"}),
+    ("q_danger_injury", {"injury", "wound", "animal_bite", "minor_burn"}),
+    ("q_danger_stroke", {"headache", "dizziness"}),
+    ("q_danger_chest", {"palpitations", "sweating", "heartburn"}),
+    ("q_danger_abdomen", {"stomach_pain"}),
+    ("q_danger_breathing", {"fever", "cough", "cold", "sore_throat", "body_ache", "weakness"}),
+]
+ADULT_RELATIONS = {"father", "mother", "grandparent", "wife", "husband"}
 DURATION_VALUES = {"today": 0.0, "2_3_days": 2.0, "week": 7.0, "month": 30.0}
 AGE_VALUES = {"young_infant": 0.1, "infant": 0.5, "child": 5.0, "adult": 30.0}
 WHO_VALUES = {"adult": {"age_years": 30.0}, "elderly": {"age_years": 70.0}, "child": {"age_years": 5.0},
@@ -151,11 +280,33 @@ class Question:
     options: list[dict]
 
 
-def question(qid: str, language: str) -> Question:
+def question(qid: str, language: str, topic: dict[str, str] | None = None) -> Question:
+    """A bank question in one language. `topic` (the main complaint's label in each
+    language) makes the duration question name it: "Bukhar kitne din se hai?"."""
     q = QUESTIONS[qid]
     lang = language if language in ("en", "hi", "hinglish") else "en"
-    return Question(id=qid, text=q["text"][lang], kind=q["kind"],
+    text = q["text"][lang]
+    if qid == "q_duration" and topic and topic.get(lang):
+        x = topic[lang]
+        text = {"en": f"Since when has the {x.lower()} been there?", "hinglish": f"{x} kitne din se hai?",
+                "hi": f"{x} कितने दिन से है?"}[lang]
+    return Question(id=qid, text=text, kind=q["kind"],
                     options=[{"value": v, "label": labels[lang]} for v, labels in q["options"]])
+
+
+def danger_asked(asked: list[str]) -> bool:
+    return any(q in DANGER_IDS for q in asked)
+
+
+def danger_qid(ex: Extraction) -> str:
+    """The danger check that fits the complaint."""
+    if ex.pregnant:
+        return "q_danger_pregnancy"
+    found = set(ex.symptom_ids())
+    for qid, symptoms in DANGER_FOR:
+        if found & symptoms:
+            return qid
+    return "q_danger"
 
 
 # other apps' wording of the same questions ("How old is she?", "Kab se hai?")
@@ -240,11 +391,15 @@ def parse_answer(qid: str, answer: str) -> dict:
             return {"age_years": ex.duration_days / 365}
         bare = re.fullmatch(r"\s*(\d{1,3})\s*", to_roman(answer))
         return {"age_years": float(bare.group(1))} if bare and int(bare.group(1)) <= 120 else {}
-    if qid == "q_danger":
-        # "Haan" sends the conversation to the emergency path; "pata nahi" stays unknown
+    if qid in DANGER_IDS:
+        # "Haan" sends the conversation to the emergency path with that check's red flag;
+        # "pata nahi" stays unknown
         v = value or yes_no(answer)
-        return {"danger": {"yes": "present", "no": "absent"}.get(v or "", "unknown")}
-    if qid == "q_who":
+        facts = {"danger": {"yes": "present", "no": "absent"}.get(v or "", "unknown"), "danger_flag": DANGER_FLAG[qid]}
+        if qid == "q_danger_breathing" and v in ("yes", "no"):
+            facts["breathing"] = {"yes": "present", "no": "absent"}[v]
+        return facts
+    if qid in ("q_who", "q_their_age"):
         if value in WHO_VALUES:
             return dict(WHO_VALUES[value])
         ex = extract(answer)
@@ -261,7 +416,7 @@ def _who_known(ex: Extraction, who: str | None) -> bool:
     """Enough is known about who the patient is: an age, a pregnancy, an older adult (from
     "dadi", "buzurg"), or the model is sure it is an older adult or a pregnancy."""
     return (ex.age_years is not None or bool(ex.pregnant) or ex.age_group == "older_adult"
-            or who in ("elderly", "pregnant"))
+            or ex.relation == "self" or who in ("self", "elderly", "pregnant"))  # "mujhe ...": the writer
 
 
 def _conversational(ex: Extraction, decision: Decision, asked: list[str], service: bool,
@@ -271,18 +426,20 @@ def _conversational(ex: Extraction, decision: Decision, asked: list[str], servic
             if qid not in asked:
                 return qid
             # asked and still unclear: one danger check, then the safe default
-            return "q_danger" if need == "main_symptom" and "q_danger" not in asked else None
+            return "q_danger" if need == "main_symptom" and not danger_asked(asked) else None
     if service:  # injection, dressing, lab test: booked as asked (a child's fever still needs the age)
         return "q_age" if "age" in decision.needs and "q_age" not in asked else None
-    if "q_danger" not in asked:
-        return "q_danger"
+    if not danger_asked(asked):
+        return danger_qid(ex)
     if "age" in decision.needs and "q_age" not in asked:
         return "q_age"
     if ex.duration_days is None and "q_duration" not in asked:
         return "q_duration"
-    if not _who_known(ex, who) and "q_age" not in asked and "q_who" not in asked:
+    if not _who_known(ex, who) and not {"q_age", "q_who", "q_their_age"} & set(asked):
         child = ex.age_group in ("infant", "child") or ex.relation in ("child", "infant") or who in ("child", "infant")
-        return "q_age" if child else "q_who"
+        if child:
+            return "q_age"
+        return "q_their_age" if ex.relation in ADULT_RELATIONS else "q_who"
     return None
 
 
