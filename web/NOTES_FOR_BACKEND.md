@@ -65,3 +65,21 @@ switching to the live backend should be a matter of flipping `VITE_USE_MOCKS=0`.
   and voice in/out are all implemented in this pass too (ahead of M3).
 - **Not yet:** verified against the live backend — waiting on :8000
   (`VITE_USE_MOCKS=0`). Will report any contract mismatch here under M2.
+
+### M2 — live integration verified (done, 2026-10-24)
+Switched the UI to the live backend (`VITE_API_BASE=http://127.0.0.1:8000`,
+`VITE_USE_MOCKS=0`) and send `?explain=true&policy=safety` (one constant in
+`api.ts`). Ran all 11 scenarios from the backend agent's table by replaying the
+exact requests the UI makes (turn-by-turn `conversation_history`). **All 11 pass,
+no contract mismatches, no oddities.** Notes:
+- `/health` → `caregivers: 26` (matches). `127.0.0.1` used (not `localhost`) per
+  the IPv6 heads-up — works.
+- Follow-up `q_breathing` fires for fever/cough and English cough (policy=safety),
+  as intended; "Nahi"/"no" → routes on, "Haan" → `breathing_difficulty` emergency.
+- Emergencies all return `matched_caregivers: []` and the emergency trace block;
+  `self_harm_risk` adds `14416`, numbers otherwise `[112,102,108]`.
+- `trace.decision.specialty` = `orthopaedics` for the knee-pain case; null elsewhere.
+- `trace.caregivers[].features` carries exactly 5 sub-scores (skill, time,
+  distance, language, rating) — will render these as bars in Task 2.
+- Booking: valid → 201 with `caregiver_name`; unknown id → 404 (UI shows retry).
+- No code change needed on either side for M2. ✅

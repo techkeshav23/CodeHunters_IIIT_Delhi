@@ -20,6 +20,11 @@ export const API_BASE: string =
 export const USE_MOCKS: boolean =
   (import.meta.env.VITE_USE_MOCKS as string | undefined) === "1";
 
+// Follow-up policy for /v1/triage (backend agent's call): "safety" adds a
+// breathing question for fever/cough so the smart-intake step shows in the demo.
+// One constant so we can flip it; the API default is "minimal".
+const TRIAGE_POLICY = "safety";
+
 const MOCK_DELAY_MS = 400;
 
 function delay(ms: number): Promise<void> {
@@ -111,11 +116,14 @@ export async function triage(req: TriageRequest): Promise<TriageResponse> {
     return pickMockTriage(req);
   }
 
-  const res = await fetch(`${API_BASE}/v1/triage?explain=true`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
+  const res = await fetch(
+    `${API_BASE}/v1/triage?explain=true&policy=${TRIAGE_POLICY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    },
+  );
   if (!res.ok) {
     throw new Error(`Triage failed: ${res.status}`);
   }
