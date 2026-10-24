@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "./types";
 import { createRecognizer, voiceSupported, type Recognizer } from "./voice";
-import type { MicState } from "./components/MicButton";
+
+export type MicState = "idle" | "listening";
 
 // Drives the mic for a single text box. The live transcript is pushed into the
 // box via setText so the user can fix it before sending (spec section 7).

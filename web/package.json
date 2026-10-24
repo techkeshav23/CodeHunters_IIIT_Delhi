@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/anek-devanagari": "^5.1.0",
+    "@fontsource/anek-latin": "^5.1.0",
     "@fontsource/noto-sans": "^5.1.0",
     "@fontsource/noto-sans-devanagari": "^5.1.0",
     "lucide-react": "^0.456.0",

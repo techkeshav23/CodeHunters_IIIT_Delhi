@@ -202,3 +202,35 @@ export async function health(): Promise<HealthResponse> {
   }
   return (await res.json()) as HealthResponse;
 }
+
+// ---- labels for the emergency page (red-flag names, helplines) ----
+
+export interface LabelsResponse {
+  red_flags: Array<{ id: string; label: string; label_hinglish: string; label_hi: string }>;
+  emergency_numbers: Array<{ label: string; label_hi: string; number: string }>;
+  helplines: Record<string, { label: string; label_hi: string; number: string }>;
+}
+
+const FALLBACK_LABELS: LabelsResponse = {
+  red_flags: [],
+  emergency_numbers: [
+    { label: "Emergency (all India)", label_hi: "Emergency (poore Bharat mein)", number: "112" },
+    { label: "Ambulance in Delhi (CATS, free)", label_hi: "Delhi ambulance (CATS, free)", number: "102" },
+    { label: "Ambulance in many states", label_hi: "Kai rajyon mein ambulance", number: "108" },
+  ],
+  helplines: {
+    self_harm_risk: { label: "Tele-MANAS mental health helpline", label_hi: "Tele-MANAS helpline", number: "14416" },
+    poisoning: { label: "AIIMS Poisons Information Centre", label_hi: "AIIMS zeher helpline", number: "1800-116-117" },
+  },
+};
+
+export async function labels(): Promise<LabelsResponse> {
+  if (USE_MOCKS) return FALLBACK_LABELS;
+  try {
+    const res = await fetch(`${API_BASE}/v1/labels`);
+    if (!res.ok) return FALLBACK_LABELS;
+    return (await res.json()) as LabelsResponse;
+  } catch {
+    return FALLBACK_LABELS;
+  }
+}
