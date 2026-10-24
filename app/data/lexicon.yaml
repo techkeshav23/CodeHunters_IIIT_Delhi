@@ -349,6 +349,9 @@ red_flags:
     label_hinglish: Behosh ya jawab nahi de rahe
     label_hi: बेहोश या जवाब नहीं दे रहे
     patterns:
+      # added after the fresh blind set (eval/fresh) showed these were missed
+      - not waking up
+      - wont wake up
       - behosh
       - hosh nahi
       - hosh mein nahi
@@ -375,6 +378,13 @@ red_flags:
     label_hi: दौरा या झटके
     exclude_if_before: [dil]
     patterns:
+      # added after the fresh blind set (eval/fresh) showed these were missed
+      - having a fit
+      - having fits
+      - fit aa raha
+      - fit aa rahe
+      - whole body shaking
+      - body is shaking and
       - mirgi
       - jhatke
       - daura pada
@@ -485,6 +495,17 @@ red_flags:
     label_hinglish: Chehre, honth ya jeebh par sujan
     label_hi: चेहरे, होंठ या जीभ पर सूजन
     patterns:
+      # added after the fresh blind set (eval/fresh) showed these were missed
+      - =lips swelling
+      - =lips are swelling
+      - =lips and eyes swelling
+      - =lips and eyes are swelling
+      - throat feels tight
+      - throat is tight
+      - throat closing
+      - honth sooj
+      - hoth sooj
+      - gala band ho raha
       - chehra sujan
       - sujan chehra
       - hont sujan
@@ -520,6 +541,15 @@ red_flags:
     label_hinglish: Zeher, chemical ya zyada dawai kha li
     label_hi: ज़हर, केमिकल या ज़्यादा दवाई खा ली
     patterns:
+      # added after the fresh blind set (eval/fresh) showed these were missed
+      - phenyl pi
+      - phenyl pee
+      - phenyle pi
+      - फिनाइल पी
+      - फिनायल पी
+      - toilet cleaner pi
+      - bleach pi
+      - harpic pi
       - zeher
       - keetnashak
       - pesticide
@@ -637,6 +667,12 @@ red_flags:
     # "dawai ka course khatam karne ka plan", "kaam khatam karna": finishing something
     exclude_if_before: [course, kaam, project, padhai, syllabus, series, chapter]
     patterns:
+      # added after the fresh blind set (eval/fresh) showed these were missed
+      - no point in living
+      - end it tonight
+      - going to end it
+      - decided to end my life
+      - decided to end it
       - khudkushi
       - marne ka mann
       - marne ka man

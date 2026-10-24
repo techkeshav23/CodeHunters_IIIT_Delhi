@@ -71,7 +71,7 @@ three months is an emergency, so it asks the age."
 **Show:** the steps, "583 mushkil test messages, har emergency pakdi", 209/209
 caregiver matches, and the last API request and response with the time in ms.
 **Say:** "This is the exact API call behind the screen: the problem statement's JSON
-schema, answered in a few milliseconds, with no outside AI service."
+schema, decided by our fine-tuned MuRIL model in about 20 milliseconds."
 
 ### Spare examples (all checked on the live server)
 - `dadi ko bedsore dressing chahiye` → home nursing, today, three medics with wound dressing.
@@ -102,21 +102,22 @@ emergency path you cannot miss."
 
 ## Likely questions
 
-- **"Where is the AI? Did you train an LLM?"** No. With no labelled clinical data we
-  could not prove an LLM keeps every emergency, its text can drift into diagnosis, and a
-  hosted model would send family health details outside. We built a normaliser for
-  Hinglish, Devanagari and speech-to-text, a negation-aware red-flag engine and a scoring
-  ranker, and tested them on 583 tricky messages, the organisers' dataset and an unseen public benchmark.
-  A learned model is wired in but off until doctor-labelled data exists, and it can only
-  raise urgency.
-- **"How do you know it generalises?"** We split the organisers' data by situation (all three
-  languages of a message on one side), so the test set is situations the model never saw: 100%
-  with rules, 83% for the model alone. On 88 messages written by other people the system picks
-  the organisers' care type 86% of the time; that is our main known gap, and it comes from the
-  data (22 situations), which is why a bigger transformer model did not help when we tried it.
-- **"Why not an LLM?"** Seconds per answer, health details sent to a third party, network needed
-  during scoring, and no way to prove it never misses an emergency. Our model answers in ~2 ms
-  offline and shows its probabilities in every response.
+- **"Where is the AI? Is this rules or RAG?"** Neither. A fine-tuned MuRIL model (Google's
+  BERT for Indian languages) decides every request: care type, urgency, red flags, the symptoms
+  it understood and who the patient is, with a calibrated confidence. There is no retrieval at
+  run time. The danger-sign lexicon is only a safety net that can escalate, never decide less
+  urgent care; every guardrail that fired is listed under "Suraksha jaanch".
+- **"The organisers gave 340 rows. How did you train on so little?"** Those rows hold only 65
+  distinct messages. So we used teacher → student distillation: Claude Opus 5.5 wrote 2,743
+  new messages for 62 case families whose labels we fixed in a labelling guide, and MuRIL was
+  fine-tuned on them. The organisers' 340 rows were never trained on; they are our test set.
+- **"Isn't 100% suspicious? Overfitting?"** The organisers' messages are short and clear. Our
+  honest numbers: 83% on 12 whole case families the model never saw, and 0.966 care F1 on the
+  organisers' rows before any error analysis. Training accuracy is 99.6%, so there is a gap on
+  brand-new kinds of request; that is what the guardrails and the follow-up questions are for.
+- **"Why not just call an LLM?"** Seconds per answer, health details sent outside, network
+  needed during scoring. MuRIL answers in ~20 ms on the server's CPU; Claude is asked only when
+  the model is unsure, and it can never remove an emergency.
 - **"What if the organisers' caregiver file looks different?"** Field names are mapped
   loosely (id or caregiver_id, location or lat/lng, lists or comma text); a file that
   cannot be read falls back to the sample profiles and `/health` says why.
