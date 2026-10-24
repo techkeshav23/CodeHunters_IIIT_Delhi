@@ -72,7 +72,7 @@ web/
     types.ts          API contract types
     App.tsx           state machine + routing between screens
     screens/          Home, FollowUp, Result, Booking, Emergency
-    components/       Header, Footer, MicButton, Explain, JudgeView
+    components/       Header, Footer, MicButton, Explain, FeatureBars, JudgeView
     mocks/            copies of docs/examples/*.json
 ```
 

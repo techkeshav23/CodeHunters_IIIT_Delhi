@@ -563,6 +563,80 @@ textarea.input:focus {
   color: var(--teal-600);
 }
 
+/* decision badges row + specialty chip */
+.decision-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.specialty-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #ede7fb;
+  color: #5a3ea8;
+}
+
+/* per-caregiver "why this match" feature bars */
+.feat {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 8px;
+}
+.feat__toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 8px 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal-700);
+  min-height: 40px;
+}
+.feat__list {
+  list-style: none;
+  margin: 4px 0 2px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.feat__row {
+  display: grid;
+  grid-template-columns: 92px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.feat__label {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.feat__track {
+  height: 9px;
+  background: var(--line-soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.feat__fill {
+  display: block;
+  height: 100%;
+  background: var(--teal-600);
+  border-radius: 999px;
+}
+.feat__pct {
+  text-align: right;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- explain / Kyon panel ---- */
 
 .explain {

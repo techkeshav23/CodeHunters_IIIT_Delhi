@@ -78,6 +78,8 @@ export interface Decision {
   confidence: number;
   source: string;
   rule: string;
+  // Set for specialist routing (e.g. "orthopaedics"); null otherwise.
+  specialty?: string | null;
 }
 
 export interface FollowUpOption {
@@ -122,6 +124,17 @@ export interface TraceCaregiver {
   score: number;
   reason: string;
   reason_local: string;
+  // 0-1 sub-scores behind the match (backend agent, documented in API.md):
+  // skill, time, distance, language, rating. Optional for forward-compat.
+  features?: MatchFeatures | null;
+}
+
+export interface MatchFeatures {
+  skill?: number;
+  time?: number;
+  distance?: number;
+  language?: number;
+  rating?: number;
 }
 
 export interface Trace {

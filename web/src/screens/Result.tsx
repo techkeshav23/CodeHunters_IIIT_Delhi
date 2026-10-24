@@ -12,7 +12,12 @@ import type { Lang, TriageResponse, TraceCaregiver } from "../types";
 import { t } from "../i18n";
 import { speak, stopSpeaking, ttsSupported } from "../voice";
 import Explain from "../components/Explain";
+import FeatureBars from "../components/FeatureBars";
 import JudgeView from "../components/JudgeView";
+
+function titleCase(s: string): string {
+  return s.replace(/(^|\s|_)\w/g, (m) => m.toUpperCase()).replace(/_/g, " ");
+}
 
 interface Props {
   lang: Lang;
@@ -53,10 +58,10 @@ export default function Result({
     const parts = [headline, trace.reasoning_local];
     const first = caregivers[0];
     if (first) parts.push(`${first.name}. ${first.reason_local}`);
-    speak(parts.filter(Boolean).join(". "), lang);
     setSpeaking(true);
-    // speechSynthesis has no reliable "all done" here; reset after a guess.
-    window.setTimeout(() => setSpeaking(false), 12000);
+    speak(parts.filter(Boolean).join(". "), lang, {
+      onEnd: () => setSpeaking(false),
+    });
   };
 
   return (
@@ -67,9 +72,16 @@ export default function Result({
         lang={dev}
       >
         <h1 className="decision-headline">{headline}</h1>
-        {urgencyLabel && (
-          <span className={badgeClass(d.urgency)}>{urgencyLabel}</span>
-        )}
+        <div className="decision-badges">
+          {urgencyLabel && (
+            <span className={badgeClass(d.urgency)}>{urgencyLabel}</span>
+          )}
+          {d.specialty && (
+            <span className="specialty-chip">
+              {t(lang, "specialtyLabel")}: {titleCase(d.specialty)}
+            </span>
+          )}
+        </div>
       </section>
 
       {ttsSupported() && (
@@ -137,6 +149,8 @@ export default function Result({
             </div>
 
             <p className="cg-reason">{cg.reason_local || cg.reason}</p>
+
+            {cg.features && <FeatureBars features={cg.features} lang={lang} />}
 
             <button
               type="button"

@@ -158,8 +158,15 @@ function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
   );
 }
 
-export function speak(text: string, lang: Lang): void {
-  if (!ttsSupported() || !text.trim()) return;
+export function speak(
+  text: string,
+  lang: Lang,
+  opts?: { onEnd?: () => void },
+): void {
+  if (!ttsSupported() || !text.trim()) {
+    opts?.onEnd?.();
+    return;
+  }
   const synth = window.speechSynthesis;
   synth.cancel(); // stop anything already speaking
   const u = new SpeechSynthesisUtterance(text);
@@ -167,6 +174,10 @@ export function speak(text: string, lang: Lang): void {
   if (voice) u.voice = voice;
   u.lang = localeFor(lang);
   u.rate = 0.9; // slightly slow (spec section 7)
+  if (opts?.onEnd) {
+    u.onend = () => opts.onEnd?.();
+    u.onerror = () => opts.onEnd?.();
+  }
   synth.speak(u);
 }
 

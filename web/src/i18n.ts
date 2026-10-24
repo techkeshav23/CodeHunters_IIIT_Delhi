@@ -156,6 +156,21 @@ export const strings = {
   },
   patient: { hinglish: "Mareez", hi: "मरीज़", en: "Patient" },
   years: { hinglish: "saal", hi: "साल", en: "years" },
+  matchWhy: {
+    hinglish: "Yeh match kyon",
+    hi: "यह मैच क्यों",
+    en: "Why this match",
+  },
+  featSkill: { hinglish: "Skill", hi: "कौशल", en: "Skill" },
+  featTime: { hinglish: "Jaldi free", hi: "जल्दी उपलब्ध", en: "Availability" },
+  featDistance: { hinglish: "Paas", hi: "नज़दीकी", en: "Nearness" },
+  featLanguage: { hinglish: "Bhasha", hi: "भाषा", en: "Language" },
+  featRating: { hinglish: "Rating", hi: "रेटिंग", en: "Rating" },
+  specialtyLabel: {
+    hinglish: "Visheshgya",
+    hi: "विशेषज्ञ",
+    en: "Specialist",
+  },
 } satisfies Record<string, Dict>;
 
 export type StringKey = keyof typeof strings;

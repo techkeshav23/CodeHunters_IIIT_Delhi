@@ -83,3 +83,14 @@ no contract mismatches, no oddities.** Notes:
   distance, language, rating) — will render these as bars in Task 2.
 - Booking: valid → 201 with `caregiver_name`; unknown id → 404 (UI shows retry).
 - No code change needed on either side for M2. ✅
+
+### M3/M4 — explainability extras (done, 2026-10-24)
+- Each caregiver card now has a "Yeh match kyon" toggle showing the five
+  `trace.caregivers[].features` (skill, time, distance, language, rating) as
+  small labelled bars with `role="meter"` + percentages. Collapsed by default.
+- `trace.decision.specialty` shown as a chip on the decision card when present
+  (e.g. "Visheshgya: Orthopaedics"). Only rendered when the API sends it.
+- Read-aloud now resets its button state from the real `speechSynthesis` `onend`
+  event (no more timeout guess).
+- Types added: `MatchFeatures` and `decision.specialty` in `src/types.ts`.
+  Both optional, so no break if a field is missing.
