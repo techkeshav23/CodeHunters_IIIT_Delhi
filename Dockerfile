@@ -6,7 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Offline option for flaky networks: put Linux wheels in vendor/wheels
+# (pip download -r requirements.txt -d vendor/wheels --only-binary=:all: --platform manylinux2014_x86_64 --python-version 3.11)
+COPY vendor/wheels /wheels
+RUN if ls /wheels/*.whl >/dev/null 2>&1; then pip install --no-index --find-links /wheels -r requirements.txt; \
+    else pip install -r requirements.txt; fi
 
 COPY app ./app
 COPY eval ./eval

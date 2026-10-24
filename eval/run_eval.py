@@ -30,7 +30,7 @@ def load_rows(path: Path) -> list[dict]:
         with path.open(encoding="utf-8-sig", newline="") as fh:
             return list(csv.DictReader(fh))
     rows = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if line:
             rows.append(json.loads(line))
