@@ -2,7 +2,9 @@
 
 For the finale demo and the video. Written for the current web app (desktop portal with
 a sidebar; phone view with a bottom tab bar). Every input below was run on the live API
-and in the web app on 24 Oct; the outcomes are what they returned.
+and in the web app on 24 Oct, and the flows below again on 25 Oct after the danger checks
+became one button per sign; the outcomes are what they returned. In the Android app, "Nayi
+jaanch" is the **+ Nayi chat** button at the top, next to History and Incognito.
 
 ## Before you start
 
@@ -30,9 +32,10 @@ or speaking. Raahat says what care fits, how soon, and who should come."
 
 ### 0:15 to 1:00. The problem statement's own example
 **Do:** click the example **Papa ko do din se bukhar hai aur khansi bhi**.
-**Show:** one question, **Kya saans lene mein dikkat ho rahi hai?** (Sawaal 1 / 3).
-**Say:** "Fever and cough, so it checks one danger sign before deciding."
-**Do:** tap **Nahi**.
+**Show:** one question, **Bukhar ke saath kya inme se kuch hai?** with one button per danger
+sign (Saans phoolna ya tez chalna, Bahut susti, Jhatke) and **Inme se kuch nahi** (Sawaal 1 / 3).
+**Say:** "Fever and cough, so it checks the danger signs that fit a fever before deciding."
+**Do:** tap **Inme se kuch nahi**.
 **Show:** the dial on **Aaj hi**, "Paramedic ghar aakar check karenge", and three medics
 from the organisers' roster: Sunita Chauhan first (Hindi, 1.3 km, free 08:00–13:00).
 **Do:** open **Yeh faisla kyon?** (what we understood: Papa, Bukhar, Khansi, 2 din se;
@@ -53,7 +56,8 @@ is the one mistake this app must not make."
 
 ### 1:30 to 2:00. Hindi and a specialist
 **Do:** **Wapas**, **Nayi jaanch**, switch the language to **हिंदी**, then speak or type
-`दो महीने से घुटने में दर्द है`.
+`दो महीने से घुटने में दर्द है`. It asks "जोड़ों या घुटने में दर्द के साथ क्या इनमें से कुछ है?";
+tap **इनमें से कुछ नहीं**.
 **Show:** "डॉक्टर से फ़ोन / वीडियो पर बात", **विभाग: हड्डी और जोड़ (Orthopaedics)**, and
 three doctors who consult by video. Tap **सुनाइए** to hear it.
 **Say:** "The whole app switches to Hindi, names the department, and can read the answer
@@ -61,7 +65,8 @@ aloud. Doctors in the roster consult by video, so distance does not count for th
 
 ### 2:00 to 2:25. A question that can change everything
 **Do:** switch back to **Hinglish**, **Nayi jaanch**, type `Mere bete ko bukhar hai`.
-**Show:** **Bachche ki umar kitni hai?** Tap **3 mahine se kam**.
+**Show:** the fever danger check; tap **Inme se kuch nahi**. Then **Bachche ki umar kitni hai?**
+Tap **3 mahine se kam**.
 **Show:** emergency: a danger sign in a young baby.
 **Say:** "It asks only when the answer can change the decision. Fever in a baby under
 three months is an emergency, so it asks the age."
