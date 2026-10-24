@@ -96,6 +96,8 @@ EMERGENCY_NUMBERS = [
 ]
 FLAG_HELPLINES = {
     "self_harm_risk": {"label": "Tele-MANAS mental health helpline", "label_hi": "Tele-MANAS helpline", "number": "14416"},
+    "psychiatric_emergency": {"label": "Tele-MANAS mental health helpline", "label_hi": "Tele-MANAS helpline",
+                              "number": "14416"},
     "poisoning": {"label": "AIIMS Poisons Information Centre", "label_hi": "AIIMS zeher helpline", "number": "1800-116-117"},
 }
 

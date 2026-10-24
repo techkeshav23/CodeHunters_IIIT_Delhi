@@ -33,6 +33,16 @@ LIST_ITEM = 6      # longest item inside such a list
 MOD_WINDOW = 3
 FUZZY_MIN_LEN = 5
 FUZZY_CUTOFF = 86
+# "suicide jaisa koi khayal nahi": words skipped right after a symptom before looking for "nahi"
+NEG_SKIP = {phon(w) for w in "jaisa jaisi jaise koi aisa aisi".split()}
+# "lakwa ho jaega" ("will get paralysed"), "behosh ho jaye to": a fear or a what-if, not a symptom
+FUTURE = {phon(w) for w in "jaega jayega jaegi jayegi jaenge jayenge jaye jaaye".split()}
+# "khud ko nuksan pahunchane ya suicide jaisa koi khayal nahi": one negation covers an "or" list
+OR_WORDS = {"ya"}
+OR_WORDS_EN = {"or"}  # Hinglish "or" often means "aur" (and), so only in English text
+LIST_VERBS = {phon(w) for w in "hai hain he h tha thi the raha rahi rahe ho hua hui is are was".split()}
+# top-level phrase lists in lexicon.yaml, matched like modifiers (see extract.py for their use)
+CONTEXT_LISTS = ("resolved", "past", "current", "episodic", "chest_wall", "third_party", "report")
 
 
 @dataclass(frozen=True)
@@ -41,6 +51,9 @@ class Pattern:
     tokens: tuple[str, ...]
     has_negation: bool
     requires: tuple[str, ...] = ()
+    group: str | None = None            # conditional group, for `requires: [pair]`
+    pair_with: tuple[str, ...] = ()     # groups this one may pair with (empty: any other group)
+    pair_within: int | None = None      # partner must be at most this many words away
 
 
 @dataclass
@@ -104,7 +117,7 @@ class Lexicon:
             self.entries["modifier"].append(self._entry({"id": mod_id, "patterns": words}, "modifier"))
         for rel_id, words in (data.get("relations") or {}).items():
             self.entries["relation"].append(self._entry({"id": rel_id, "patterns": words}, "relation"))
-        for mod_id in ("resolved", "past", "current", "episodic"):
+        for mod_id in CONTEXT_LISTS:
             self.entries["modifier"].append(self._entry({"id": mod_id, "patterns": data.get(mod_id) or []},
                                                         "modifier"))
 
@@ -123,18 +136,24 @@ class Lexicon:
     def _canon_plain(self, tok: str) -> str:
         return self.alias.get(tok, tok)
 
-    def _pattern(self, text: str, requires: tuple[str, ...] = ()) -> Pattern | None:
+    def _pattern(self, text: str, requires: tuple[str, ...] = (), group: str | None = None,
+                 pair_with: tuple[str, ...] = (), pair_within: int | None = None) -> Pattern | None:
         toks = tuple(self._canon_plain(t) for t in tokenize(text) if t not in (BOUNDARY, COMMA))
         if not toks:
             return None
         has_neg = any(t in {"nahi", "not", "no", "na", "without", "t"} for t in toks)
-        return Pattern(text=text, tokens=toks, has_negation=has_neg, requires=requires)
+        return Pattern(text=text, tokens=toks, has_negation=has_neg, requires=requires,
+                       group=group, pair_with=pair_with, pair_within=pair_within)
 
     def _entry(self, item: dict, kind: str) -> Entry:
         pats = [p for p in (self._pattern(str(t)) for t in item.get("patterns") or []) if p]
         for cond in item.get("conditional") or []:
             req = tuple(cond.get("requires") or ())
-            pats += [p for p in (self._pattern(str(t), req) for t in cond.get("patterns") or []) if p]
+            group = cond.get("group")
+            pair_with = tuple(cond.get("pair_with") or ())
+            within = cond.get("pair_within")
+            pats += [p for p in (self._pattern(str(t), req, group, pair_with, within)
+                                 for t in cond.get("patterns") or []) if p]
         meta = {k: v for k, v in item.items() if k not in {"id", "label", "label_hinglish", "label_hi",
                                                             "patterns", "conditional", "exclude_if_before"}}
         excl = frozenset(self._canon_plain(phon(str(w))) for w in item.get("exclude_if_before") or [])
@@ -279,18 +298,33 @@ class Lexicon:
             if tokens[k] in self.neg_after and tokens[k - 1] not in self.not_after:
                 return True
         # after: "dikkat nahi", "dard to nahi hai" (but not "dard kam nahi ho raha"),
-        # and the fear form "stroke na ho" ("let it not be a stroke")
-        for k in range(end, min(len(tokens), end + NEG_WINDOW)):
+        # the fear form "stroke na ho" ("let it not be a stroke") and the future "lakwa ho jaega"
+        skip = end
+        while skip < len(tokens) and tokens[skip] in NEG_SKIP:  # "suicide jaisa koi khayal nahi"
+            skip += 1
+        for k in range(skip, min(len(tokens), skip + NEG_WINDOW)):
             t = tokens[k]
             if t in (BOUNDARY, COMMA) or t in self.breakers:
                 break
             if t == "na" and k + 1 < len(tokens) and tokens[k + 1] in ("ho", "hua", "hoga", "hoye"):
+                return True
+            if k == end and t in ("ho", "a") and k + 1 < len(tokens) and tokens[k + 1] in FUTURE:
                 return True
             if t in self.neg_after:
                 prev = tokens[k - 1] if k - 1 >= 0 else ""
                 if prev in self.not_after:
                     return False
                 return True
+        # a risk, not an event: "risk of stroke", "how to prevent a heart attack", "lakwe ka khatra"
+        k = start - 1
+        while k >= 0 and tokens[k] in ("a", "an", "the", "of"):
+            k -= 1
+        if k >= 0 and (tokens[k] in ("prevent", "avoid")
+                       or (tokens[k] in ("risk", "chance", "chances") and tokens[k + 1] == "of")):
+            return True
+        # "lakwe ka khatra", "heart attack ka koi khatra nahi": talk about a risk, not a symptom
+        if tokens[end:end + 1] in (["ka"], ["ki"], ["ke"]) and "khatra" in tokens[end + 1:end + 3]:
+            return True
         # before: "no chest pain", "bina bukhar ke", and lists such as
         # "No weakness, numbness, slurred speech, chest pain or trouble breathing"
         in_list = False
@@ -312,6 +346,26 @@ class Lexicon:
             if item_len >= (LIST_ITEM if in_list else NEG_WINDOW):
                 return False
         return False
+
+    def negate_or_lists(self, hits: list[Hit], tokens: list[str], english: bool = False) -> None:
+        """"behoshi ya seene mein dard kuch nahi": a negation at the end of an "or" list covers
+        the earlier items too. Works right to left so the negation runs back along the list."""
+        joins = OR_WORDS | (OR_WORDS_EN if english else set())
+        ordered = sorted(hits, key=lambda h: (h.start, h.end))
+        for i in range(len(ordered) - 1, -1, -1):
+            h = ordered[i]
+            if h.negated or h.pattern.has_negation:
+                continue
+            later = [g for g in ordered if g.start >= h.end and g.start - h.end <= 6]
+            if not later:
+                continue
+            first = min(g.start for g in later)
+            if not any(g.negated for g in later if g.start == first):
+                continue
+            between = tokens[h.end:first]
+            if any(t in joins for t in between) and not any(
+                    t == BOUNDARY or t in self.breakers or t in LIST_VERBS for t in between):
+                h.negated = True
 
     def near(self, hits: list[Hit], tokens: list[str], start: int, end: int) -> bool:
         """True if any hit lies within MOD_WINDOW words of [start, end) in the same sentence."""

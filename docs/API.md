@@ -101,8 +101,11 @@ Red flag ids (stable): `breathing_difficulty`, `chest_pain`, `stroke_signs`,
 `unconscious`, `seizure`, `severe_bleeding`, `major_injury`, `severe_allergy`,
 `poisoning`, `venomous_bite`, `severe_burn`, `self_harm_risk`,
 `pregnancy_emergency`, `infant_danger_sign`, `severe_headache`,
-`severe_abdominal_pain`, `severe_dehydration`, `sudden_confusion`. Labels for
-each come from `GET /v1/labels`.
+`severe_abdominal_pain`, `severe_dehydration`, `sudden_confusion`,
+`low_sugar_signs`, `heat_stroke`, `eye_injury`, `severe_bp`, `abnormal_vitals`
+(pulse, oxygen, BP, sugar or child temperature numbers out of range),
+`psychiatric_emergency`, `emergency_requested`, and `possible_emergency`
+(raised by the optional learned model). Labels for each come from `GET /v1/labels`.
 
 ---
 

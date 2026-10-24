@@ -46,7 +46,16 @@ aliases:
   rahe: [rhe]
   bahut: [bht, bhot, bohot, bahot, bahoot, bhut]
   tedha: [teda, ted, tedhi, tedi, terha, tirchha]
-  aankh: [aankhein, aankhen, ankhe, ankhen, eyes, eye]
+  aankh: [aankhein, aankhen, ankhe, ankhen, aankhon, ankhon, eyes, eye]
+  jabda: [jabde, jabdo, jabdon, jabada, jaw, jaws]
+  kandha: [kandhe, kandho, kandhon, shoulder, shoulders]
+  tight: [tightness]
+  pump: [panp, pamp]
+  sentence: [vakya, vaky, sentences, वाक्य]
+  goliyan: [goliyon, goliya, goliyaan]
+  gaya: [gya]
+  gayi: [gyi]
+  gaye: [gye]
   baayein: [baayen, baye, bayen, baain, left]
   baat: [baatein, baaten, baaton]
   # English words as speech-to-text writes them in Devanagari (सुसाइड, हैवी, प्रेशर)
@@ -72,16 +81,20 @@ aliases:
 negation:
   after: [nahi]
   before: ["no", "not", without, denies, denied, never, bina, na]
-  breakers: [aur, and, but, par, lekin, magar, however, kintu, parantu]
+  # "na bukhar hai na khansi, bas achanak muh tedha ho gaya": "bas" starts a new statement
+  breakers: [aur, and, but, par, lekin, magar, however, kintu, parantu, bas, sirf, only, just, except]
   # "nahi" after these words confirms the symptom: "dard kam nahi ho raha",
   # "bardasht nahi", "bukhar utar nahi raha", "khoon ruk nahi raha".
-  not_after: [bardasht, ruk, rukta, kam, theek, thik, ja, jaa, utar, utarta, band, sudhar, aaram, rahat, chain, so, sakte]
+  # "behosh, uth nahi rahi" (not waking up) confirms too.
+  not_after: [bardasht, ruk, rukta, kam, theek, thik, ja, jaa, utar, utarta, band, sudhar, aaram, rahat, chain, so, sakte,
+              uth, utha, uthti, uthta, uthte]
 
 # Phrases placing a symptom in the past ("seizure disorder years ago", "pichle saal heart
 # attack hua tha"). A red flag in the same phrase is not counted unless the phrase also
-# says it is happening now (ab, abhi, now, again, phir se).
+# says it is happening now (ab, abhi, now, again, phir se). A year ("in 2019") counts too
+# (extract.py). "stroke ke baad wali" (the medicine for after the stroke) is history.
 past: [years ago, year ago, months ago, last year, pichle saal, saal pehle, saal purana, history of,
-       in the past, used to, had a history]
+       in the past, used to, had a history, ke baad wali, ke baad wala, ke baad wale, last winter, last summer]
 current: [ab, abhi, now, again, phir se, dobara, today, aaj, this episode, is different, alag tarah]
 
 # Long-standing, on-and-off breathlessness or chest discomfort ("sometimes, for 3 months")
@@ -95,14 +108,33 @@ resolved: [ab theek, ab thik, ab sahi, aaram aa gaya, aaram mil gaya, theek ho g
            theek ho gaye, bilkul theek, hosh mein hain, hosh mein hai, chal pa rahe, chal pa rahi,
            feels better, feeling better, better now]
 
+# Chest pain that hurts when the spot is pressed or the arm is moved. In a young adult with
+# no sweating, breathlessness or dizziness this is chest-wall strain: a same-day check, not
+# an ambulance (extract.py). Exertion alone ("gym ke baad") is NOT on this list.
+chest_wall: [dabane pe, dabane par, dabane se, dabaane pe, dabaane par, press karne, on pressing, when i press,
+             when pressed, tender to touch, haath upar karne, haath upar karne pe, haath uthane, haath ghumane,
+             haath hilane, moving my arm, move my arm, arm movement]
+
+# Someone other than the patient ("padosi wale uncle", "TV pe ek aadmi"). A red flag in a
+# sentence about such a person, told in the past or from the news, is not the patient's when
+# the message is about a family member elsewhere (extract.py).
+third_party: [padosi, padosan, padosiyon, neighbour, neighbor, ek aadmi, ek aurat, ek ladka, ek ladki,
+              someone, somebody, a man, a woman, a guy, colleague, celebrity, actor]
+report: [tv, news, akhbaar, akhbar, newspaper, article, youtube, film, movie, serial, documentary]
+
 modifiers:
   # checked within 3 words of the symptom, same sentence
   severe: [bahut tez, bahut zyada, bahut dard, tez dard, tez bukhar, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe", sar phat]
-  sudden: [achanak, ekdam, "ek dam se", "all of a sudden", "abhi abhi"]
+  sudden: [achanak, ekdam, "ek dam se", "ekdum se", "all of a sudden", "abhi abhi"]
   mild: [halka, halki, halke, thoda, thodi, "thoda sa", mild, slight, "a bit", "little bit"]
 
 # Red flags. `patterns` always fire. `conditional` patterns fire only with
-# one of `requires`: severe, sudden, infant, child, older_adult, pregnant, fever.
+# one of `requires`: severe, sudden, infant (under 3 months), baby (under 1 year), child,
+# older_adult, pregnant, fever, diabetic, heat, bp_danger, postpartum (delivery in the last
+# weeks), palpitations, or pair.
+# `pair`: the block has a `group`, and fires when a different group of the same red flag is
+# also in the message (arm weakness + slurred speech; chest burning + sweating). `pair_with`
+# limits which groups count as a partner (both sides must accept each other).
 red_flags:
   - id: breathing_difficulty
     label: Breathing difficulty
@@ -154,6 +186,18 @@ red_flags:
       - pump se bhi aaram nahi
       - inhaler se aaram nahi
       - inhaler not helping
+      # chest pulling in, too breathless to finish a sentence
+      - seena dhans
+      - pasli dhans
+      - pasliyan dhans
+      - chest pulling in
+      - chest sucking in
+      - retractions
+      - sentence nahi bol
+      - "can't finish a sentence"
+      - "can't complete a sentence"
+      - cannot finish a sentence
+      - "can't speak in full sentences"
       - सांस नहीं आ रही
       - सांस लेने में दिक्कत
       - सांस फूल रही
@@ -161,6 +205,14 @@ red_flags:
     conditional:
       - patterns: [seeti awaaz, seeti jaisi, wheezing, wheeze]
         requires: [child, infant, severe]
+      # gone silent (no voice, silent cry) after choking or a swallowed object; a young baby always
+      - group: voice
+        patterns: [awaaz nahi nikal, rone par awaaz nahi, rone pe awaaz nahi, "can't cry", no sound, silent cry]
+        requires: [infant, pair]
+      - group: object
+        patterns: [sikka, coin, nigal, swallowed, kuch atak, choked on, choke on]
+        requires: [pair]
+        pair_with: [voice]
   - id: chest_pain
     label: Chest pain or pressure
     label_hinglish: Seene mein dard ya dabav
@@ -176,8 +228,11 @@ red_flags:
       - chest pressure
       - chest discomfort
       - seena bechaini
+      - seena ghabrahat
       - seena pressure
       - pressure seena
+      - seena tight
+      - tight seena
       - baayein haath dard
       - baaye haath dard
       - left arm dard
@@ -189,6 +244,24 @@ red_flags:
       - dil ka daura
       - सीने में दर्द
       - छाती में दर्द
+    conditional:
+      # how heart attacks are often described: "seene mein jalan" (burning, read as acidity),
+      # jaw or shoulder pain, with sweating. Any one alone is not enough.
+      - group: burn
+        patterns: [seena jalan, jalan seena, chest burning, burning chest, burning in chest]
+        requires: [pair]
+      - group: sweat
+        patterns: [pasina, sweating, sweaty]
+        requires: [pair]
+        pair_with: [burn]
+      - group: cold_sweat
+        patterns: [thanda pasina, cold sweat, cold sweats, pasina pasina, bahut pasina, clammy, drenched in sweat]
+        requires: [pair]
+        pair_with: [burn, radiate]
+      - group: radiate
+        patterns: [jabda, kandha dard, dard kandha, kandha dukh]
+        requires: [pair]
+        pair_with: [burn, cold_sweat]
   - id: stroke_signs
     label: Stroke warning signs (face, arm, speech)
     label_hinglish: Lakwe ke lakshan (chehra, haath, bolna)
@@ -228,14 +301,46 @@ red_flags:
       - awaaz ladkhada
       - bolne ladkhada
       - slurred speech
+      - speech slurred
+      - slurring
       - stroke
       - मुंह टेढ़ा
       - लकवा
     conditional:
-      - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak", haath nahi uth, baazu nahi uth,
-                   pair nahi uth, cannot lift, "can't lift", "can not lift", unable to lift,
-                   haath sunn, pair sunn, haath pair sunn, haath aur pair sunn, ladkhada, bolna band]
-        requires: [sudden, older_adult]
+      # face, arm, speech, balance: one sign needs a sudden start or an older patient,
+      # two different signs together are a stroke at any age
+      - group: speech
+        patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak", ladkhada, bolna band,
+                   baat atak, atak atak bol, atak atak ke bol, atak atak ke bolne, atak atak bolne, atak ke bolne,
+                   shabd nahi nikal, shabd nahi aa, alfaaz nahi,
+                   "can't find words", cannot find words, "can't get words out", trouble finding words,
+                   word finding, trouble speaking, difficulty speaking, words jumbled, jumbled words, garbled]
+        requires: [sudden, older_adult, pair]
+      - group: limb
+        patterns: [haath nahi uth, haath uth nahi, baazu nahi uth, pair nahi uth, pair uth nahi, cannot lift,
+                   "can't lift", "can not lift", unable to lift, haath sunn, pair sunn, haath pair sunn,
+                   haath aur pair sunn, arm numb, leg numb, numb arm, numb leg, arm heavy, leg heavy,
+                   haath kaam nahi, pair kaam nahi, haath jaan nahi, pair jaan nahi, haath taakat nahi,
+                   "can't move arm", "can't move leg", "can't move his arm",
+                   "can't move her arm", "can't move his leg", "can't move her leg"]
+        requires: [sudden, older_adult, pair]
+      - group: face
+        patterns: [laar gir, laar tapak, lar gir, muh se laar, munh se laar, drooling, drool]
+        requires: [sudden, pair]
+      # sudden spinning plus falling or leaning to one side: a stroke in the back of the brain
+      - group: lateral
+        patterns: [ek taraf gir, ek side gir, ek taraf jhuk, ek side jhuk, falling to one side, falls to one side,
+                   leaning to one side, leans to one side, tilting to one side, veering to one side]
+        requires: [sudden, pair]
+      - group: balance
+        patterns: [balance nahi, balance kho, lose balance, losing balance, lost balance, "can't walk straight",
+                   seedha chal nahi, seedha khada nahi]
+        requires: [sudden, pair]
+        pair_with: [speech, limb, face, lateral]
+      - group: vertigo
+        patterns: [chakkar]
+        requires: [pair]
+        pair_with: [lateral]
   - id: unconscious
     label: Unconscious or not responding
     label_hinglish: Behosh ya jawab nahi de rahe
@@ -253,6 +358,12 @@ red_flags:
       - faint ho
       - बेहोश
       - होश नहीं
+    conditional:
+      # nearly fainting ("aankh ke aage andhera") in an older adult, in pregnancy, or with palpitations
+      - patterns: [aankh andhera, aankh ke aage andhera, aankh ke saamne andhera, andhera chha, going to pass out,
+                   about to pass out, gonna pass out, feel faint, feeling faint, feel like fainting, almost fainted,
+                   almost passed out, nearly fainted, nearly passed out]
+        requires: [older_adult, pregnant, palpitations]
   - id: seizure
     label: Seizure or fits
     label_hinglish: Daura ya jhatke
@@ -298,6 +409,13 @@ red_flags:
       - heavy khoon
       - "khoon won't stop"
       - khoon not stopping
+      # soaking a pad every hour
+      - pad bhar
+      - pad poora bhar
+      - soaking a pad
+      - soaking pads
+      - soaked a pad
+      - khoon bahut badh
       - बहुत खून
       - खून की उल्टी
   - id: major_injury
@@ -343,7 +461,29 @@ red_flags:
       - jeebh sujan
       - sujan jeebh
       - anaphylaxis
+      - anaphylactic
       - चेहरे पर सूजन
+    conditional:
+      # a known allergy or an exposure (peanut, sting, injection) with mouth or throat swelling or a wheeze
+      - group: allergy
+        patterns: [allergy, allergic]
+        requires: [pair]
+        pair_with: [swelling]
+      - group: exposure
+        patterns: [mungfali, peanut, peanuts, jhinga, prawn, prawns, shellfish, seafood, madhumakhi, bee sting,
+                   wasp, keeda kaat, keede ne kaat, insect bite, injection ke baad, injection lagne ke baad,
+                   dawai lene ke baad, dawai khane ke baad]
+        requires: [pair]
+        pair_with: [swelling, airway]
+      - group: swelling
+        patterns: [muh sujan, munh sujan, sujan muh, gala sujan, gale sujan, throat swelling, throat swollen,
+                   throat is swelling]
+        requires: [pair]
+        pair_with: [allergy, exposure, airway]
+      - group: airway
+        patterns: [seeti, wheeze, wheezing, throat tight, throat closing, gala band ho, gala ghut]
+        requires: [pair]
+        pair_with: [exposure, swelling]
   - id: poisoning
     label: Poison, chemical or medicine overdose swallowed
     label_hinglish: Zeher, chemical ya zyada dawai kha li
@@ -381,6 +521,24 @@ red_flags:
       - nigal li
       - swallowed
       - ज़हर
+    conditional:
+      # a child who swallowed something ("sikka muh mein daala aur nigal gayi")
+      - patterns: [nigal gaya, nigal gayi, nigal gaye]
+        requires: [child, infant]
+      # a household chemical or object taken by mouth ("harpic ki bottle se pi liya")
+      - group: substance
+        patterns: [harpic, lizol, phenyl, toilet cleaner, floor cleaner, bathroom cleaner, bleach, kerosene,
+                   mitti ka tel, thinner, naphthalene, mothball, mothballs, button battery, battery, sikka, coin,
+                   magnet, mosquito liquid, all out, good knight, colin, detergent, washing powder, chemical]
+        requires: [pair]
+        pair_with: [intake]
+        pair_within: 8
+      - group: intake
+        patterns: [pi liya, pi li, pi gaya, pi gayi, pi gaye, kha liya, kha li, kha gaya, kha gayi, nigal, swallow,
+                   drank, chaat liya, chaat li]
+        requires: [pair]
+        pair_with: [substance]
+        pair_within: 8
   - id: venomous_bite
     label: Snake or scorpion bite
     label_hinglish: Saanp ya bichhu ne kaata
@@ -407,10 +565,24 @@ red_flags:
       - bahut jal
       - chehra jal
       - pura jal
+      # chest, belly or back burnt: a large area
+      - seena jal gaya
+      - seena jal gayi
+      - pet jal gaya
+      - pet jal gayi
+      - peeth jal gaya
+      - peeth jal gayi
       - करंट लगा
     conditional:
-      - patterns: [jal gaya, jal gayi, jal gaye, jhulas, burn, burns, burnt, burned, scald]
-        requires: [severe, infant, child]
+      - group: burn
+        patterns: [jal gaya, jal gayi, jal gaye, jhulas, burn, burns, burnt, burned, scald]
+        requires: [severe, infant, child, pair]
+      # a large area or large blisters
+      - group: area
+        patterns: [bade chhale, bade bade chhale, big blisters, large blisters, pura haath, poora haath, pura pair,
+                   whole arm, whole hand, whole leg, kai jagah, bahut jagah]
+        requires: [pair]
+        pair_with: [burn]
   - id: self_harm_risk
     label: Thoughts of self-harm or suicide
     label_hinglish: Khud ko nuksan pahunchane ke khayal
@@ -457,8 +629,48 @@ red_flags:
       - better off without me
       - no point living
       - nas kaat
+      # said indirectly: "you will be happy without me", "no one will be troubled because of me"
+      - mere bina khush
+      - mere bina behtar
+      - meri wajah se pareshan nahi
+      - meri wajah se kisi ko pareshan nahi
+      - jeene ka koi matlab nahi
       - आत्महत्या
       - जीना नहीं चाहता
+    conditional:
+      # two of: hopeless or farewell words, the means at hand, shut away and silent
+      - group: words
+        patterns: [bojh hoon, bojh hu, bojh ban, burden on, ab nahi hota, ab aur nahi hota, "can't take it anymore",
+                   "can't go on", alvida, goodbye sab, goodbye everyone, last message, aakhri message, sabko sorry,
+                   sab se sorry, sab se maafi, maaf kar dena sab, nahi rehna, duniya chhod]
+        requires: [pair]
+      - group: means
+        patterns: [goliyan nikal, goliyan nikaal, goliyan jama, goliyan chhupa, goliyan ke patte, goli ke patte,
+                   patte chhupa, chhupa ke rakhe, saved up pills, stockpiling, dupatta, rassi, phanda, fanda, rope,
+                   pankhe se latak, fan se latak, chhat se kood, blade]
+        requires: [pair]
+      - group: shut_away
+        patterns: [room band, kamra band, kamre band, andar se band, darwaza nahi khol, door nahi khol,
+                   lock kar liya, locked himself, locked herself, andar awaaz nahi, phone nahi utha,
+                   not answering the door]
+        requires: [pair]
+  - id: psychiatric_emergency
+    label: Hearing voices or acting strangely, with risk of harm
+    label_hinglish: Awaazein sunna ya ajeeb bartaav, nuksan ka khatra
+    label_hi: आवाज़ें सुनना या अजीब बर्ताव, नुकसान का ख़तरा
+    conditional:
+      # new voices or strange beliefs after childbirth, or with a risk to someone
+      - group: psychotic
+        patterns: [awaaz bolti, awaaz bolta, awaaz kehti, awaaz kehta, awaaz sunai, awaazein sun, hearing voices,
+                   hears voices, voices telling, voices in her head, voices in his head, bachcha shaitan,
+                   shaitan hai, koi maarne aa]
+        requires: [postpartum, pair]
+      - group: danger
+        patterns: [bachcha leke band, bachcha ko leke band, darwaza nahi khol, door nahi khol, lock kar liya,
+                   locked herself, locked himself, chaku, maar dalunga, maar dalungi, bachcha ko maar,
+                   hurt the baby, kill the baby]
+        requires: [pair]
+        pair_with: [psychotic]
   - id: pregnancy_emergency
     label: Pregnancy warning sign
     label_hinglish: Pregnancy mein khatre ka lakshan
@@ -476,6 +688,9 @@ red_flags:
                    dhundhla, blurred vision, movement band, movement kam, movement nahi, hilna band,
                    thaili phat, paani ki thaili, water broke, waters broke, dard shuru]
         requires: [pregnant]
+      # in the weeks after delivery: bleeding getting heavier, clots, fits, blurred vision
+      - patterns: [khoon badh, khoon zyada, zyada khoon, thakke, clots, daura, dhundhla, blurred vision]
+        requires: [pregnant, postpartum]
   - id: infant_danger_sign
     label: Danger sign in a young baby
     label_hinglish: Chhote bachche mein khatre ka lakshan
@@ -489,11 +704,17 @@ red_flags:
       - ekdam sust
       - bilkul sust
       - sust pada
+      - not taking feeds
+      - not taking feed
+      - refusing feeds
+      - refusing feed
     conditional:
       - patterns: [bukhar, sust, neela pad, ulti]
         requires: [infant]
-      - patterns: [sust, lethargic, thanda pad]
+      - patterns: [sust, lethargic, thanda pad, floppy, limp, dheela pad, dheeli pad, hard to wake]
         requires: [child]
+      - patterns: [weak cry, crying weak, kamzor rona, rona kamzor]
+        requires: [infant, baby]
   - id: severe_headache
     label: Sudden severe headache or stiff neck with fever
     label_hinglish: Achanak tez sar dard ya bukhar ke saath gardan akadna
@@ -612,6 +833,15 @@ red_flags:
       - aankh tezaab
       - aankh chemical
       - eye injury
+    conditional:
+      # sudden loss of sight, often "like a curtain falling" ("jaise parda gir gaya")
+      - group: sight
+        patterns: [dikh nahi, nahi dikh, dikhna kam, roshni chali, roshni gayi, lost vision, lost sight, went blind,
+                   "can't see out of"]
+        requires: [sudden, pair]
+      - group: curtain
+        patterns: [parda gir, parda aa, parda chha, parda sa, curtain, shade over, dark shadow]
+        requires: [sudden, pair]
   - id: severe_bp
     # also raised from numbers in the text (BP 180 or more), see extract.py
     label: Very high blood pressure
@@ -621,6 +851,13 @@ red_flags:
       # "BP bahut high" with a bad headache, vomiting, blurred vision or chest pain
       - patterns: [bp tez, bp bahut tez, bp badh, bp bahut badh, bp shoot]
         requires: [bp_danger]
+  - id: abnormal_vitals
+    # raised from numbers in the text, see extract.py: pulse under 40 or over 150 with symptoms,
+    # oxygen under 90, BP under 90 with shock signs, sugar under 54, fever of 104 or more in a child
+    label: Dangerous pulse, oxygen, BP, sugar or fever reading
+    label_hinglish: Pulse, oxygen, BP, sugar ya bukhar ki khatarnak reading
+    label_hi: नब्ज़, ऑक्सीजन, बीपी, शुगर या बुखार की ख़तरनाक रीडिंग
+    patterns: []
   - id: possible_emergency
     # raised by the learned model, not by a phrase
     label: Signs that need urgent care
