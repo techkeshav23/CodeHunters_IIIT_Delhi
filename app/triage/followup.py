@@ -89,110 +89,131 @@ QUESTIONS: dict[str, dict] = {
             ("unknown", {"en": "Not sure", "hinglish": "Pata nahi", "hi": "पता नहीं"}),
         ],
     },
-    # the same wording the fine-tuned model saw in its multi-turn training examples
+    # the danger check that fits the complaint: one danger sign per button, and "none of these";
+    # a sign raises its own red flag (DANGER_OPTION_FLAG)
     "q_danger": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Is there any trouble breathing, chest pain, fainting or heavy bleeding?",
-            "hinglish": "Kya saans lene mein dikkat, seene mein dard, behoshi ya bahut tez khoon behna jaisa kuch hai?",
-            "hi": "क्या सांस लेने में दिक्कत, सीने में दर्द, बेहोशी या बहुत खून बहना जैसा कुछ है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("breathless", {"en": "Trouble breathing", "hinglish": "Saans lene mein dikkat", "hi": "साँस लेने में दिक्कत"}),
+            ("chest", {"en": "Chest pain or pressure", "hinglish": "Seene mein dard ya dabav", "hi": "सीने में दर्द या दबाव"}),
+            ("faint", {"en": "Fainting or not responding", "hinglish": "Behoshi ya jawab na dena", "hi": "बेहोशी या जवाब न देना"}),
+            ("bleeding", {"en": "Bleeding that will not stop", "hinglish": "Khoon ruk nahi raha", "hi": "ख़ून रुक नहीं रहा"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
-    # the danger check that fits the complaint; a "Haan" raises the matching red flag
     "q_danger_breathing": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Along with this, is breathing hard or fast, or are the lips turning blue?",
-            "hinglish": "Iske saath kya saans phool rahi hai, tez chal rahi hai, ya hoth neele pad rahe hain?",
-            "hi": "इसके साथ क्या साँस फूल रही है, तेज़ चल रही है, या होंठ नीले पड़ रहे हैं?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("breathless", {"en": "Breathing hard or fast", "hinglish": "Saans phoolna ya tez chalna", "hi": "साँस फूलना या तेज़ चलना"}),
+            ("drowsy", {"en": "Very drowsy, hard to wake", "hinglish": "Bahut susti, jagana mushkil", "hi": "बहुत सुस्ती, जगाना मुश्किल"}),
+            ("fits", {"en": "Fits (body jerking)", "hinglish": "Jhatke (fits)", "hi": "झटके (दौरे)"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_dehydration": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Is even water not staying down, is urine much less, or is there unusual drowsiness?",
-            "hinglish": "Kya paani bhi nahi ruk raha, peshab bahut kam ho gaya hai, ya bahut susti hai?",
-            "hi": "क्या पानी भी नहीं रुक रहा, पेशाब बहुत कम हो गया है, या बहुत सुस्ती है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("no_water", {"en": "Even water comes back up", "hinglish": "Paani bhi nahi ruk raha", "hi": "पानी भी नहीं रुक रहा"}),
+            ("little_urine", {"en": "Very little urine", "hinglish": "Peshab bahut kam", "hi": "पेशाब बहुत कम"}),
+            ("drowsy", {"en": "Very drowsy or dizzy", "hinglish": "Bahut susti ya chakkar", "hi": "बहुत सुस्ती या चक्कर"}),
+            ("blood_stool", {"en": "Blood in vomit or stool", "hinglish": "Ulti ya mal mein khoon", "hi": "उल्टी या मल में ख़ून"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_injury": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Was there a hit to the head, any fainting or vomiting, or bleeding that will not stop?",
-            "hinglish": "Kya sar par chot lagi, behoshi ya ulti hui, ya khoon ruk nahi raha?",
-            "hi": "क्या सिर पर चोट लगी, बेहोशी या उल्टी हुई, या खून रुक नहीं रहा?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("head_hit", {"en": "Hit the head hard", "hinglish": "Sar par zor se chot", "hi": "सिर पर ज़ोर से चोट"}),
+            ("faint", {"en": "Fainted or vomiting", "hinglish": "Behoshi ya ulti", "hi": "बेहोशी या उल्टी"}),
+            ("bleeding", {"en": "Bleeding that will not stop", "hinglish": "Khoon ruk nahi raha", "hi": "ख़ून रुक नहीं रहा"}),
+            ("cannot_move", {"en": "Cannot move or stand", "hinglish": "Hila ya khada nahi ho pa rahe", "hi": "हिल या खड़े नहीं हो पा रहे"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_stroke": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Did it start suddenly and very badly, or is there weakness on one side or trouble speaking?",
-            "hinglish": "Kya achanak bahut tez shuru hua, ya ek taraf kamzori ya bolne mein dikkat hai?",
-            "hi": "क्या अचानक बहुत तेज़ शुरू हुआ, या एक तरफ़ कमज़ोरी या बोलने में दिक्कत है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("worst_sudden", {"en": "Sudden, worst ever pain", "hinglish": "Achanak, sabse tez dard", "hi": "अचानक, सबसे तेज़ दर्द"}),
+            ("one_side", {"en": "Weakness on one side or face drooping", "hinglish": "Ek taraf kamzori ya muh tedha", "hi": "एक तरफ़ कमज़ोरी या मुँह टेढ़ा"}),
+            ("speech", {"en": "Trouble speaking", "hinglish": "Bolne mein dikkat", "hi": "बोलने में दिक्कत"}),
+            ("vomit_vision", {"en": "Vomiting or blurred vision", "hinglish": "Ulti ya dhundhla dikhna", "hi": "उल्टी या धुंधला दिखना"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_abdomen": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Is the pain very severe, or is there blood in the vomit or black stool?",
-            "hinglish": "Kya dard bahut tez hai, ya ulti mein khoon ya kaala mal aa raha hai?",
-            "hi": "क्या दर्द बहुत तेज़ है, या उल्टी में खून या काला मल आ रहा है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("severe", {"en": "Very severe pain, cannot move", "hinglish": "Bahut tez dard, hil nahi pa rahe", "hi": "बहुत तेज़ दर्द, हिल नहीं पा रहे"}),
+            ("blood_vomit", {"en": "Blood in vomit", "hinglish": "Ulti mein khoon", "hi": "उल्टी में ख़ून"}),
+            ("black_stool", {"en": "Black or bloody stool", "hinglish": "Kaala ya khoon wala mal", "hi": "काला या ख़ून वाला मल"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_chest": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Is there chest pain or pressure, sweating, or breathlessness with it?",
-            "hinglish": "Kya saath mein seene mein dard ya dabav, pasina, ya saans phoolna hai?",
-            "hi": "क्या साथ में सीने में दर्द या दबाव, पसीना, या साँस फूलना है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("chest", {"en": "Chest pain or pressure", "hinglish": "Seene mein dard ya dabav", "hi": "सीने में दर्द या दबाव"}),
+            ("sweat", {"en": "Sweating with uneasiness", "hinglish": "Pasina aur ghabrahat", "hi": "पसीना और घबराहट"}),
+            ("breathless", {"en": "Breathlessness", "hinglish": "Saans phoolna", "hi": "साँस फूलना"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_pregnancy": {
-        "kind": "yes_no",
+        "kind": "choice",
         "text": {
-            "en": "Is there any bleeding, severe belly pain, or are the baby's movements less than usual?",
-            "hinglish": "Kya khoon aa raha hai, pet mein tez dard hai, ya baby ki halchal kam lag rahi hai?",
-            "hi": "क्या खून आ रहा है, पेट में तेज़ दर्द है, या बच्चे की हलचल कम लग रही है?",
+            "en": "Is there any of these?",
+            "hinglish": "Kya inme se kuch ho raha hai?",
+            "hi": "क्या इनमें से कुछ हो रहा है?",
         },
         "options": [
-            ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
-            ("no", {"en": "No", "hinglish": "Nahi", "hi": "नहीं"}),
+            ("bleeding", {"en": "Bleeding", "hinglish": "Khoon aana", "hi": "ख़ून आना"}),
+            ("severe_pain", {"en": "Severe belly pain", "hinglish": "Pet mein tez dard", "hi": "पेट में तेज़ दर्द"}),
+            ("less_movement", {"en": "Baby moving less", "hinglish": "Baby ki halchal kam", "hi": "बच्चे की हलचल कम"}),
+            ("water_broke", {"en": "Water broke", "hinglish": "Paani ki thaili phati", "hi": "पानी की थैली फटी"}),
+            ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
     "q_danger_mind": {
         "kind": "yes_no",
         "text": {
-            "en": "Are there any thoughts of hurting yourself or of not wanting to live?",
-            "hinglish": "Kya khud ko nuksan pahunchane ya jeene ka mann na hone jaise khayal aate hain?",
-            "hi": "क्या ख़ुद को नुकसान पहुँचाने या जीने का मन न होने जैसे ख़याल आते हैं?",
+            "en": "Do thoughts of hurting yourself or not wanting to live ever come?",
+            "hinglish": "Kya kabhi khud ko nuksan pahunchane ya jeene ka mann na hone ke khayal aate hain?",
+            "hi": "क्या कभी ख़ुद को नुकसान पहुँचाने या जीने का मन न होने के ख़याल आते हैं?",
         },
         "options": [
             ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
@@ -256,6 +277,17 @@ DANGER_FLAG = {"q_danger": "possible_emergency", "q_danger_breathing": "breathin
                "q_danger_chest": "chest_pain", "q_danger_pregnancy": "pregnancy_emergency",
                "q_danger_mind": "self_harm_risk"}
 DANGER_IDS = set(DANGER_FLAG)
+# the red flag each danger button raises
+DANGER_OPTION_FLAG = {
+    "breathless": "breathing_difficulty", "chest": "chest_pain", "faint": "unconscious", "bleeding": "severe_bleeding",
+    "drowsy": "possible_emergency", "fits": "seizure", "no_water": "severe_dehydration",
+    "little_urine": "severe_dehydration", "blood_stool": "severe_bleeding", "head_hit": "major_injury",
+    "cannot_move": "major_injury", "worst_sudden": "severe_headache", "one_side": "stroke_signs",
+    "speech": "stroke_signs", "vomit_vision": "severe_headache", "severe": "severe_abdominal_pain",
+    "blood_vomit": "severe_bleeding", "black_stool": "severe_bleeding", "sweat": "chest_pain",
+    "severe_pain": "pregnancy_emergency", "less_movement": "pregnancy_emergency", "water_broke": "pregnancy_emergency",
+}
+NONE_OF_THESE = re.compile(r"\b(kuch nahi|kuch nhi|koi nahi|none|nothing|nahi|nahin|nhi|no)\b|कुछ नहीं|नहीं")
 DANGER_FOR = [
     ("q_danger_mind", {"mental_health"}),
     ("q_danger_dehydration", {"vomiting", "diarrhoea"}),
@@ -286,10 +318,14 @@ def question(qid: str, language: str, topic: dict[str, str] | None = None) -> Qu
     q = QUESTIONS[qid]
     lang = language if language in ("en", "hi", "hinglish") else "en"
     text = q["text"][lang]
-    if qid == "q_duration" and topic and topic.get(lang):
+    if topic and topic.get(lang):
         x = topic[lang]
-        text = {"en": f"Since when has the {x.lower()} been there?", "hinglish": f"{x} kitne din se hai?",
-                "hi": f"{x} कितने दिन से है?"}[lang]
+        if qid == "q_duration":
+            text = {"en": f"Since when has the {x.lower()} been there?", "hinglish": f"{x} kitne din se hai?",
+                    "hi": f"{x} कितने दिन से है?"}[lang]
+        elif qid in DANGER_IDS and q["kind"] == "choice":
+            text = {"en": f"Along with the {x.lower()}, is there any of these?",
+                    "hinglish": f"{x} ke saath kya inme se kuch hai?", "hi": f"{x} के साथ क्या इनमें से कुछ है?"}[lang]
     return Question(id=qid, text=text, kind=q["kind"],
                     options=[{"value": v, "label": labels[lang]} for v, labels in q["options"]])
 
@@ -392,12 +428,19 @@ def parse_answer(qid: str, answer: str) -> dict:
         bare = re.fullmatch(r"\s*(\d{1,3})\s*", to_roman(answer))
         return {"age_years": float(bare.group(1))} if bare and int(bare.group(1)) <= 120 else {}
     if qid in DANGER_IDS:
-        # "Haan" sends the conversation to the emergency path with that check's red flag;
-        # "pata nahi" stays unknown
-        v = value or yes_no(answer)
+        # a danger button raises its own red flag; "none of these" / "nahi" clears the check;
+        # a typed "haan" raises the check's general flag; "pata nahi" stays unknown
+        if value in DANGER_OPTION_FLAG:
+            facts = {"danger": "present", "danger_flag": DANGER_OPTION_FLAG[value]}
+            if value == "breathless":
+                facts["breathing"] = "present"
+            return facts
+        v = "no" if value == "none" else (value or yes_no(answer))
+        if v is None and NONE_OF_THESE.search(to_roman(answer).lower() + " " + (answer or "")):
+            v = "no"
         facts = {"danger": {"yes": "present", "no": "absent"}.get(v or "", "unknown"), "danger_flag": DANGER_FLAG[qid]}
-        if qid == "q_danger_breathing" and v in ("yes", "no"):
-            facts["breathing"] = {"yes": "present", "no": "absent"}[v]
+        if qid in ("q_danger", "q_danger_breathing") and v == "no":
+            facts["breathing"] = "absent"
         return facts
     if qid in ("q_who", "q_their_age"):
         if value in WHO_VALUES:

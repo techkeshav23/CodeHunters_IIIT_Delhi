@@ -241,7 +241,9 @@ def test_conversational_flow_rules_only(client, no_student):
     h = [{"role": "user", "content": "papa ko bukhar hai"}]
     r = post(client, "papa ko bukhar hai", policy="conversational")
     assert r["trace"]["follow_up"]["id"] == "q_danger_breathing"  # fever: the breathing check
-    assert [o["label"] for o in r["trace"]["follow_up"]["options"]] == ["Haan", "Nahi"]
+    labels = [o["label"] for o in r["trace"]["follow_up"]["options"]]
+    assert labels[0] == "Saans phoolna ya tez chalna" and labels[-1] == "Inme se kuch nahi"
+    assert r["follow_up_question"] == "Bukhar ke saath kya inme se kuch hai?"
     r = post(client, "Nahi", h + [turn("q_danger_breathing")], policy="conversational")
     assert r["trace"]["follow_up"]["id"] == "q_duration"
     assert r["follow_up_question"] == "Bukhar kitne din se hai?"
@@ -545,3 +547,11 @@ def test_danger_check_fits_the_complaint(client, no_student):
     r = post(client, "Haan", [{"role": "user", "content": "sar mein bahut dard hai"}, turn("q_danger_stroke")],
              policy="conversational")
     assert r["care_type"] == "emergency_112" and r["red_flags"] == ["stroke_symptoms"]
+
+
+def test_danger_buttons_raise_their_own_flag(client, no_student):
+    h = [{"role": "user", "content": "mummy ko ulti aur dast ho rahe hain"}, turn("q_danger_dehydration")]
+    r = post(client, "Peshab bahut kam", h, policy="conversational")
+    assert r["care_type"] == "emergency_112" and r["red_flags"] == ["severe_dehydration"]
+    r = post(client, "Inme se kuch nahi", h, policy="conversational")
+    assert r["care_type"] != "emergency_112"
