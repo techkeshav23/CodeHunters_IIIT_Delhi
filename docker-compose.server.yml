@@ -21,7 +21,7 @@ services:
     volumes:
       - ./data/provided:/srv/data/provided:ro
     restart: unless-stopped
-    mem_limit: 1536m
+    mem_limit: 2560m
     cpus: 1.5
     logging:
       driver: json-file

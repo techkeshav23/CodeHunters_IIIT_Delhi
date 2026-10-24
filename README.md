@@ -65,14 +65,15 @@ The API is stateless: the client sends the conversation each time.
 ## How it works
 
 ```
-text / voice
- -> normalise: Devanagari transliterated, Hinglish spellings reduced to phonetic keys
- -> red-flag rules (English, Hindi, Hinglish; negation-aware) -- hit --> emergency, no matching
- -> extract: symptoms, services asked for, who the patient is, age, duration, severity
- -> rules (care type) + learned model trained on the organisers' data (TF-IDF + logistic regression, ~2 ms)
- -> urgency from the care type, never below the rules' own
- -> follow-up question only if the answer can change the decision (max 3; answers re-checked for red flags)
- -> caregiver matching (organisers' recipe): role, active, skill, radius; 0.35 language + 0.30 proximity + 0.20 skill + 0.15 rating
+text / voice (+ the conversation so far)
+ -> MuRIL, fine-tuned (app/triage/student.py, ONNX, ~20 ms): care type, urgency, red flags,
+    structured symptoms, who the patient is; calibrated confidence (high / medium / low)
+ -> safety net: the danger-sign lexicon (English, Hindi, Hinglish; negation-aware) can only escalate;
+    a named red flag -> emergency_112, no matching; the model alone sensing danger -> danger-signs question
+ -> guardrails: urgency never below the rules', at least same day for a baby / older adult / pregnancy,
+    fever gets a home check; model unsure -> Claude second opinion (optional) or a question
+ -> follow-up questions (app: up to 3, danger signs first, tap-to-answer; API default: only when unclear)
+ -> caregiver matching (organisers' recipe): role, active, skill, tier, radius; 0.35 language + 0.30 proximity + 0.20 skill + 0.15 rating
  -> response with reasons built only from computed facts
 ```
 
@@ -145,26 +146,39 @@ is the default matching pool (`/health` shows `caregivers_source: sanocare_v1`).
 files can go in `data/provided/` (git-ignored); `app/data/dev_caregivers.json` is the
 team's 26-profile sample, used only as a fallback.
 
-Train and check:
+Training text for the model is synthetic, written by Claude Opus 5.5 for 62 case families
+whose labels we fixed (`docs/LABELING_GUIDE.md`, `data/generated/`). The organisers' 340 rows
+are never trained on; they are the test set.
+
+Train and check (GPU training uses a separate venv with CUDA PyTorch and transformers):
 
 ```bash
-.venv\Scripts\python -m scripts.train_triage      # by-situation split, writes models/triage.joblib
-.venv\Scripts\python -m scripts.eval_matching     # caregiver lists vs the labels
-.venv\Scripts\python -m eval.run_eval data\sanocare_v1\triage_dataset.jsonl --mode interactive
+.venv\Scripts\python -m scripts.gen_data                             # teacher writes messages (ANTHROPIC_API_KEY)
+.venv-train\Scripts\python -m scripts.train_student                  # prepare, held-out families, final training
+.venv-train\Scripts\python -m scripts.train_student --export-only    # ONNX + test on the organisers' rows
+.venv\Scripts\python -m scripts.compare_models                       # rules vs TF-IDF vs MuRIL
+.venv\Scripts\python -m scripts.eval_matching                        # caregiver lists vs the labels
 ```
+
+The model weights (`models/student/model.onnx`, about 950 MB) are too big for git: they are
+published as a GitHub release asset (`model-muril-v3`); put `model.onnx` into
+`models/student/` next to `meta.json` and `tokenizer.json`, or rebuild it with the two
+commands above. Without it the API falls back to the rules and the older TF-IDF model.
 
 ## Models and APIs used
 
-- Rules and lexicon written by the team; RapidFuzz for spelling distance.
-- TF-IDF + logistic regression model trained on the organisers' data
-  (`scripts/train_triage.py`); its probabilities are in every response (`trace.model`).
-- No LLM and no paid API at runtime (see `docs/WRITEUP.md` for why).
-- Voice in the web app: the browser's Web Speech API.
+- MuRIL base (google/muril-base-cased, Apache-2.0), fine-tuned by us; served with ONNX Runtime.
+- Claude Opus 5.5 (Anthropic API): offline teacher that wrote the training text; at run time
+  only a second opinion when the model is unsure (`CC_LLM_FALLBACK=on` and `ANTHROPIC_API_KEY`).
+- Danger-sign lexicon and rules written by the team (the safety net); RapidFuzz for spelling.
+- The previous TF-IDF + logistic regression model (`scripts/train_triage.py`) is the fallback.
+- Voice: the browser's Web Speech API; the Android app uses the phone's speech services.
 
 ## Open-source components
 
 FastAPI, Starlette, Pydantic, Uvicorn (MIT / BSD), PyYAML (MIT), RapidFuzz (MIT),
-scikit-learn, NumPy, SciPy, joblib (BSD), pytest (MIT), httpx (BSD).
+scikit-learn, NumPy, SciPy, joblib (BSD), pytest (MIT), httpx (BSD), ONNX Runtime (MIT),
+Hugging Face tokenizers and transformers (Apache-2.0), PyTorch (BSD), anthropic SDK (MIT).
 Web app packages are listed in `web/README.md`.
 
 ## Project layout
