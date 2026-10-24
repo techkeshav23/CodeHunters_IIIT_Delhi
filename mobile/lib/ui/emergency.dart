@@ -279,7 +279,7 @@ class EmergencyTakeover extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        state.newCheck();
+                        state.newChat();
                         Navigator.of(context).pop();
                       },
                       style: OutlinedButton.styleFrom(

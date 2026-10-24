@@ -1,7 +1,8 @@
-// App state: preferences, the consult thread, and saved bookings.
+// App state: preferences, the consult thread, saved chats and saved bookings.
 // Mirrors web/src/App.tsx. The conversation history is built exactly like the
 // web client: on a follow-up, append the user's turn and the assistant's
 // question (with question_id); on a final decision or emergency, start over.
+// Chats are kept on the phone only (shared_preferences), never in incognito.
 
 import 'dart:async';
 import 'dart:convert';
@@ -13,6 +14,7 @@ import 'api.dart';
 import 'config.dart';
 import 'i18n.dart';
 import 'models.dart';
+import 'util.dart';
 import 'voice.dart';
 
 // ---- thread messages ----
@@ -52,6 +54,139 @@ class ErrorMsg extends Msg {
   const ErrorMsg(super.id, this.text, this.usedVoice);
 }
 
+// ---- saved chats (History) ----
+
+/// Stored form of a thread message: the user's text, or the request and the
+/// raw response body. A failed request (ErrorMsg) is not saved.
+Map<String, Object?>? encodeMsg(Msg m) => switch (m) {
+  UserMsg() => {'type': 'user', 'text': m.text},
+  QuestionMsg() => {'type': 'question', 'req': m.req.toJson(), 'res': m.res.raw},
+  DecisionMsg() => {'type': 'decision', 'req': m.req.toJson(), 'res': m.res.raw},
+  EmergencyMsg() => {'type': 'emergency', 'req': m.req.toJson(), 'res': m.res.raw, 'user_text': m.userText},
+  ErrorMsg() => null,
+};
+
+/// Rebuilds a message saved with [encodeMsg]; null if it cannot be read.
+Msg? decodeMsg(Map<String, Object?> j, int id) {
+  final type = j['type'];
+  if (type == 'user') return UserMsg(id, '${j['text'] ?? ''}');
+  final rq = j['req'];
+  final rs = j['res'];
+  if (rq is! Map || rs is! Map) return null;
+  final req = TriageRequest.fromJson(rq.cast<String, Object?>());
+  final res = TriageResponse.fromJson(rs.cast<String, Object?>());
+  final userText = j['user_text'];
+  return switch (type) {
+    'question' => QuestionMsg(id, req, res),
+    'decision' => DecisionMsg(id, req, res),
+    'emergency' => EmergencyMsg(id, req, res, userText is String ? userText : req.userInput),
+    _ => null,
+  };
+}
+
+/// The conversation [AppState.send] holds after [msgs]: if the last answer
+/// was a question, that request's history, the user's turn and the question
+/// (with its question_id); after a decision or emergency, nothing.
+List<HistoryItem> historyAfter(List<Msg> msgs) {
+  for (final m in msgs.reversed) {
+    if (m is QuestionMsg) {
+      return [
+        ...m.req.conversationHistory,
+        HistoryItem(role: 'user', content: m.req.userInput),
+        HistoryItem(role: 'assistant', content: m.res.questionText ?? '', questionId: m.res.trace.followUp?.id),
+      ];
+    }
+    if (m is DecisionMsg || m is EmergencyMsg) return [];
+  }
+  return [];
+}
+
+/// History title: the first thing the user said, on one line, ~60 characters.
+String chatTitle(List<Msg> msgs) {
+  for (final m in msgs) {
+    if (m is! UserMsg) continue;
+    final line = m.text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final chars = line.characters;
+    return chars.length <= 60 ? line : '${chars.take(57).toString().trimRight()}…';
+  }
+  return '';
+}
+
+/// What a chat came to, for the History list: [SavedChat.outcome] is
+/// "decision", "emergency", "question" (still waiting for an answer) or
+/// "none" (no reply yet).
+({String kind, String? label, int level}) chatOutcome(List<Msg> msgs, Lang lang) {
+  for (final m in msgs.reversed) {
+    switch (m) {
+      case DecisionMsg(:final res):
+        final label = [careLabel(res, lang), urgencyLabel(res, lang)].where((s) => s.trim().isNotEmpty).join(' · ');
+        return (kind: 'decision', label: label, level: urgencyLevel(res.urgency ?? res.trace.decision.urgency));
+      case EmergencyMsg(:final res):
+        return (kind: 'emergency', label: res.trace.emergency?.titleLocal ?? t(lang, K.sosPageTitle), level: 2);
+      case QuestionMsg():
+        return (kind: 'question', label: null, level: 0);
+      case UserMsg() || ErrorMsg():
+        break;
+    }
+  }
+  return (kind: 'none', label: null, level: 0);
+}
+
+/// A consult thread saved on this phone. Messages stay in their stored form
+/// until the chat is opened.
+class SavedChat {
+  final String id;
+  final DateTime startedAt;
+  final DateTime updatedAt;
+  final String title;
+  final String outcome; // decision | emergency | question | none
+  final String? outcomeLabel; // care + urgency, or the emergency title
+  final int level; // 0-2, colours the outcome
+  final List<Map<String, Object?>> messages;
+  const SavedChat({
+    required this.id,
+    required this.startedAt,
+    required this.updatedAt,
+    required this.title,
+    required this.outcome,
+    this.outcomeLabel,
+    this.level = 0,
+    required this.messages,
+  });
+
+  /// Null for an entry that cannot be read (it is then left out).
+  static SavedChat? tryParse(Map<String, Object?> j) {
+    try {
+      final id = j['id'];
+      final msgs = j['messages'];
+      if (id is! String || id.isEmpty || msgs is! List) return null;
+      final out = j['outcome'] is Map ? (j['outcome'] as Map).cast<String, Object?>() : const <String, Object?>{};
+      final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      return SavedChat(
+        id: id,
+        startedAt: DateTime.tryParse('${j['started_at']}') ?? epoch,
+        updatedAt: DateTime.tryParse('${j['updated_at']}') ?? epoch,
+        title: j['title'] is String ? j['title'] as String : '',
+        outcome: out['kind'] is String ? out['kind'] as String : 'none',
+        outcomeLabel: out['label'] is String ? out['label'] as String : null,
+        level: out['level'] is num ? (out['level'] as num).toInt() : 0,
+        messages: msgs.whereType<Map>().map((m) => m.cast<String, Object?>()).toList(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'started_at': startedAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+    'title': title,
+    'outcome': {'kind': outcome, 'label': outcomeLabel, 'level': level},
+    'messages': messages,
+  };
+}
+
 enum Backend { wait, ok, bad }
 
 enum ThemePref { auto, light, dark }
@@ -83,6 +218,26 @@ class AppState extends ChangeNotifier {
   /// jodein"), or null. Its conversation is already back in [history].
   int? addingTo;
 
+  // ---- saved chats (History) ----
+  static const maxChats = 30;
+  static const _chatsKey = 'cc_chats';
+
+  /// Newest first.
+  List<SavedChat> chats = [];
+
+  /// Id of the open thread in [chats]; null until it is first saved, and
+  /// always null in incognito.
+  String? chatId;
+  DateTime? _chatStarted;
+
+  /// Incognito: the open thread is never written to the phone.
+  bool incognito = false;
+
+  /// Bumped whenever the thread is swapped (new chat, opened chat), so a
+  /// reply still loading for the old thread is dropped.
+  int get thread => _thread;
+  int _thread = 0;
+
   // ---- bookings ----
   List<SavedBooking> bookings = [];
 
@@ -113,6 +268,17 @@ class AppState extends ChangeNotifier {
         final list = jsonDecode(raw);
         if (list is List) {
           bookings = list.whereType<Map>().map((m) => SavedBooking.fromJson(m.cast<String, Object?>())).toList();
+        }
+      }
+      final rawChats = p.getString(_chatsKey);
+      if (rawChats != null) {
+        final list = jsonDecode(rawChats);
+        if (list is List) {
+          chats = list
+              .whereType<Map>()
+              .map((m) => SavedChat.tryParse(m.cast<String, Object?>()))
+              .whereType<SavedChat>()
+              .toList();
         }
       }
     } catch (_) {
@@ -172,7 +338,12 @@ class AppState extends ChangeNotifier {
     final clean = text.trim();
     if (clean.isEmpty || busy) return null;
     voice.stopSpeaking();
-    if (!retry) messages.add(UserMsg(_nextId++, clean));
+    final thread = _thread;
+    if (!retry) {
+      if (messages.isEmpty) _chatStarted = DateTime.now();
+      messages.add(UserMsg(_nextId++, clean));
+      _saveChat();
+    }
     busy = true;
     notifyListeners();
 
@@ -186,6 +357,7 @@ class AppState extends ChangeNotifier {
     Msg added;
     try {
       final res = await api.triage(req);
+      if (thread != _thread) return null; // the user moved to another chat meanwhile
       last = (req: req, res: res);
       final voiceLang = res.trace.language;
       if (res.isEmergency) {
@@ -209,11 +381,13 @@ class AppState extends ChangeNotifier {
         if (usedVoice && autoRead) voice.speak(speechFor(res.trace.speech, decisionSummary(res), voiceLang));
       }
     } catch (_) {
+      if (thread != _thread) return null;
       // Never fabricate a result: show the error with a retry button.
       added = ErrorMsg(_nextId++, clean, usedVoice);
     }
     messages.add(added);
     busy = false;
+    _saveChat();
     notifyListeners();
     return added;
   }
@@ -223,13 +397,126 @@ class AppState extends ChangeNotifier {
     return send(m.text, usedVoice: m.usedVoice, retry: true);
   }
 
-  void newCheck() {
+  /// "Nayi chat", and every "Nayi jaanch" button: an empty thread. The open
+  /// chat is already in History (each message saves it); an incognito one is
+  /// dropped. Always leaves incognito.
+  void newChat() {
+    _clearThread();
+    incognito = false;
+    tab = 0;
+    notifyListeners();
+  }
+
+  /// "Incognito chat": nothing in this thread is saved from now on. From the
+  /// start view this is a new chat; on an open saved chat it also takes that
+  /// chat out of History. Returns true when a saved chat was removed.
+  bool goIncognito() {
+    if (incognito) return false;
+    final id = chatId;
+    incognito = true;
+    chatId = null;
+    final removed = id != null && _dropChat(id);
+    tab = 0;
+    notifyListeners();
+    return removed;
+  }
+
+  /// Opens a chat from History in the Jaanch thread. If it ends on a
+  /// question, [history] is rebuilt exactly as [send] left it, so the next
+  /// message answers it; otherwise the next message starts a new case.
+  void openChat(SavedChat c) {
+    if (!incognito && c.id == chatId) {
+      setTab(0);
+      return;
+    }
+    _clearThread();
+    incognito = false;
+    for (final j in c.messages) {
+      final m = decodeMsg(j, _nextId++);
+      if (m != null) messages.add(m);
+    }
+    // A last message with no reply (app closed or request failed): offer the
+    // retry, as right after a failed request.
+    final tail = messages.isEmpty ? null : messages.last;
+    if (tail is UserMsg) messages.add(ErrorMsg(_nextId++, tail.text, false));
+    history = historyAfter(messages);
+    chatId = c.id;
+    _chatStarted = c.startedAt;
+    tab = 0;
+    notifyListeners();
+  }
+
+  /// Deletes one saved chat. If it is the open one, the thread is cleared
+  /// too, so the next message does not save it again.
+  void deleteChat(String id) {
+    if (!_dropChat(id)) return;
+    if (id == chatId) _clearThread();
+    notifyListeners();
+  }
+
+  /// "Saari history mitayein" (after the confirm dialog).
+  void deleteAllChats() {
+    final wasOpen = chatId != null;
+    chats = [];
+    _writeChats();
+    if (wasOpen) _clearThread();
+    notifyListeners();
+  }
+
+  void _clearThread() {
     voice.stopSpeaking();
+    if (incognito) last = null; // nothing of an incognito chat stays behind
     messages.clear();
     history = [];
     addingTo = null;
-    tab = 0;
-    notifyListeners();
+    busy = false;
+    chatId = null;
+    _chatStarted = null;
+    _thread++;
+  }
+
+  /// Puts the open thread at the top of History (at most [maxChats]).
+  /// Called every time a message is added; never in incognito.
+  void _saveChat() {
+    if (incognito) return;
+    final stored = messages.map(encodeMsg).whereType<Map<String, Object?>>().toList();
+    if (stored.isEmpty) return;
+    final now = DateTime.now();
+    final id = chatId ??= 'c${now.microsecondsSinceEpoch}-$_nextId';
+    final out = chatOutcome(messages, lang);
+    final chat = SavedChat(
+      id: id,
+      startedAt: _chatStarted ?? now,
+      updatedAt: now,
+      title: chatTitle(messages),
+      outcome: out.kind,
+      outcomeLabel: out.label,
+      level: out.level,
+      messages: stored,
+    );
+    chats = [chat, ...chats.where((c) => c.id != id)].take(maxChats).toList();
+    _writeChats();
+  }
+
+  bool _dropChat(String id) {
+    final before = chats.length;
+    chats = chats.where((c) => c.id != id).toList();
+    if (chats.length == before) return false;
+    _writeChats();
+    return true;
+  }
+
+  void _writeChats() {
+    final p = _prefs;
+    if (p == null) return;
+    try {
+      final done = chats.isEmpty
+          ? p.remove(_chatsKey)
+          : p.setString(_chatsKey, jsonEncode([for (final c in chats) c.toJson()]));
+      done.catchError((_) => false);
+    } catch (_) {
+      // Storage full or unavailable: History still works until the app closes.
+    }
   }
 
   /// "Aur jaankari jodein": puts the conversation that led to [m] (earlier

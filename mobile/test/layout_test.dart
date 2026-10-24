@@ -165,6 +165,93 @@ void main() {
         await tester.drag(find.byType(Scrollable).last, const Offset(0, -3000));
         await settle(tester, 4);
       });
+
+      testWidgets('chat bar, incognito and history at 360dp, text x1.3, ${lang.code}, ${theme.name}', (tester) async {
+        tester.view.physicalSize = const Size(360 * 3, 740 * 3);
+        tester.view.devicePixelRatio = 3;
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        final state = AppState(
+          api: ApiClient(base: 'https://api.test', client: server()),
+        );
+        state.setLang(lang);
+        state.setTheme(theme);
+        state.setLargeText(true);
+        await tester.pumpWidget(CareCompassApp(state: state));
+        await settle(tester);
+
+        // bar buttons by accessible name: labels fold into icons when narrow
+        Finder bar(String label) =>
+            find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').startsWith(label));
+
+        Future<void> say(String text) async {
+          await tester.enterText(find.byType(TextField), text);
+          await tester.pump();
+          await tester.ensureVisible(find.byTooltip(t(lang, K.send))); // below the fold on the start view
+          await settle(tester, 4);
+          await tester.tap(find.byTooltip(t(lang, K.send)));
+          await settle(tester);
+        }
+
+        Future<void> tapIt(Finder f) async {
+          await tester.ensureVisible(f);
+          await settle(tester, 4);
+          await tester.tap(f);
+          await settle(tester);
+        }
+
+        expect(bar(tm(lang, M.history)), findsOneWidget);
+        expect(bar(tm(lang, M.incognito)), findsOneWidget);
+
+        // three chats: a decision, a pending question, an emergency
+        await say(t(lang, K.ex1));
+        await tapIt(find.text('Nahi'));
+        await tapIt(bar(tm(lang, M.newChat)));
+        await say(t(lang, K.ex2));
+        await tapIt(bar(tm(lang, M.newChat)));
+        await say('Mummy ke seene mein dard hai aur pasina aa raha hai');
+        await tapIt(find.text(t(lang, K.back)));
+        expect(state.chats, hasLength(3));
+        await tapIt(bar(tm(lang, M.newChat)));
+        expect(bar('${tm(lang, M.history)} (3)'), findsOneWidget);
+
+        // incognito: banner on the start view and in the thread
+        await tapIt(bar(tm(lang, M.incognito)));
+        expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
+        await say('Bukhar hai');
+        expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
+        expect(state.chats, hasLength(3));
+
+        // History: rows, delete-all dialog (cancel), delete one, open one
+        await tapIt(bar(tm(lang, M.history)));
+        expect(find.text(tm(lang, M.historyTitle)), findsOneWidget);
+        expect(find.text(tm(lang, M.chatPending)), findsOneWidget);
+        await tapIt(find.text(tm(lang, M.deleteAll)));
+        expect(find.text(tm(lang, M.deleteAllTitle)), findsOneWidget);
+        await tapIt(find.text(t(lang, K.back)).last);
+        await tapIt(find.byTooltip(tm(lang, M.chatDelete)).first);
+        expect(state.chats, hasLength(2));
+        await tapIt(find.text(t(lang, K.ex1)).last);
+        expect(state.incognito, isFalse);
+        expect(find.text(tm(lang, M.historyTitle)), findsNothing);
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+        await settle(tester, 4);
+
+        // this saved chat switched to incognito leaves History
+        await tapIt(bar(tm(lang, M.incognitoShort)));
+        expect(find.text(tm(lang, M.incognitoRemoved)), findsOneWidget);
+        expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
+        expect(state.chats, hasLength(1));
+
+        // delete all, confirmed: the empty state
+        await tapIt(bar(tm(lang, M.history)));
+        await tapIt(find.text(tm(lang, M.deleteAll)));
+        await tapIt(find.text(tm(lang, M.deleteYes)));
+        expect(state.chats, isEmpty);
+        expect(find.text(tm(lang, M.historyEmpty)), findsOneWidget);
+      });
     }
   }
 }

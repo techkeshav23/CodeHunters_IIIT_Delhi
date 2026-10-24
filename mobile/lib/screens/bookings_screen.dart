@@ -43,7 +43,7 @@ class BookingsScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(t(lang, K.bookingsEmpty), style: body(16, color: cc.ink2)),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: state.newCheck, child: Text(t(lang, K.startCheck))),
+                FilledButton(onPressed: state.newChat, child: Text(t(lang, K.startCheck))),
               ],
             ),
           )

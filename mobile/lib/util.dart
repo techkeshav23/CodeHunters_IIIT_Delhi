@@ -150,6 +150,27 @@ String? fmtDays(double? days, Lang lang) {
   }
 }
 
+const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _monthsHi = ['जन', 'फ़र', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अग', 'सित', 'अक्टू', 'नव', 'दिस'];
+
+/// When a saved chat was last used: "Abhi", "5 min pehle", "Aaj 3:42 PM",
+/// "Kal 9:10 PM", else "12 Oct, 9:10 PM".
+String chatTime(DateTime when, Lang lang, {DateTime? now}) {
+  final n = now ?? DateTime.now();
+  final w = when.toLocal();
+  final mins = n.difference(w).inMinutes;
+  if (mins < 1) return tm(lang, M.timeNow);
+  if (mins < 60) return tm(lang, M.timeMins, {'n': mins});
+  final h = w.hour % 12 == 0 ? 12 : w.hour % 12;
+  final clock = '$h:${w.minute.toString().padLeft(2, '0')} ${w.hour < 12 ? 'AM' : 'PM'}';
+  final days = DateTime(n.year, n.month, n.day).difference(DateTime(w.year, w.month, w.day)).inDays;
+  if (days == 0) return tm(lang, M.timeToday, {'t': clock});
+  if (days == 1) return tm(lang, M.timeYesterday, {'t': clock});
+  final month = (lang == Lang.hi ? _monthsHi : _months)[w.month - 1];
+  final year = w.year == n.year ? '' : ' ${w.year}';
+  return '${w.day} $month$year, $clock';
+}
+
 String titleCase(String s) => s.replaceAllMapped(RegExp(r'\b\w'), (m) => m.group(0)!.toUpperCase());
 
 /// True when the text contains Devanagari, so we can pick the Devanagari face first.

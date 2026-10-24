@@ -53,11 +53,14 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
     if (mounted) setState(() {});
   }
 
+  DateTime? _sentAt;
+
   void _send() {
     final state = AppScope.read(context);
     final text = widget.controller.text.trim();
     if (text.isEmpty || state.busy) return;
-    state.voice.stopListening();
+    _sentAt = DateTime.now();
+    state.voice.cancelListening(); // a late result must not refill the cleared box
     HapticFeedback.lightImpact();
     widget.onSend(text, _usedVoice);
     _usedVoice = false;
@@ -71,7 +74,10 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
       return;
     }
     HapticFeedback.mediumImpact();
+    final startedAt = DateTime.now();
     final ok = await voice.startListening(state.lang, (text, isFinal) {
+      final sent = _sentAt;
+      if (sent != null && sent.isAfter(startedAt)) return; // already sent: ignore late results
       widget.controller.value = TextEditingValue(
         text: text,
         selection: TextSelection.collapsed(offset: text.length),

@@ -420,7 +420,7 @@ class _DecisionCardState extends State<DecisionCard> {
                   label: Text(t(lang, K.whyThis)),
                 ),
                 TextButton.icon(
-                  onPressed: state.newCheck,
+                  onPressed: state.newChat,
                   icon: const Icon(LucideIcons.rotateCcw, size: 16),
                   label: Text(t(lang, K.newCheck)),
                 ),

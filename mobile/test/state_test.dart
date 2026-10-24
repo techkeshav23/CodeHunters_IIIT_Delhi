@@ -113,9 +113,9 @@ void main() {
     expect(state.history, isEmpty);
     expect(state.addingDetails, isFalse);
 
-    // a new check also forgets it
+    // a new chat also forgets it
     state.addMoreDetails(again);
-    state.newCheck();
+    state.newChat();
     expect(state.addingTo, isNull);
     expect(state.history, isEmpty);
   });

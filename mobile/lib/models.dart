@@ -85,6 +85,7 @@ class LatLng {
   final double lat;
   final double lng;
   const LatLng(this.lat, this.lng);
+  factory LatLng.fromJson(Map<String, Object?> j) => LatLng(_d(j['lat']), _d(j['lng']));
   Map<String, Object?> toJson() => {'lat': lat, 'lng': lng};
 }
 
@@ -93,6 +94,9 @@ class HistoryItem {
   final String content;
   final String? questionId;
   const HistoryItem({required this.role, required this.content, this.questionId});
+
+  factory HistoryItem.fromJson(Map<String, Object?> j) =>
+      HistoryItem(role: _s(j['role']), content: _s(j['content']), questionId: _sn(j['question_id']));
 
   Map<String, Object?> toJson() => {
     'role': role,
@@ -112,6 +116,17 @@ class TriageRequest {
     this.location,
     this.conversationHistory = const [],
   });
+
+  /// Reads back a request saved with [toJson] (chat history on the phone).
+  factory TriageRequest.fromJson(Map<String, Object?> j) {
+    final loc = j['location'];
+    return TriageRequest(
+      userInput: _s(j['user_input']),
+      language: _s(j['language'], 'auto'),
+      location: loc is Map ? LatLng.fromJson(_m(loc)) : null,
+      conversationHistory: _l(j['conversation_history']).map((e) => HistoryItem.fromJson(_m(e))).toList(),
+    );
+  }
 
   Map<String, Object?> toJson() => {
     'user_input': userInput,

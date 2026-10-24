@@ -85,6 +85,15 @@ class Voice {
     listening.value = false;
   }
 
+  /// Stops and drops what is still being recognised (used on Send, so a late final result
+  /// cannot refill the cleared text box).
+  Future<void> cancelListening() async {
+    try {
+      if (_stt.isListening) await _stt.cancel();
+    } catch (_) {}
+    listening.value = false;
+  }
+
   void _onStatus(String status) {
     if (status == 'done' || status == 'notListening') {
       if (listening.value) {
