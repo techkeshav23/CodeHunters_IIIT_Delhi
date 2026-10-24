@@ -1,5 +1,5 @@
-"""External check on CARE-Bench (public, English, patient-facing triage; Wu et al., 2026,
-arXiv 2608.03731, huggingface.co/datasets/ningkko/CARE-Bench).
+"""External check on CARE-Bench (public, English, patient-facing triage; Hua, Na and Ayubcha,
+2026, arXiv 2608.03731, huggingface.co/datasets/ningkko/CARE-Bench).
 
     python -m scripts.external_carebench data/external/care_bench/evaluation_prefixes_public.jsonl
 
@@ -8,7 +8,7 @@ Our labels differ, so this reports what matters for safety:
 - urgent recall: 1B cases we send to same-day or immediate care,
 - emergency rate on 1B, and false emergencies on 0A/0B/1A,
 - how often we ask a question on 0A ("info needed") cases versus the rest.
-Used for evaluation only; the data is not redistributed (no licence is stated).
+Used for evaluation only; the data is not redistributed (its GitHub README lists CC BY-NC 4.0).
 """
 from __future__ import annotations
 

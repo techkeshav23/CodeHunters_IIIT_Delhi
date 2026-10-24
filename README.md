@@ -57,8 +57,8 @@ text / voice
  -> normalise: Devanagari transliterated, Hinglish spellings reduced to phonetic keys
  -> red-flag rules (English, Hindi, Hinglish; negation-aware) -- hit --> emergency, no matching
  -> extract: symptoms, services asked for, who the patient is, age, duration, severity
- -> triage rules (care type + urgency)          [model trained on the provided data: next]
- -> follow-up question only if the answer can change the decision (max 3)
+ -> triage rules (care type + urgency)    [optional learned model: can only raise urgency, off by default]
+ -> follow-up question only if the answer can change the decision (max 3; answers re-checked for red flags)
  -> caregiver ranking: role filter, then skill, free time, distance, language, rating
  -> response with reasons built only from computed facts
 ```
@@ -84,20 +84,27 @@ Safety logic:
 
 `eval/run_eval.py` reports macro-F1 for care type and urgency, emergency recall,
 false alarms, under-triage, NDCG@3 for matching (when labels exist) and latency.
-`eval/cases/redteam_v0.jsonl` holds 122 team-written tricky cases (casual
-emergencies, negations, Devanagari, typos, babies, pregnancy, mental health,
-look-alikes). They are for testing only, not training, and their care/urgency
-labels are the team's own, not doctors'. The test suite fails if any emergency
-in that file is missed.
+`eval/cases/` holds 432 synthetic tricky cases (270 emergencies): casual
+emergencies, negations, Devanagari, typos, run-together words, babies, pregnancy,
+mental health, other people's or past events, and look-alikes. They are for
+testing only, not training, and their care/urgency labels are the team's own,
+not doctors'.
 
-Blind sets: `redteam_blind_v1.jsonl` (95) and `redteam_blind_v2.jsonl` (85) were
-written by a second team member without seeing the lexicon. Their first runs
-caught 75% and 39% of emergencies; every miss was fixed and both are now part
-of the safety tests, so they are regression sets rather than blind ones.
+| Set | Cases | Written by |
+|---|---|---|
+| `redteam_v0` | 122 | backend side |
+| `redteam_blind_v1`, `_v2`, `_v3` | 95, 85, 66 | second team member, without seeing the lexicon (first runs caught 75%, 39% and 93% of emergencies) |
+| `redteam_sweep_v1` | 33 | adversarial sweep, built from the misses it found |
+| `redteam_probe_v1`, `redteam_pregnancy_v1` | 18, 13 | probes of suppression rules and pregnancy cues |
+
+Every miss was fixed and all sets are in the test suite, so they are regression
+sets now. `pytest` fails if any emergency is missed, if false emergencies pass
+10%, or if a labelled case is under-triaged (`tests/test_safety.py`,
+`tests/test_routing.py`).
 
 External check on public data: [CARE-Bench](https://huggingface.co/datasets/ningkko/CARE-Bench)
-(Wu et al. 2026, arXiv 2608.03731; English, 925 labelled patient-message prefixes; no licence
-stated, so it is used for evaluation only and not included in this repo):
+(Hua, Na and Ayubcha, 2026, arXiv:2608.03731; English, 925 labelled patient-message prefixes;
+CC BY-NC 4.0 per its GitHub README, so it is used for evaluation only and not included in this repo):
 
 ```bash
 .venv\Scripts\python -m scripts.external_carebench data\external\care_bench\evaluation_prefixes_public.jsonl
@@ -123,7 +130,10 @@ IIIT-Delhi, labelled DEV.
 
 ## Models and APIs used
 
-- Rules and lexicon written by the team (no external model or API yet).
+- Rules and lexicon written by the team; RapidFuzz for spelling distance.
+- Optional TF-IDF + logistic regression model (`scripts/train_baseline.py`), off until
+  doctor-labelled data exists; it can only raise urgency.
+- No LLM and no paid API at runtime (see `docs/WRITEUP.md` for why).
 - Voice in the web app: the browser's Web Speech API.
 
 ## Open-source components
@@ -138,9 +148,9 @@ Web app packages are listed in `web/README.md`.
 app/            API, pipeline, NLP, triage rules, matching
 app/data/       lexicon.yaml (red flags, symptoms, services), dev caregivers
 eval/           metrics, eval harness, tricky test cases
-scripts/        predictions CSV
+scripts/        predictions CSV, CARE-Bench check, probe, optional model training
 tests/          pytest suite
-docs/           API contract, examples, web app spec
+docs/           API contract, examples, write-up, web app spec
 web/            web app (Vite + React)
 ```
 

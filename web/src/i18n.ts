@@ -181,7 +181,7 @@ const S = {
   step1: { hinglish: "Samajhna", hi: "समझना", en: "Understand" },
   step1t: { hinglish: "Hindi, Hinglish, English, voice typing aur galat spelling bhi.", hi: "हिंदी, हिंग्लिश, अंग्रेज़ी, वॉइस टाइपिंग और ग़लत स्पेलिंग भी।", en: "Hindi, Hinglish and English, voice typing and misspellings too." },
   step2: { hinglish: "Khatre ki jaanch", hi: "ख़तरे की जाँच", en: "Danger check" },
-  step2t: { hinglish: "Sabse pehle 24 tarah ke khatre ke lakshan. Mile to seedha emergency.", hi: "सबसे पहले 24 तरह के ख़तरे के लक्षण। मिलें तो सीधे इमरजेंसी।", en: "First, 24 kinds of danger signs. If one is found, straight to emergency." },
+  step2t: { hinglish: "Sabse pehle 25 tarah ke khatre ke lakshan. Mile to seedha emergency.", hi: "सबसे पहले 25 तरह के ख़तरे के लक्षण। मिलें तो सीधे इमरजेंसी।", en: "First, 25 kinds of danger signs. If one is found, straight to emergency." },
   step3: { hinglish: "Zarurat par sawaal", hi: "ज़रूरत पर सवाल", en: "Ask only if needed" },
   step3t: { hinglish: "Sirf tab, jab jawab se faisla badal sake. Zyada se zyada 3.", hi: "सिर्फ़ तब, जब जवाब से फ़ैसला बदल सके। ज़्यादा से ज़्यादा 3।", en: "Only when the answer can change the decision. Three at most." },
   step4: { hinglish: "Faisla", hi: "फ़ैसला", en: "Decide" },
@@ -239,6 +239,27 @@ export function t(lang: Lang, key: Key, vars?: Record<string, string | number>):
   let s = S[key][lang] ?? S[key].en;
   if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
   return s;
+}
+
+// department names for decision.specialty; unknown ids are shown as sent
+const SPECIALTIES: Record<string, Record<Lang, string>> = {
+  orthopaedics: { hinglish: "Haddi aur jod (Orthopaedics)", hi: "हड्डी और जोड़ (Orthopaedics)", en: "Orthopaedics (bones and joints)" },
+  dermatology: { hinglish: "Twacha (Skin)", hi: "त्वचा (Skin)", en: "Dermatology (skin)" },
+  ent: { hinglish: "Kaan, naak, gala (ENT)", hi: "कान, नाक, गला (ENT)", en: "ENT (ear, nose, throat)" },
+  neurology: { hinglish: "Dimag aur nasein (Neurology)", hi: "दिमाग़ और नसें (Neurology)", en: "Neurology" },
+  gastroenterology: { hinglish: "Pet aur pachan (Gastro)", hi: "पेट और पाचन (Gastro)", en: "Gastroenterology (digestion)" },
+  urology: { hinglish: "Kidney aur peshab (Urology)", hi: "किडनी और पेशाब (Urology)", en: "Urology" },
+  ophthalmology: { hinglish: "Aankh (Eye)", hi: "आँख (Eye)", en: "Ophthalmology (eye)" },
+  dental: { hinglish: "Daant (Dental)", hi: "दाँत (Dental)", en: "Dental" },
+  cardiology: { hinglish: "Dil (Cardiology)", hi: "दिल (Cardiology)", en: "Cardiology (heart)" },
+  psychiatry: { hinglish: "Mann ka swasthya (Psychiatry)", hi: "मन का स्वास्थ्य (Psychiatry)", en: "Psychiatry (mental health)" },
+  gynaecology: { hinglish: "Mahila aur pregnancy (Gynaecology)", hi: "महिला और गर्भावस्था (Gynaecology)", en: "Gynaecology" },
+  physiotherapy: { hinglish: "Physiotherapy", hi: "फ़िज़ियोथेरेपी", en: "Physiotherapy" },
+  paediatrics: { hinglish: "Bachchon ke doctor (Paediatrics)", hi: "बच्चों के डॉक्टर (Paediatrics)", en: "Paediatrics (children)" },
+};
+
+export function specialtyLabel(lang: Lang, id: string): string {
+  return SPECIALTIES[id]?.[lang] ?? id;
 }
 
 export const LANG_LABEL: Record<Lang, string> = { hi: "हिंदी", hinglish: "Hinglish", en: "English" };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, RotateCcw, Siren, Volume2, Square } from "lucide-react";
 import type { Lang, TraceCaregiver, TriageResponse } from "../types";
-import { t } from "../i18n";
+import { specialtyLabel, t } from "../i18n";
 import { isTele, type Msg, urgencyLevel, fmtDays } from "../lib";
 import { BrandMark } from "./Brand";
 import Dial from "./Dial";
@@ -177,7 +177,7 @@ function Decision({
             <span className={level === 1 ? "chip chip--haldi" : level === 2 ? "chip chip--danger" : "chip chip--brand"}>
               {d.urgency_label_local}
             </span>
-            {d.specialty && <span className="chip">{t(lang, "specialist", { x: d.specialty })}</span>}
+            {d.specialty && <span className="chip">{t(lang, "specialist", { x: specialtyLabel(lang, d.specialty) })}</span>}
             {dur && <span className="chip">{dur}</span>}
           </div>
           <p className="decision__reason">{res.trace.reasoning_local}</p>

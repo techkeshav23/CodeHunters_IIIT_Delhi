@@ -4,7 +4,7 @@ only guards emergencies). Each set has 9-31 labelled rows, so the floors are poo
 across sets. Under-triage (urgency below the label) is never allowed.
 
 CARE-Bench is checked too when its public files are in data/external (they are not
-committed, since no licence is stated), so this part is skipped elsewhere."""
+committed: evaluation use only), so this part is skipped elsewhere."""
 from pathlib import Path
 
 import pytest

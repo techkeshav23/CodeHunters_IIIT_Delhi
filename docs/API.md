@@ -249,7 +249,10 @@ numbers, for clients that want to render them.
 
 ## GET /health
 
-`{"status": "ok", "version": "0.1.0", "caregivers_source": "dev_sample", "caregivers": 24, "model": "rules"}`
+`{"status": "ok", "version": "0.1.0", "caregivers_source": "dev_sample", "caregivers": 26, "model": "rules"}`
+
+`caregivers_source` is `provided` (a file in `data/provided/`), `env` (`CC_CAREGIVERS`),
+`dev_sample`, or `dev_sample_fallback: <reason>` when the given file could not be read.
 
 ---
 
