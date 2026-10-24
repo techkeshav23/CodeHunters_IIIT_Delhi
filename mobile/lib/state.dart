@@ -79,6 +79,10 @@ class AppState extends ChangeNotifier {
   ({TriageRequest req, TriageResponse res})? last;
   int _nextId = 1;
 
+  /// Id of the decision the user is adding details to ("Aur jaankari
+  /// jodein"), or null. Its conversation is already back in [history].
+  int? addingTo;
+
   // ---- bookings ----
   List<SavedBooking> bookings = [];
 
@@ -91,6 +95,9 @@ class AppState extends ChangeNotifier {
   String get locationLabel => t(lang, K.locDemo);
 
   bool get answering => messages.isNotEmpty && messages.last is QuestionMsg;
+
+  /// True while the next message adds details to the last decision.
+  bool get addingDetails => addingTo != null && messages.isNotEmpty && messages.last.id == addingTo;
 
   Future<void> load() async {
     try {
@@ -175,6 +182,7 @@ class AppState extends ChangeNotifier {
       location: location,
       conversationHistory: List.unmodifiable(history),
     );
+    addingTo = null;
     Msg added;
     try {
       final res = await api.triage(req);
@@ -219,7 +227,30 @@ class AppState extends ChangeNotifier {
     voice.stopSpeaking();
     messages.clear();
     history = [];
+    addingTo = null;
     tab = 0;
+    notifyListeners();
+  }
+
+  /// "Aur jaankari jodein": puts the conversation that led to [m] (earlier
+  /// turns, then the user's last message) back into [history], so the next
+  /// message is read together with it instead of as a new case.
+  void addMoreDetails(DecisionMsg m) {
+    if (busy) return;
+    voice.stopSpeaking();
+    history = [
+      ...m.req.conversationHistory,
+      HistoryItem(role: 'user', content: m.req.userInput),
+    ];
+    addingTo = m.id;
+    notifyListeners();
+  }
+
+  /// Undo [addMoreDetails]: the next message starts a fresh case again.
+  void cancelAddMore() {
+    if (addingTo == null) return;
+    history = [];
+    addingTo = null;
     notifyListeners();
   }
 
@@ -257,13 +288,15 @@ class AppState extends ChangeNotifier {
   }
 }
 
-/// What the read-aloud button says for a decision (same as the web client).
+/// What the read-aloud button says for a decision (same as the web client),
+/// ending with the "come back / call 112 if ..." advice when there is one.
 String decisionSummary(TriageResponse res) {
   final d = res.trace.decision;
   return [
     d.careLabelLocal,
     d.urgencyLabelLocal,
     res.trace.reasoningLocal,
+    res.trace.safetyNetLocal,
   ].where((s) => s != null && s.trim().isNotEmpty).join('. ');
 }
 

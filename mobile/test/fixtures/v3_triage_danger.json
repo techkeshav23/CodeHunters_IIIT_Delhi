@@ -1,0 +1,175 @@
+{
+ "follow_up_question": "Kya inme se kuch hai: saans phoolna, behoshi, seene mein dard, ya bahut tez bukhar?",
+ "care_type": null,
+ "urgency": null,
+ "red_flags": [],
+ "reasoning": "Checking danger signs before deciding.",
+ "matched_caregivers": [],
+ "trace": {
+  "version": "0.1.0",
+  "language": "hinglish",
+  "mode": "interactive",
+  "understood": {
+   "patient": {
+    "relation": "father",
+    "relation_label": "Papa",
+    "age_years": null,
+    "age_group": null,
+    "pregnant": null
+   },
+   "symptoms": [
+    {
+     "id": "fever",
+     "label": "Fever",
+     "label_local": "Bukhar"
+    },
+    {
+     "id": "cough",
+     "label": "Cough",
+     "label_local": "Khansi"
+    }
+   ],
+   "duration_days": 2,
+   "duration_label": "2 days",
+   "services": [],
+   "severity": []
+  },
+  "checks": [
+   {
+    "id": "breathing_difficulty",
+    "label": "Breathing difficulty",
+    "label_local": "Saans lene mein dikkat",
+    "status": "not_reported"
+   }
+  ],
+  "red_flags": [],
+  "decision": {
+   "care_type": null,
+   "urgency": null,
+   "care_label": null,
+   "care_label_local": null,
+   "urgency_label": null,
+   "urgency_label_local": null,
+   "confidence": 0.7,
+   "source": "model",
+   "rule": "acute_fever",
+   "specialty": null
+  },
+  "reasoning_local": "Faisle se pehle saans ki dikkat check kar rahe hain.",
+  "follow_up": {
+   "id": "q_danger",
+   "text": "Kya inme se kuch hai: saans phoolna, behoshi, seene mein dard, ya bahut tez bukhar?",
+   "kind": "yes_no",
+   "options": [
+    {
+     "value": "yes",
+     "label": "Haan"
+    },
+    {
+     "value": "no",
+     "label": "Nahi"
+    }
+   ],
+   "asked_so_far": 1,
+   "max": 4
+  },
+  "emergency": null,
+  "caregivers": [],
+  "timing_ms": 1.8,
+  "model": {
+   "name": "MuRIL (fine-tuned)",
+   "probabilities": {
+    "paramedic": 0.21,
+    "nurse": 0.03,
+    "lab": 0.02,
+    "gp": 0.1,
+    "emergency": 0.04,
+    "followup": 0.58,
+    "out_of_scope": 0.02
+   },
+   "urgency_probabilities": {
+    "routine": 0.4,
+    "same_day": 0.55,
+    "immediate": 0.05
+   },
+   "confidence": 0.58,
+   "band": "low",
+   "version": "student-2026-10-24",
+   "latency_ms": 41.7
+  },
+  "structured": {
+   "symptoms": [
+    {
+     "id": "fever",
+     "label": "Fever",
+     "label_local": "Bukhar"
+    },
+    {
+     "id": "cough",
+     "label": "Cough",
+     "label_local": "Khansi"
+    }
+   ],
+   "who": "adult",
+   "who_label_local": "Papa",
+   "duration_days": 2,
+   "age_years": null
+  },
+  "guardrails": [
+   {
+    "id": "safety_net",
+    "label": "Safety net (red-flag rules)",
+    "label_local": "Suraksha jaal (khatre ke niyam)",
+    "status": "pass"
+   },
+   {
+    "id": "model_emergency",
+    "label": "Model emergency check",
+    "label_local": "Model ki emergency jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "vulnerable_floor",
+    "label": "Elderly, child or pregnancy floor",
+    "label_local": "Buzurg, bachche ya pregnancy ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "urgency_floor",
+    "label": "Urgency floor",
+    "label_local": "Jaldi ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "low_confidence",
+    "label": "Low confidence check",
+    "label_local": "Kam bharose ki jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "out_of_scope",
+    "label": "Out of scope",
+    "label_local": "Seva ke bahar",
+    "status": "pass"
+   },
+   {
+    "id": "llm_fallback",
+    "label": "Second check by Claude",
+    "label_local": "Claude se doosri jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "clinical_scope",
+    "label": "No diagnosis or medicine",
+    "label_local": "Bimari ya dawai ka naam nahi",
+    "status": "pass"
+   },
+   {
+    "id": "invariants",
+    "label": "Output checks",
+    "label_local": "Jawab ki jaanch",
+    "status": "pass"
+   }
+  ]
+ }
+}

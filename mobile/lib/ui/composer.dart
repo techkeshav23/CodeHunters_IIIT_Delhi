@@ -115,7 +115,11 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
         isDense: true,
         border: InputBorder.none,
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        hintText: listening ? t(lang, K.listening) : t(lang, state.answering ? K.placeholderAnswer : K.placeholder),
+        hintText: listening
+            ? t(lang, K.listening)
+            : state.addingDetails
+            ? tm(lang, M.addMoreHint)
+            : t(lang, state.answering ? K.placeholderAnswer : K.placeholder),
         hintStyle: body(size, color: listening ? cc.sindoor : cc.ink3),
       ),
     );
@@ -160,6 +164,7 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (state.addingDetails) _AddingNote(lang: lang, onCancel: state.cancelAddMore),
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
@@ -230,6 +235,40 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Above the docked box while adding details to the last decision: says the
+/// next message is read together with the earlier ones, with a way out.
+class _AddingNote extends StatelessWidget {
+  const _AddingNote({required this.lang, required this.onCancel});
+  final Lang lang;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 0, 4),
+      child: Row(
+        children: [
+          Icon(LucideIcons.messageSquarePlus, size: 16, color: cc.brand),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              tm(lang, M.addMoreNote),
+              style: body(13.5, weight: FontWeight.w600, color: cc.ink2, height: 1.3),
+            ),
+          ),
+          IconButton(
+            tooltip: t(lang, K.close),
+            onPressed: onCancel,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(LucideIcons.x, size: 18, color: cc.ink3),
+          ),
+        ],
+      ),
     );
   }
 }

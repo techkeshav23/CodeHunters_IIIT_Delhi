@@ -17,9 +17,9 @@ String get apiBase {
   return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
 }
 
-/// Follow-up policy the web app uses: "safety" adds a breathing check for
-/// fever and cough cases.
-const String kTriagePolicy = 'safety';
+/// Follow-up policy the web app uses: "conversational" asks the 2-4 targeted
+/// questions of the smart intake (danger signs, who, how long) before deciding.
+const String kTriagePolicy = 'conversational';
 
 /// Fixed demo location (same as the web app): Okhla, New Delhi.
 const LatLng kDemoLocation = LatLng(28.5459, 77.2732);

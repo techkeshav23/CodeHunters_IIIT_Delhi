@@ -34,7 +34,7 @@ void main() {
 
     final q = await state.send('papa ko do din se bukhar hai aur khansi bhi');
     expect(q, isA<QuestionMsg>());
-    expect(requests.single.url.toString(), 'https://api.test/v1/triage?explain=true&policy=safety');
+    expect(requests.single.url.toString(), 'https://api.test/v1/triage?explain=true&policy=conversational');
     expect(state.history.map((h) => h.toJson()).toList(), [
       {'role': 'user', 'content': 'papa ko do din se bukhar hai aur khansi bhi'},
       {'role': 'assistant', 'content': 'Kya saans lene mein dikkat ho rahi hai?', 'question_id': 'q_breathing'},
@@ -62,6 +62,62 @@ void main() {
       'urgency': 'same_day',
       'note': 'gate 2',
     });
+  });
+
+  test('"Aur jaankari jodein" sends the earlier conversation with the next message', () async {
+    final requests = <Map<String, dynamic>>[];
+    final client = MockClient((req) async {
+      final body = jsonDecode(req.body) as Map<String, dynamic>;
+      requests.add(body);
+      final history = body['conversation_history'] as List;
+      return jsonRes(fx(history.isEmpty ? 'v3_triage_danger.json' : 'v3_triage_final.json'));
+    });
+    final state = AppState(
+      api: ApiClient(base: 'https://api.test', client: client),
+    );
+
+    await state.send('papa ko do din se bukhar hai aur khansi bhi');
+    final d = await state.send('Nahi') as DecisionMsg;
+    expect(state.history, isEmpty);
+    expect(state.addingDetails, isFalse);
+
+    state.addMoreDetails(d);
+    expect(state.addingTo, d.id);
+    expect(state.addingDetails, isTrue);
+    expect(state.history.map((h) => h.toJson()).toList(), [
+      {'role': 'user', 'content': 'papa ko do din se bukhar hai aur khansi bhi'},
+      {
+        'role': 'assistant',
+        'content': 'Kya inme se kuch hai: saans phoolna, behoshi, seene mein dard, ya bahut tez bukhar?',
+        'question_id': 'q_danger',
+      },
+      {'role': 'user', 'content': 'Nahi'},
+    ]);
+
+    final again = await state.send('aur ulti bhi ho rahi hai');
+    expect(again, isA<DecisionMsg>());
+    final sent = requests.last;
+    expect(sent['user_input'], 'aur ulti bhi ho rahi hai');
+    final h = (sent['conversation_history'] as List).cast<Map<String, dynamic>>();
+    expect(h.where((e) => e['role'] == 'user').map((e) => e['content']), [
+      'papa ko do din se bukhar hai aur khansi bhi',
+      'Nahi',
+    ]);
+    expect(state.addingTo, isNull);
+    expect(state.history, isEmpty, reason: 'the new decision starts fresh again');
+
+    // cancelling puts things back to a fresh case
+    state.addMoreDetails(again as DecisionMsg);
+    expect(state.history, isNotEmpty);
+    state.cancelAddMore();
+    expect(state.history, isEmpty);
+    expect(state.addingDetails, isFalse);
+
+    // a new check also forgets it
+    state.addMoreDetails(again);
+    state.newCheck();
+    expect(state.addingTo, isNull);
+    expect(state.history, isEmpty);
   });
 
   test('emergency response becomes an EmergencyMsg and clears history', () async {

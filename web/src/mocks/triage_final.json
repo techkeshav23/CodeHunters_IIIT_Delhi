@@ -71,15 +71,25 @@
         "severity": []
       },
       "model": {
+        "name": "MuRIL (fine-tuned)",
         "probabilities": {
-          "emergency": 0.114,
-          "followup": 0.083,
-          "gp": 0.095,
-          "lab": 0.086,
-          "nurse": 0.116,
-          "paramedic": 0.506
+          "paramedic": 0.93,
+          "nurse": 0.02,
+          "lab": 0.01,
+          "gp": 0.03,
+          "emergency": 0.005,
+          "followup": 0.004,
+          "out_of_scope": 0.001
         },
-        "version": "2026-10-24T15:56:36"
+        "urgency_probabilities": {
+          "routine": 0.09,
+          "same_day": 0.89,
+          "immediate": 0.02
+        },
+        "confidence": 0.93,
+        "band": "high",
+        "version": "mock",
+        "latency_ms": 21.4
       },
       "checks": [
         {
@@ -200,7 +210,91 @@
           }
         }
       ],
-      "timing_ms": 2.9
+      "timing_ms": 2.9,
+      "structured": {
+        "symptoms": [
+          {
+            "id": "fever",
+            "label": "Fever",
+            "label_local": "Bukhar"
+          },
+          {
+            "id": "cough",
+            "label": "Cough",
+            "label_local": "Khansi"
+          }
+        ],
+        "who": "elderly",
+        "who_label_local": "Buzurg",
+        "duration_days": 2,
+        "age_years": null
+      },
+      "guardrails": [
+        {
+          "id": "safety_net",
+          "label": "Danger-sign rules",
+          "label_local": "Khatre ke lakshan ki jaanch",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "model_emergency",
+          "label": "Model emergency check",
+          "label_local": "Model ki emergency jaanch",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "vulnerable_floor",
+          "label": "Extra care for elders, children, pregnancy",
+          "label_local": "Buzurg, bachche, pregnancy par zyada dhyan",
+          "status": "fired",
+          "note_local": "Buzurg ke liye 'aaj hi' se der nahi"
+        },
+        {
+          "id": "urgency_floor",
+          "label": "Urgency never lowered",
+          "label_local": "Jaldi kabhi kam nahi ki",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "low_confidence",
+          "label": "Model unsure",
+          "label_local": "Model ko shak",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "out_of_scope",
+          "label": "Not a health need",
+          "label_local": "Health se alag baat",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "llm_fallback",
+          "label": "Second check (Claude)",
+          "label_local": "Doosri jaanch (Claude)",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "clinical_scope",
+          "label": "No diagnosis or medicine",
+          "label_local": "Bimari ya dawai ka naam nahi",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "invariants",
+          "label": "Answer is consistent",
+          "label_local": "Jawab sahi banawat mein",
+          "status": "pass",
+          "note_local": null
+        }
+      ],
+      "safety_net_local": "Saans phoolne lage, seene mein dard ho ya hosh kam lage to intezaar mat karein, turant 112 par call karein. Bukhar 3 din mein na utre to dobara jaanch karein."
     }
   }
 }

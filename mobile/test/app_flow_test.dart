@@ -97,6 +97,105 @@ void main() {
     expect(find.text('Ravi Kumar'), findsOneWidget);
   });
 
+  testWidgets('model-first decision: who decided, safety net, safety checks, add more details', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    final sent = <Map<String, dynamic>>[];
+    final client = MockClient((req) async {
+      if (req.url.path == '/v1/labels') return jsonRes(fx('labels.json'));
+      if (req.url.path == '/health') return jsonRes(fx('health.json'));
+      final body = jsonDecode(req.body) as Map<String, dynamic>;
+      sent.add(body);
+      final input = (body['user_input'] as String).toLowerCase();
+      if (input.contains('seene')) return jsonRes(fx('v3_triage_emergency.json'));
+      final history = body['conversation_history'] as List;
+      return jsonRes(fx(history.isEmpty ? 'v3_triage_danger.json' : 'v3_triage_final.json'));
+    });
+    final state = AppState(api: ApiClient(base: 'https://api.test', client: client));
+    await tester.pumpWidget(CareCompassApp(state: state));
+    await settle(tester);
+
+    final ex1 = find.text('Papa ko do din se bukhar hai aur khansi bhi');
+    await tester.scrollUntilVisible(ex1, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(ex1);
+    await settle(tester);
+
+    // danger-signs question: two big yes/no targets
+    expect(find.text('Sawaal 1 / 4'), findsOneWidget);
+    expect(find.text('Haan'), findsOneWidget);
+    expect(tester.getSize(find.ancestor(of: find.text('Nahi'), matching: find.byType(Container)).first).height,
+        greaterThanOrEqualTo(58));
+    await tester.tap(find.text('Nahi'));
+    await settle(tester, 20);
+
+    // who decided, in words; safety-net advice under the reason
+    expect(find.text('MuRIL model aur suraksha niyamon ne tay kiya · Pakka bharosa'), findsOneWidget);
+    expect(find.textContaining('112 par call kijiye'), findsOneWidget);
+
+    // why: structured chips and the safety checks, the fired one first
+    await tester.ensureVisible(find.text('Yeh faisla kyon?'));
+    await settle(tester, 4);
+    await tester.tap(find.text('Yeh faisla kyon?'));
+    await settle(tester);
+    expect(find.text('Buzurg'), findsOneWidget);
+    expect(find.text('70y'), findsOneWidget);
+    expect(find.text('Suraksha jaanch'), findsOneWidget);
+    expect(find.textContaining('Laagu hua · 70 saal'), findsOneWidget);
+    final firedY = tester.getTopLeft(find.text('Buzurg, bachche ya pregnancy ka niyam')).dy;
+    final passY = tester.getTopLeft(find.text('Suraksha jaal (khatre ke niyam)')).dy;
+    expect(firedY, lessThan(passY));
+
+    // add more details: the box gets focus and the next send carries the earlier turns
+    await tester.ensureVisible(find.text('Aur jaankari jodein'));
+    await settle(tester, 4);
+    await tester.tap(find.text('Aur jaankari jodein'));
+    await settle(tester);
+    expect(state.addingDetails, isTrue);
+    expect(find.text('Pichhli baat ke saath jodkar dobara dekhenge'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
+    await tester.enterText(find.byType(TextField), 'aur ulti bhi ho rahi hai');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Bhejein'));
+    await settle(tester, 20);
+    final history = (sent.last['conversation_history'] as List).cast<Map<String, dynamic>>();
+    expect(sent.last['user_input'], 'aur ulti bhi ho rahi hai');
+    expect(history.first['content'], 'Papa ko do din se bukhar hai aur khansi bhi');
+    expect(history.last, {'role': 'user', 'content': 'Nahi'});
+    expect(find.text('Pichhli baat ke saath jodkar dobara dekhenge'), findsNothing);
+
+    // an emergency the safety net raised says so on the takeover
+    await tester.enterText(find.byType(TextField), 'Mummy ke seene mein dard hai');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Bhejein'));
+    await settle(tester);
+    expect(find.text('Abhi call karein'), findsOneWidget);
+    expect(find.text('Humari suraksha jaanch ne ise emergency maana'), findsOneWidget);
+  });
+
+  testWidgets('an out-of-scope reply is not counted as a question', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    final client = MockClient((req) async {
+      if (req.url.path == '/v1/labels') return jsonRes(fx('labels.json'));
+      if (req.url.path == '/health') return jsonRes(fx('health.json'));
+      return jsonRes(fx('v3_triage_scope.json'));
+    });
+    final state = AppState(api: ApiClient(base: 'https://api.test', client: client));
+    await tester.pumpWidget(CareCompassApp(state: state));
+    await settle(tester);
+
+    await tester.enterText(find.byType(TextField), 'kal mausam kaisa rahega?');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Bhejein'));
+    await settle(tester);
+    expect(find.textContaining('Main sirf sehat ki dekhbhal'), findsOneWidget);
+    expect(find.textContaining('Sawaal'), findsNothing);
+  });
+
   testWidgets('emergency opens the red takeover with 112, 102, 108', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.625;

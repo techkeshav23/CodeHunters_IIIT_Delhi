@@ -145,6 +145,8 @@ class QuestionCard extends StatelessWidget {
     final n = fu?.askedSoFar ?? 1;
     final max = (fu?.max ?? 3).clamp(1, 10);
     final voiceLang = res.trace.language;
+    // q_scope is a polite "we can't help with this" reply, not a numbered question.
+    final counted = fu?.id != 'q_scope';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -162,25 +164,27 @@ class QuestionCard extends StatelessWidget {
             spacing: 9,
             runSpacing: 2,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < max; i++)
-                    Container(
-                      width: 22,
-                      height: 5,
-                      margin: EdgeInsets.only(right: i < max - 1 ? 5 : 0),
-                      decoration: BoxDecoration(
-                        color: i < n ? cc.haldi : cc.surface3,
-                        borderRadius: BorderRadius.circular(3),
+              if (counted) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < max; i++)
+                      Container(
+                        width: 22,
+                        height: 5,
+                        margin: EdgeInsets.only(right: i < max - 1 ? 5 : 0),
+                        decoration: BoxDecoration(
+                          color: i < n ? cc.haldi : cc.surface3,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-              Text(
-                t(lang, K.questionOf, {'n': n, 'max': max}),
-                style: body(13.5, weight: FontWeight.w600, color: cc.ink3),
-              ),
+                  ],
+                ),
+                Text(
+                  t(lang, K.questionOf, {'n': n, 'max': max}),
+                  style: body(13.5, weight: FontWeight.w600, color: cc.ink3),
+                ),
+              ],
               ReadAloudButton(id: 'q${msg.id}', text: text, voiceLang: voiceLang, speech: res.trace.speech),
             ],
           ),
@@ -215,17 +219,26 @@ class QuestionCard extends StatelessWidget {
                 ),
               )
             else
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (var i = 0; i < fu.options.length; i++)
-                    EntryAnimation(
-                      delay: Duration(milliseconds: 80 * i),
-                      offset: 10,
-                      child: _OptionButton(option: fu.options[i], onTap: () => onAnswer(fu.options[i].label)),
-                    ),
-                ],
+              // Longer sets: two equal columns, so every option is a big target.
+              LayoutBuilder(
+                builder: (context, c) {
+                  final w = (c.maxWidth - 10) / 2;
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (var i = 0; i < fu.options.length; i++)
+                        SizedBox(
+                          width: w,
+                          child: EntryAnimation(
+                            delay: Duration(milliseconds: 80 * i),
+                            offset: 10,
+                            child: _OptionButton(option: fu.options[i], onTap: () => onAnswer(fu.options[i].label)),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
           ],
         ],
@@ -249,22 +262,23 @@ class _OptionButton extends StatelessWidget {
       excludeSemantics: true,
       child: Pressable(
         onTap: onTap,
+        // Big, thumb-sized targets for elderly and low-literacy users.
         child: Container(
-          constraints: const BoxConstraints(minHeight: 52, minWidth: 80),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          constraints: const BoxConstraints(minHeight: 58, minWidth: 88),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: cc.bg,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: yes ? Color.lerp(cc.line, cc.sindoor, 0.45)! : Color.lerp(cc.line, cc.brand, 0.35)!,
-              width: 1.6,
+              width: 1.8,
             ),
           ),
           child: Text(
             option.label,
             textAlign: TextAlign.center,
-            style: body(17, weight: FontWeight.w700, color: cc.ink, height: 1.25),
+            style: body(18, weight: FontWeight.w700, color: cc.ink, height: 1.25),
           ),
         ),
       ),
@@ -272,10 +286,14 @@ class _OptionButton extends StatelessWidget {
   }
 }
 
-/// The final decision: dial, care label, reasoning, why, caregivers.
+/// The final decision: dial, care label, who decided, reasoning, safety-net
+/// advice, why, caregivers.
 class DecisionCard extends StatefulWidget {
-  const DecisionCard({super.key, required this.msg});
+  const DecisionCard({super.key, required this.msg, this.onAddMore});
   final DecisionMsg msg;
+
+  /// "Aur jaankari jodein"; null hides the button (older decisions).
+  final VoidCallback? onAddMore;
 
   @override
   State<DecisionCard> createState() => _DecisionCardState();
@@ -300,9 +318,11 @@ class _DecisionCardState extends State<DecisionCard> {
     final level = urgencyLevel(res.urgency ?? d.urgency);
     final tele = isTele(res.careType);
     final carers = res.trace.caregivers;
-    final dur = fmtDays(res.trace.understood.durationDays, lang);
+    final dur = fmtDays(res.trace.structured?.durationDays ?? res.trace.understood.durationDays, lang);
     final care = careLabel(res, lang);
     final urg = urgencyLabel(res, lang);
+    final decidedBy = decidedByText(res.trace, lang);
+    final safetyNet = res.trace.safetyNetLocal;
     final urgTone = switch (level) {
       2 => ChipTone.danger,
       1 => ChipTone.haldi,
@@ -351,6 +371,10 @@ class _DecisionCardState extends State<DecisionCard> {
                     if (dur != null) CCChip(dur),
                   ],
                 ),
+                if (decidedBy != null) ...[
+                  const SizedBox(height: 10),
+                  _DecidedBy(text: decidedBy, source: d.source),
+                ],
                 const SizedBox(height: 12),
                 Text(
                   res.trace.reasoningLocal,
@@ -358,6 +382,10 @@ class _DecisionCardState extends State<DecisionCard> {
                   overflow: _why ? null : TextOverflow.ellipsis,
                   style: body(16, color: cc.ink2),
                 ),
+                if (safetyNet != null) ...[
+                  const SizedBox(height: 12),
+                  _SafetyNetNotice(text: safetyNet),
+                ],
               ],
             ),
           ),
@@ -366,6 +394,15 @@ class _DecisionCardState extends State<DecisionCard> {
             child: Wrap(
               spacing: 2,
               children: [
+                if (widget.onAddMore != null)
+                  TextButton.icon(
+                    onPressed: widget.onAddMore,
+                    style: TextButton.styleFrom(
+                      foregroundColor: state.addingTo == widget.msg.id ? cc.brand2 : cc.ink2,
+                    ),
+                    icon: const Icon(LucideIcons.messageSquarePlus, size: 18),
+                    label: Text(tm(lang, M.addMore)),
+                  ),
                 ReadAloudButton(
                   id: 'd${widget.msg.id}',
                   text: decisionSummary(res),
@@ -470,6 +507,72 @@ class _DecisionCardState extends State<DecisionCard> {
   }
 }
 
+/// One quiet line under the care label: which part of the system decided
+/// ("MuRIL model ne tay kiya · Pakka bharosa").
+class _DecidedBy extends StatelessWidget {
+  const _DecidedBy({required this.text, required this.source});
+  final String text;
+  final String source;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    final icon = switch (source) {
+      'llm' => LucideIcons.sparkles,
+      'safety_net' => LucideIcons.shieldCheck,
+      'rules' => LucideIcons.listChecks,
+      _ => LucideIcons.brainCircuit,
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 15, color: cc.brand),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(text, style: body(13.5, weight: FontWeight.w600, color: cc.ink2, height: 1.35)),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Come back / call 112 if ..." advice (trace.safety_net_local), always in
+/// full under the reason.
+class _SafetyNetNotice extends StatelessWidget {
+  const _SafetyNetNotice({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: cc.haldiSoft,
+        borderRadius: BorderRadius.circular(rMd),
+        border: Border.all(color: cc.haldi.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(LucideIcons.lifeBuoy, size: 18, color: cc.ink),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: body(15, color: cc.ink, height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Emergency result inside the thread: re-opens the full-screen takeover.
 class EmergencyInline extends StatelessWidget {
   const EmergencyInline({super.key, required this.msg});
@@ -506,6 +609,25 @@ class EmergencyInline extends StatelessWidget {
           if (msg.res.trace.reasoningLocal.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(msg.res.trace.reasoningLocal, style: body(15, color: cc.ink)),
+          ],
+          if (msg.res.trace.raisedBySafetyNet) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(LucideIcons.shieldAlert, size: 15, color: cc.sindoor),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    tm(lang, M.sosBySafetyNet),
+                    style: body(13.5, weight: FontWeight.w600, color: cc.ink2, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: 12),
           SizedBox(

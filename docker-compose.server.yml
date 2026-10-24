@@ -14,11 +14,15 @@ services:
     environment:
       - CC_FOLLOWUP_POLICY=minimal
       - CC_TOP_K=3
+      - CC_STUDENT_THREADS=2
+      # Claude only when the MuRIL model is unsure; the key lives in the server's .env (not in git)
+      - CC_LLM_FALLBACK=on
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
       - ./data/provided:/srv/data/provided:ro
     restart: unless-stopped
-    mem_limit: 768m
-    cpus: 1.0
+    mem_limit: 1536m
+    cpus: 1.5
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

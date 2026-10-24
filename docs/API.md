@@ -15,6 +15,36 @@ The API is **stateless**: the client sends the whole conversation every time.
 
 Alias: `POST /triage`.
 
+Query parameters: `explain=true` adds `trace` (below); `policy` picks how follow-up questions
+are asked: `minimal` (default, used by the organisers' scorer: decide directly when the
+message is clear, ask only when the intent is unclear or a child's age is needed), `safety`
+(minimal plus a breathing check for fever and cough) or `conversational` (the web and the
+app; see "Conversational policy").
+
+### How a decision is made
+
+When the fine-tuned model (MuRIL, `models/student/`) is loaded, the API is **model-first**:
+
+1. The lexicon still reads the facts (duration, age, answers to our questions). Its red-flag
+   rules are the **safety net**: they can only escalate.
+2. **Emergency** if the rules find a red flag, or the model's red-flag head fires, or its
+   emergency / "immediate" probability passes its threshold. `red_flags` is the union of both.
+3. Otherwise the model's top care type. Its `followup` class asks what is needed;
+   `out_of_scope` answers with a polite scope message (`q_scope`). When the model is unsure
+   (confidence band `low`): Claude gives a second opinion if switched on, else the
+   conversational policy asks a question, else the rules' choice, else the model's.
+4. **Urgency** is the model's, never `emergency` outside the emergency path, never below
+   the rules' urgency, at least `same_day` for a baby, an older adult or a pregnancy (an
+   older adult's own lab test stays `scheduled`), and `scheduled` for a home lab test unless
+   one of these raises it.
+
+Without the model file (CI, `CC_STUDENT=off`) the rules + the older TF-IDF model decide as
+before. `trace.decision.source` says which: `model`, `model+safety_net` (the model, with the
+rules adding a red flag or raising urgency), `safety_net` (the rules decided: a red flag the
+model missed, an answer of "Haan" to the danger question, or the model was unsure), `llm`
+(Claude's second opinion) or `rules` (the fine-tuned model is not loaded; `model` there
+means the older TF-IDF model).
+
 ### Request
 
 ```json
@@ -102,12 +132,38 @@ Files with the earlier values (`nurse`, `gp_teleconsult`, `specialist`,
 `pregnancy_emergency`, `severe_headache`, `severe_abdominal_pain`, `sudden_confusion`,
 `low_sugar_signs`, `heat_stroke`, `eye_injury`, `severe_bp`, `abnormal_vitals`
 (pulse, oxygen, BP, sugar or child temperature numbers out of range),
-`emergency_requested`, and `possible_emergency` (raised by the learned model alone).
+`emergency_requested`, `possible_emergency` (an emergency with no particular sign named:
+the model alone, or "Haan" to the danger question) and `other_emergency` (the fine-tuned
+model's "other emergency" class: poisoning, snake bite, severe burn...). The two generic
+ones are dropped when a specific flag is also present.
 `trace.red_flags[].id` always holds our id, with labels in three languages; labels for
-each come from `GET /v1/labels`.
+each come from `GET /v1/labels`. `trace.red_flags[].source` says who raised it: `rules`,
+`model`, `rules+model` or `llm`.
 
-`trace.model` (when the learned model is loaded): `probabilities` over paramedic, nurse,
-lab, gp, emergency and followup for this message, and the model's training date.
+`trace.model` (when a learned model is loaded):
+
+```json
+"model": {
+  "name": "MuRIL (fine-tuned)",
+  "probabilities": { "paramedic": 0.93, "nurse": 0.01, "lab": 0.01, "gp": 0.03, "emergency": 0.01, "followup": 0.005, "out_of_scope": 0.005 },
+  "urgency_probabilities": { "routine": 0.04, "same_day": 0.95, "immediate": 0.01 },
+  "confidence": 0.93,
+  "band": "high",
+  "flags": [],
+  "version": "2026-10-24T20:00:00",
+  "latency_ms": 18.2
+}
+```
+
+`confidence` is the calibrated probability of the top care class; `band` is `high`, `medium`
+or `low` (thresholds in the model's `meta.json`). With the older TF-IDF model only `name`,
+`probabilities` (without `out_of_scope`) and `version` are present.
+
+`trace.llm` (only when Claude's second opinion was used): `{model, care_type, urgency,
+red_flags, reasoning, latency_ms}`. It is off unless `CC_LLM_FALLBACK=on` and
+`ANTHROPIC_API_KEY` are set (`CC_LLM_MODEL`, default `claude-opus-5-5`; 8 s timeout, one
+retry; any error is ignored). It is asked only when the model is unsure and did not say
+emergency, and it can only pick a care type or add an emergency, never remove one.
 
 `trace.speech`: what the apps read aloud, `{"locale": "hi-IN" | "en-IN", "text": ...}`. For
 Hindi and Hinglish it is the Hindi (Devanagari) wording, because a Hindi voice reads
@@ -186,9 +242,83 @@ Also stable (added after v0): `trace.mode` (`interactive` / `batch`),
 "why this caregiver" breakdown. `trace` is present on every shape when
 `explain=true`.
 
-The web app sends `policy=safety`, which adds a breathing check for fever
-and cough cases. The default (`minimal`, used for automated scoring) only
-asks when the answer is needed to decide.
+The default policy (`minimal`, used for automated scoring) only asks when the
+answer is needed to decide. `policy=safety` adds a breathing check for fever
+and cough cases.
+
+### New trace fields (all optional; older responses lack them)
+
+`trace.structured`: Module 1's structured intake, on every shape.
+
+```json
+"structured": {
+  "symptoms": [
+    { "id": "fever", "label": "Fever", "label_local": "Bukhar" },
+    { "id": "cough", "label": "Cough", "label_local": "Khansi" }
+  ],
+  "who": "elderly",
+  "who_label": "Older adult",
+  "who_label_local": "Buzurg",
+  "duration_days": 3,
+  "age_years": 70
+}
+```
+
+`symptoms` are the model's tags (symptoms and services) followed by anything else the
+lexicon found. `who`: `self`, `adult`, `elderly`, `child`, `infant`, `pregnant` or `unknown`
+(from the words first: age, pregnancy, "dadi"; else the model). `duration_days` and
+`age_years` come from the words and the answers, or null.
+
+`trace.guardrails`: every check, on every shape, in this order, with `status` `fired` when
+it changed or decided something and `pass` otherwise.
+
+```json
+"guardrails": [
+  { "id": "safety_net", "label": "Danger-sign rules", "label_local": "Khatre ke lakshan ke niyam",
+    "status": "pass", "note": "No danger sign found in the words used.",
+    "note_local": "Likhi baat mein koi khatre ka lakshan nahi mila." }
+]
+```
+
+| id | fired when |
+|---|---|
+| `safety_net` | the rules found a red flag (or "Haan" to the danger question) |
+| `model_emergency` | the model said emergency |
+| `vulnerable_floor` | urgency raised to `same_day` for a baby, an older adult or a pregnancy |
+| `urgency_floor` | urgency raised to the rules' urgency |
+| `low_confidence` | the model's band was `low` |
+| `out_of_scope` | the message is not about home health care |
+| `llm_fallback` | Claude's second opinion was used |
+| `clinical_scope` | a disease or medicine name was removed from the reply |
+| `invariants` | the final contract check had to correct the response |
+
+`trace.safety_net_local`: on a final non-emergency decision, when to come back or call 112,
+in the user's language (null on questions and emergencies). Example (Hinglish, fever):
+"Agar saans lene mein dikkat, seene mein dard, behoshi, ya bukhar 3 din se zyada rahe, to
+turant 112 par call karein ya hamein batayein."
+
+### Conversational policy (`policy=conversational`, the web and the app)
+
+A short check-up before deciding, at most 3 questions (`CC_MAX_FOLLOWUPS`), never when a
+red flag is present, skipping anything already known:
+
+1. Intent unclear: `q_main_symptom` (what is needed). Not about health care: `q_scope`.
+2. A symptom (medic visit or doctor consult): `q_danger` first (danger signs, options
+   Haan / Nahi), then `q_duration` if the duration is unknown, then `q_who` (or `q_age`
+   for a child) if who and how old is unknown.
+3. A service request (injection, dressing, lab test): no danger or duration questions.
+4. When the model is unsure and nothing else is left to ask: `q_main_symptom`.
+5. Still unclear when the questions run out: `teleconsultation`, `same_day` (safe default).
+
+"Haan" to `q_danger` goes straight to the emergency shape with `possible_emergency`
+(a named sign in the answer, "haan, saans phool rahi hai", gives that flag instead). "Nahi"
+also counts as no breathing difficulty. "Pata nahi" / "don't know" counts as unknown.
+
+Question ids that may appear in `trace.follow_up.id`: `q_main_symptom`, `q_age`,
+`q_duration`, `q_breathing`, and new: `q_danger` (`yes_no`), `q_who` (`choice`: adult, 60 or
+older, child, baby 3-12 months, baby under 3 months, pregnant) and `q_scope` (`free_text`,
+the polite scope reply: "Hum sirf ghar pe health care mein madad karte hain: doctor se baat,
+ghar pe check-up, nursing ya lab test. Kya koi beemar hai?").
 
 `trace.follow_up` when a question is asked:
 
@@ -256,7 +386,13 @@ numbers, for clients that want to render them.
 
 ## GET /health
 
-`{"status": "ok", "version": "0.1.0", "caregivers_source": "dev_sample", "caregivers": 26, "model": "rules"}`
+`{"status": "ok", "version": "0.1.0", "caregivers_source": "dev_sample", "caregivers": 26, "model": "rules", "model_trained_at": null, "model_test_accuracy": null, "student": null, "llm_fallback": false}`
+
+`model` is `student (MuRIL)` when the fine-tuned model is loaded (then `model_trained_at` and
+`model_test_accuracy`, its care accuracy on the organisers' 340 rows, are the student's, and
+`student` holds `{name, trained_at, test_organiser_340, holdout, thresholds}` from its
+`meta.json`), `rules+model` with the older TF-IDF model, `rules` with neither.
+`llm_fallback` says whether Claude's second opinion is switched on.
 
 `caregivers_source` is `provided` (a file in `data/provided/`), `env` (`CC_CAREGIVERS`),
 `dev_sample`, or `dev_sample_fallback: <reason>` when the given file could not be read.

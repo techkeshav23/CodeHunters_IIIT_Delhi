@@ -80,6 +80,8 @@ export interface Decision {
   urgency_label: string | null;
   urgency_label_local: string | null;
   confidence: number;
+  // who made the call: model | model+safety_net | safety_net | llm (a second check
+  // by Claude when the model was unsure) | rules (no model loaded)
   source: string;
   rule: string;
   // Set for specialist routing (e.g. "orthopaedics"); null otherwise.
@@ -91,6 +93,8 @@ export interface FollowUpOption {
   label: string;
 }
 
+// ids include q_danger (yes/no danger signs) and q_scope (a polite reply to a
+// message that is not a health need; it may come without options)
 export interface FollowUp {
   id: string;
   text: string;
@@ -135,11 +139,42 @@ export interface TraceCaregiver {
 
 export type MatchFeatures = Record<string, number | null | undefined>;
 
-// The learned model's output (only when the model is loaded). Classes today:
-// paramedic, nurse, lab, gp, emergency, followup.
+export type ConfidenceBand = "high" | "medium" | "low";
+
+// The learned model's output (only when a model is loaded). Classes: paramedic,
+// nurse, lab, gp, emergency, followup, out_of_scope. The fine-tuned MuRIL model
+// adds its name, urgency probabilities (routine, same_day, immediate) and a
+// calibrated confidence with its band; the older model sent only the first two.
 export interface ModelOutput {
+  name?: string | null;
   probabilities: Record<string, number>;
+  urgency_probabilities?: Record<string, number> | null;
+  confidence?: number | null;
+  band?: ConfidenceBand | null;
   version?: string;
+  latency_ms?: number | null;
+}
+
+// Module 1's structured output: the symptoms and services found, and who the care
+// is for (self | adult | elderly | child | infant | pregnant | unknown).
+export interface Structured {
+  symptoms: Symptom[];
+  who?: string | null;
+  who_label_local?: string | null;
+  duration_days?: number | null;
+  age_years?: number | null;
+}
+
+// One safety check run on this answer: "fired" means it changed or guarded the
+// decision, "pass" means it ran and had nothing to add. Ids: safety_net,
+// model_emergency, vulnerable_floor, urgency_floor, low_confidence, out_of_scope,
+// llm_fallback, clinical_scope, invariants.
+export interface Guardrail {
+  id: string;
+  label: string;
+  label_local: string;
+  status: "pass" | "fired";
+  note_local?: string | null;
 }
 
 export interface Trace {
@@ -148,10 +183,14 @@ export interface Trace {
   mode?: string;
   understood: Understood;
   model?: ModelOutput | null;
+  structured?: Structured | null;
+  guardrails?: Guardrail[] | null;
   checks: Check[];
   red_flags: RedFlag[];
   decision: Decision;
   reasoning_local: string;
+  /** For non-emergency answers: when to come back or call 112, in the user's language. */
+  safety_net_local?: string | null;
   follow_up: FollowUp | null;
   emergency: Emergency | null;
   caregivers: TraceCaregiver[];

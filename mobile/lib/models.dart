@@ -252,6 +252,125 @@ class Decision {
     rule: _s(j['rule']),
     specialty: _sn(j['specialty']),
   );
+
+  /// Who made the call: "model" | "model+safety_net" | "safety_net" | "llm" |
+  /// "rules" (rules = the fine-tuned model was not loaded).
+  bool get byModel => source == 'model' || source == 'model+safety_net';
+  bool get bySafetyNet => source == 'safety_net' || source == 'model+safety_net';
+  bool get byLlm => source == 'llm';
+}
+
+enum ConfidenceBand { high, medium, low }
+
+ConfidenceBand? confidenceBandOf(String? v) => switch (v) {
+  'high' => ConfidenceBand.high,
+  'medium' => ConfidenceBand.medium,
+  'low' => ConfidenceBand.low,
+  _ => null,
+};
+
+/// trace.model: the fine-tuned MuRIL model's output. Older servers send only
+/// probabilities (and a version), so everything else is optional.
+class ModelInfo {
+  final String? name;
+  final Map<String, double> probabilities;
+  final Map<String, double> urgencyProbabilities;
+  final double? confidence;
+  final ConfidenceBand? band;
+  final String version;
+  final double? latencyMs;
+  const ModelInfo({
+    this.name,
+    this.probabilities = const {},
+    this.urgencyProbabilities = const {},
+    this.confidence,
+    this.band,
+    this.version = '',
+    this.latencyMs,
+  });
+
+  static Map<String, double> _probs(Object? v) {
+    final out = <String, double>{};
+    _m(v).forEach((k, p) {
+      final d = _dn(p);
+      if (d != null) out[k] = d;
+    });
+    return out;
+  }
+
+  factory ModelInfo.fromJson(Map<String, Object?> j) => ModelInfo(
+    name: _sn(j['name']),
+    probabilities: _probs(j['probabilities']),
+    urgencyProbabilities: _probs(j['urgency_probabilities']),
+    confidence: _dn(j['confidence']),
+    band: confidenceBandOf(_sn(j['band'])),
+    version: _s(j['version']),
+    latencyMs: _dn(j['latency_ms']),
+  );
+
+  /// "MuRIL (fine-tuned)" -> "MuRIL", for the one-line "Decided by" note.
+  String get shortName {
+    final n = (name ?? '').trim();
+    final cut = n.indexOf(' (');
+    return (cut > 0 ? n.substring(0, cut) : n).trim();
+  }
+}
+
+/// trace.structured: Module 1's structured symptoms, plus who it is for, how
+/// long and how old when the user said so.
+class Structured {
+  final List<LabelItem> symptoms;
+  final String? who;
+  final String? whoLabelLocal;
+  final double? durationDays;
+  final double? ageYears;
+  const Structured({this.symptoms = const [], this.who, this.whoLabelLocal, this.durationDays, this.ageYears});
+  factory Structured.fromJson(Map<String, Object?> j) => Structured(
+    symptoms: _l(j['symptoms'])
+        .map((e) => LabelItem.fromJson(_m(e)))
+        .where((s) => s.labelLocal.trim().isNotEmpty)
+        .toList(),
+    who: _sn(j['who']),
+    whoLabelLocal: _sn(j['who_label_local']),
+    durationDays: _dn(j['duration_days']),
+    ageYears: _dn(j['age_years']),
+  );
+
+  /// Shown only when "who" adds something ("Buzurg"), not for unknown.
+  String? get whoChip {
+    final w = whoLabelLocal?.trim() ?? '';
+    return (w.isEmpty || who == 'unknown') ? null : w;
+  }
+
+  bool get isEmpty => symptoms.isEmpty && whoChip == null && durationDays == null && ageYears == null;
+}
+
+/// One entry of trace.guardrails: a safety check and whether it changed the
+/// answer ("fired") or not ("pass").
+class Guardrail {
+  final String id;
+  final String label;
+  final String labelLocal;
+  final bool fired;
+  final String noteLocal;
+  const Guardrail({
+    required this.id,
+    required this.label,
+    required this.labelLocal,
+    required this.fired,
+    this.noteLocal = '',
+  });
+  factory Guardrail.fromJson(Map<String, Object?> j) {
+    final id = _s(j['id']);
+    final label = _s(j['label'], id);
+    return Guardrail(
+      id: id,
+      label: label,
+      labelLocal: _s(j['label_local'], label),
+      fired: _s(j['status']) == 'fired',
+      noteLocal: _s(j['note_local']),
+    );
+  }
 }
 
 class FollowUpOption {
@@ -444,6 +563,19 @@ class Trace {
 
   /// trace.model.probabilities (class -> probability), when a model ran.
   final Map<String, double> modelProbabilities;
+
+  /// trace.model, or null when no model block came back.
+  final ModelInfo? model;
+
+  /// trace.structured (null on older servers: use [understood] instead).
+  final Structured? structured;
+
+  /// trace.guardrails in the order sent; see [guardrailsFiredFirst].
+  final List<Guardrail> guardrails;
+
+  /// "Come back / call 112 if ..." advice for a non-emergency decision, in
+  /// the user's language.
+  final String? safetyNetLocal;
   const Trace({
     this.version = '',
     this.language = Lang.hinglish,
@@ -458,7 +590,22 @@ class Trace {
     this.speech,
     this.timingMs = 0,
     this.modelProbabilities = const {},
+    this.model,
+    this.structured,
+    this.guardrails = const [],
+    this.safetyNetLocal,
   });
+
+  /// Safety checks that changed the answer first, then the ones that passed.
+  List<Guardrail> get guardrailsFiredFirst => [
+    ...guardrails.where((g) => g.fired),
+    ...guardrails.where((g) => !g.fired),
+  ];
+
+  /// The safety net (not the model alone) raised this case: the source says
+  /// so, or the safety_net guardrail fired.
+  bool get raisedBySafetyNet =>
+      decision.bySafetyNet || guardrails.any((g) => g.fired && g.id == 'safety_net');
 
   /// Highest model probability (0-1), or null when no model output came back.
   double? get modelTopProbability =>
@@ -487,6 +634,10 @@ class Trace {
   factory Trace.fromJson(Map<String, Object?> j) {
     final fu = j['follow_up'];
     final em = j['emergency'];
+    final mo = j['model'];
+    final st = j['structured'];
+    final net = _sn(j['safety_net_local'])?.trim();
+    final model = mo is Map ? ModelInfo.fromJson(_m(mo)) : null;
     return Trace(
       version: _s(j['version']),
       language: langFromCode(_sn(j['language'])),
@@ -500,7 +651,15 @@ class Trace {
       caregivers: _l(j['caregivers']).map((e) => TraceCaregiver.fromJson(_m(e))).toList(),
       speech: Speech.fromJson(j['speech']),
       timingMs: _d(j['timing_ms']),
-      modelProbabilities: _m(_m(j['model'])['probabilities']).map((k, v) => MapEntry(k, _d(v))),
+      modelProbabilities: model?.probabilities ?? const {},
+      model: model,
+      structured: st is Map ? Structured.fromJson(_m(st)) : null,
+      guardrails: _l(j['guardrails'])
+          .whereType<Map>()
+          .map((e) => Guardrail.fromJson(_m(e)))
+          .where((g) => g.id.isNotEmpty || g.labelLocal.isNotEmpty)
+          .toList(),
+      safetyNetLocal: (net == null || net.isEmpty) ? null : net,
     );
   }
 }

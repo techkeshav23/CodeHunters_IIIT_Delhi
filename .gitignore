@@ -1,5 +1,6 @@
 # Python
 .venv/
+.venv-train/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -24,3 +25,7 @@ models/*.joblib
 .env
 *.key
 models/encoders/
+# the MuRIL student weights (~240 MB) ship as a GitHub release asset, not in git
+models/student/*.onnx
+models/student/*.onnx.data
+models/student/*.pt

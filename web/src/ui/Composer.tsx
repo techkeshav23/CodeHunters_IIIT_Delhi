@@ -11,6 +11,8 @@ interface Props {
   onSend: (text: string, usedVoice: boolean) => void;
   busy: boolean;
   answering: boolean;
+  // "Add more details" was tapped: the next message joins the last case
+  adding?: boolean;
   locationLabel: string;
   locating: boolean;
   onUseLocation: () => void;
@@ -73,7 +75,11 @@ export default function Composer(p: Props) {
             ref={p.inputRef}
             rows={1}
             value={p.value}
-            placeholder={listening ? t(p.lang, "listening") : t(p.lang, p.answering ? "placeholderAnswer" : "placeholder")}
+            placeholder={
+              listening
+                ? t(p.lang, "listening")
+                : t(p.lang, p.adding ? "placeholderMore" : p.answering ? "placeholderAnswer" : "placeholder")
+            }
             onChange={(e) => {
               if (listening) mic.abort(); // typing takes over from dictation
               p.onChange(e.target.value);

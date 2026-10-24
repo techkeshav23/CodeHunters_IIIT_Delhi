@@ -7,6 +7,8 @@ import 'dart:io';
 
 import 'package:carecompass/i18n.dart';
 import 'package:carecompass/models.dart';
+import 'package:carecompass/state.dart';
+import 'package:carecompass/strings_mobile.dart';
 import 'package:carecompass/util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -219,6 +221,10 @@ void main() {
           {'caregiver_id': 'X', 'name': 'A B', 'score': '0.5', 'features': null, 'languages': null},
         ],
         'follow_up': 'not a map',
+        'model': 'not a map',
+        'structured': 5,
+        'guardrails': 'not a list',
+        'safety_net_local': '   ',
       },
     });
     expect(r.careKind, CareKind.unknown);
@@ -227,6 +233,173 @@ void main() {
     expect(r.trace.caregivers.single.languages, isEmpty);
     expect(r.isEmergency, isFalse);
     expect(r.trace.speech, isNull);
+    expect(r.trace.model, isNull);
+    expect(r.trace.structured, isNull);
+    expect(r.trace.guardrails, isEmpty);
+    expect(r.trace.safetyNetLocal, isNull);
+    expect(decidedByText(r.trace, Lang.en), isNull);
+  });
+
+  test('odd values inside the model-first fields never throw', () {
+    final r = TriageResponse.fromJson({
+      'care_type': 'home_nursing',
+      'urgency': 'scheduled',
+      'trace': {
+        'model': {
+          'name': null,
+          'probabilities': {'nurse': '0.8', 'gp': 'x', 'lab': null},
+          'urgency_probabilities': 'x',
+          'confidence': 'high',
+          'band': 'very_high',
+        },
+        'decision': {'source': 7},
+        'structured': {
+          'symptoms': [null, 3, {'id': 'fever'}, {'id': 'cough', 'label': 'Cough'}],
+          'who': null,
+          'duration_days': 'two',
+        },
+        'guardrails': [null, 1, {}, {'id': 'urgency_floor', 'status': 'fired'}, {'label': 'Something new'}],
+        'safety_net_local': 42,
+      },
+    });
+    final m = r.trace.model!;
+    expect(m.probabilities, {'nurse': 0.8});
+    expect(m.urgencyProbabilities, isEmpty);
+    expect(m.confidence, isNull);
+    expect(m.band, isNull);
+    expect(m.shortName, isEmpty);
+    expect(r.trace.decision.source, '7');
+    final st = r.trace.structured!;
+    expect(st.symptoms.map((s) => s.labelLocal), ['Cough'], reason: 'entries without any label are dropped');
+    expect(st.durationDays, isNull);
+    expect(st.whoChip, isNull);
+    expect(r.trace.guardrails.map((g) => g.id), ['urgency_floor', '']);
+    expect(r.trace.guardrails.first.fired, isTrue);
+    expect(r.trace.guardrails.first.labelLocal, 'urgency_floor', reason: 'falls back to the id');
+    expect(r.trace.guardrails.last.fired, isFalse);
+    expect(r.trace.safetyNetLocal, '42');
+    expect(decidedByText(r.trace, Lang.en), isNull, reason: 'unknown source');
+  });
+
+  group('model-first trace (fine-tuned MuRIL + safety net)', () {
+    test('final decision: model block, source, structured, guardrails, safety net', () {
+      final r = triage('v3_triage_final.json');
+      expect(r.isEmergency, isFalse);
+      expect(r.careKind, CareKind.paramedic);
+
+      final m = r.trace.model!;
+      expect(m.name, 'MuRIL (fine-tuned)');
+      expect(m.shortName, 'MuRIL');
+      expect(m.confidence, closeTo(0.93, 1e-9));
+      expect(m.band, ConfidenceBand.high);
+      expect(m.probabilities.keys, containsAll(['paramedic', 'nurse', 'lab', 'gp', 'emergency', 'followup', 'out_of_scope']));
+      expect(m.urgencyProbabilities['same_day'], closeTo(0.66, 1e-9));
+      expect(m.latencyMs, closeTo(41.7, 1e-9));
+      expect(m.version, isNotEmpty);
+      // the old field still works for the "Model ka bharosa" line
+      expect(r.trace.modelProbabilities, m.probabilities);
+      expect(r.trace.modelSupportFor(r.careType), closeTo(0.93, 1e-9));
+
+      final d = r.trace.decision;
+      expect(d.source, 'model+safety_net');
+      expect(d.byModel, isTrue);
+      expect(d.bySafetyNet, isTrue);
+      expect(d.byLlm, isFalse);
+
+      final st = r.trace.structured!;
+      expect(st.symptoms.map((s) => s.id), ['fever', 'cough']);
+      expect(st.symptoms.map((s) => s.labelLocal), ['Bukhar', 'Khansi']);
+      expect(st.who, 'elderly');
+      expect(st.whoChip, 'Buzurg');
+      expect(st.durationDays, 3);
+      expect(st.ageYears, 70);
+      expect(st.isEmpty, isFalse);
+
+      expect(r.trace.guardrails, hasLength(9));
+      final fired = r.trace.guardrailsFiredFirst;
+      expect(fired.first.id, 'vulnerable_floor');
+      expect(fired.first.fired, isTrue);
+      expect(fired.first.noteLocal, contains('aaj hi'));
+      expect(fired.skip(1).every((g) => !g.fired), isTrue);
+      expect(r.trace.raisedBySafetyNet, isTrue);
+
+      expect(r.trace.safetyNetLocal, contains('112'));
+      expect(decisionSummary(r), endsWith(r.trace.safetyNetLocal!));
+    });
+
+    test('"Decided by" line in three languages, band words not percentages', () {
+      final r = triage('v3_triage_final.json');
+      expect(decidedByText(r.trace, Lang.hinglish), 'MuRIL model aur suraksha niyamon ne tay kiya · Pakka bharosa');
+      expect(decidedByText(r.trace, Lang.hi), 'MuRIL मॉडल और सुरक्षा नियमों ने तय किया · पक्का भरोसा');
+      expect(decidedByText(r.trace, Lang.en), 'Decided by MuRIL model + safety rules · High confidence');
+      for (final l in Lang.values) {
+        expect(decidedByText(r.trace, l), isNot(contains('%')));
+      }
+      expect(bandText(ConfidenceBand.medium, Lang.en), 'Medium confidence');
+      expect(bandText(ConfidenceBand.low, Lang.hinglish), 'Kam bharosa');
+
+      final llm = triage('v3_triage_llm.json');
+      expect(llm.trace.decision.byLlm, isTrue);
+      expect(llm.trace.model!.band, ConfidenceBand.low);
+      expect(decidedByText(llm.trace, Lang.en), 'The model was unsure, so Claude did a second check');
+      expect(llm.trace.guardrailsFiredFirst.take(2).map((g) => g.id), ['low_confidence', 'llm_fallback']);
+
+      final plain = TriageResponse.fromJson({
+        'trace': {
+          'model': {'name': 'MuRIL (fine-tuned)', 'band': 'medium'},
+          'decision': {'source': 'model'},
+        },
+      });
+      expect(decidedByText(plain.trace, Lang.en), 'Decided by MuRIL model · Medium confidence');
+      final rules = TriageResponse.fromJson({
+        'trace': {
+          'decision': {'source': 'rules'},
+          'guardrails': [
+            {'id': 'safety_net', 'status': 'pass'},
+          ],
+        },
+      });
+      expect(decidedByText(rules.trace, Lang.hinglish), 'Niyamon ne tay kiya');
+    });
+
+    test('emergency raised by the safety net', () {
+      final r = triage('v3_triage_emergency.json');
+      expect(r.isEmergency, isTrue);
+      expect(r.trace.decision.source, 'safety_net');
+      expect(r.trace.raisedBySafetyNet, isTrue);
+      expect(r.trace.guardrailsFiredFirst.first.id, 'safety_net');
+      expect(r.trace.safetyNetLocal, isNull);
+      expect(decidedByText(r.trace, Lang.en), 'Decided by safety rules');
+    });
+
+    test('danger-signs and out-of-scope follow-ups', () {
+      final q = triage('v3_triage_danger.json');
+      expect(q.isEmergency, isFalse);
+      expect(q.trace.followUp!.id, 'q_danger');
+      expect(q.trace.followUp!.options.map((o) => o.label), ['Haan', 'Nahi']);
+      expect(q.trace.followUp!.max, 4);
+      expect(q.trace.structured!.whoChip, 'Papa');
+
+      final s = triage('v3_triage_scope.json');
+      expect(s.trace.followUp!.id, 'q_scope');
+      expect(s.trace.followUp!.options, isEmpty);
+      expect(s.questionText, isNotNull);
+      expect(s.trace.structured!.isEmpty, isTrue, reason: '"unknown" who with no symptoms adds nothing');
+    });
+
+    test('older servers: none of the new fields, no "Decided by" line', () {
+      for (final name in ['triage_final.json', 'v2_triage_final.json', 'v2_triage_emergency.json', 'triage_followup.json']) {
+        final r = triage(name);
+        expect(r.trace.structured, isNull, reason: name);
+        expect(r.trace.guardrails, isEmpty, reason: name);
+        expect(r.trace.safetyNetLocal, isNull, reason: name);
+        expect(r.trace.model?.band, isNull, reason: name);
+        expect(r.trace.raisedBySafetyNet, isFalse, reason: name);
+        expect(decidedByText(r.trace, Lang.en), isNull, reason: name);
+      }
+      // the v2 model block still parses its probabilities
+      expect(triage('v2_triage_final.json').trace.model!.probabilities['paramedic'], closeTo(0.506, 1e-9));
+    });
   });
 
   test('read-aloud text (trace.speech) parses', () {
@@ -267,5 +440,16 @@ void main() {
     }
     expect(t(Lang.hinglish, K.questionOf, {'n': 1, 'max': 3}), 'Sawaal 1 / 3');
     expect(t(Lang.hinglish, K.urgRoutine), 'Kuch dinon mein');
+  });
+
+  test('mobile-only strings exist in all three languages', () {
+    for (final k in M.values) {
+      for (final l in Lang.values) {
+        expect(tm(l, k), isNotEmpty, reason: '$k/$l');
+      }
+    }
+    expect(tm(Lang.hinglish, M.addMore), 'Aur jaankari jodein');
+    expect(tm(Lang.hi, M.addMore), 'और जानकारी जोड़ें');
+    expect(tm(Lang.en, M.addMore), 'Add more details');
   });
 }

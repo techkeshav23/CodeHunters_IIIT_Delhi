@@ -293,25 +293,11 @@ def _iso(text: str) -> datetime | None:
     return dt if dt.tzinfo else dt.replace(tzinfo=IST)
 
 
-def next_free(slots: list[str], ref: datetime) -> datetime | None:
-    """Earliest start at or after `ref` across all slot strings."""
-    best: datetime | None = None
-
-    def offer(dt: datetime | None) -> None:
-        nonlocal best
-        if dt is not None and dt >= ref - timedelta(minutes=1) and (best is None or dt < best):
-            best = dt
-
-    def window(day: datetime, t0: time, t1: time | None) -> None:
-        start = datetime.combine(day.date(), t0, IST)
-        end = datetime.combine(day.date(), t1, IST) if t1 else None
-        if start >= ref:
-            offer(start)
-        elif end and ref < end:
-            # inside the window: next quarter hour
-            q = ref + timedelta(minutes=(15 - ref.minute % 15) % 15)
-            offer(q.replace(second=0, microsecond=0))
-
+def _periods(slots: list[str], ref: datetime) -> list[tuple[datetime, datetime | None, str]]:
+    """Each listed free period near `ref` as (start, end or None, kind): "range" for an ISO
+    start/end pair, "at" for a single ISO time, "clock" for a time or window on a day (today,
+    tomorrow; a daily window or a bare time counts for today and for tomorrow)."""
+    out: list[tuple[datetime, datetime | None, str]] = []
     for raw in slots:
         s = raw.strip()
         if s.startswith("{"):
@@ -325,13 +311,11 @@ def next_free(slots: list[str], ref: datetime) -> datetime | None:
         low = s.lower()
         if "/" in s and _iso(s.split("/")[0]):
             a, b = (_iso(p) for p in s.split("/", 1))
-            if a and b and a < ref < b:
-                offer(ref.replace(second=0, microsecond=0))
-            offer(a)
+            out.append((a, b, "range"))
             continue
         dt = _iso(s)
         if dt:
-            offer(dt)
+            out.append((dt, None, "at"))
             continue
         m = re.fullmatch(r"(today|tomorrow|daily|everyday|)\s*" + _TIME + r"(?:\s*-\s*" + _TIME + r")?", low)
         if not m:
@@ -342,9 +326,41 @@ def next_free(slots: list[str], ref: datetime) -> datetime | None:
         if t0 is None:
             continue
         if word in ("today", "tomorrow"):
-            day = ref if word == "today" else ref + timedelta(days=1)
-            window(day, t0, t1)
+            days = [ref if word == "today" else ref + timedelta(days=1)]
         else:  # daily window or a bare time: today, else tomorrow
-            window(ref, t0, t1)
-            window(ref + timedelta(days=1), t0, t1)
+            days = [ref, ref + timedelta(days=1)]
+        for day in days:
+            out.append((datetime.combine(day.date(), t0, IST),
+                        datetime.combine(day.date(), t1, IST) if t1 else None, "clock"))
+    return out
+
+
+def next_free(slots: list[str], ref: datetime) -> datetime | None:
+    """Earliest start at or after `ref` across all slot strings (inside an open window: the
+    next quarter hour)."""
+    best: datetime | None = None
+
+    def offer(dt: datetime | None) -> None:
+        nonlocal best
+        if dt is not None and dt >= ref - timedelta(minutes=1) and (best is None or dt < best):
+            best = dt
+
+    for start, end, kind in _periods(slots, ref):
+        if kind == "range":
+            if end and start < ref < end:
+                offer(ref.replace(second=0, microsecond=0))
+            offer(start)
+        elif kind == "at" or start >= ref:
+            offer(start)
+        elif end and ref < end:
+            # inside the window: next quarter hour
+            q = ref + timedelta(minutes=(15 - ref.minute % 15) % 15)
+            offer(q.replace(second=0, microsecond=0))
     return best
+
+
+def open_until(slots: list[str], ref: datetime) -> datetime | None:
+    """The end of a listed window that is open at `ref` (the caregiver is free now), else
+    None. A bare start time ("today 16:00") has no end, so it never counts as open."""
+    ends = [end for start, end, _ in _periods(slots, ref) if end and start <= ref < end]
+    return max(ends) if ends else None

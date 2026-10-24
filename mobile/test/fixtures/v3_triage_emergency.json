@@ -1,0 +1,177 @@
+{
+ "follow_up_question": null,
+ "care_type": "emergency_112",
+ "urgency": "emergency",
+ "red_flags": [
+  "chest_pain"
+ ],
+ "reasoning": "Possible emergency signs: chest pain or pressure. Do not wait for a booking: call 112 now (ambulance 102 in Delhi).",
+ "matched_caregivers": [],
+ "trace": {
+  "version": "0.1.0",
+  "language": "hinglish",
+  "mode": "interactive",
+  "understood": {
+   "patient": {
+    "relation": "mother",
+    "relation_label": "Mummy",
+    "age_years": null,
+    "age_group": null,
+    "pregnant": null
+   },
+   "symptoms": [
+    {
+     "id": "sweating",
+     "label": "Sweating",
+     "label_local": "Pasina"
+    }
+   ],
+   "duration_days": null,
+   "duration_label": null,
+   "services": [],
+   "severity": []
+  },
+  "checks": [
+   {
+    "id": "chest_pain",
+    "label": "Chest pain or pressure",
+    "label_local": "Seene mein dard ya dabav",
+    "status": "present"
+   }
+  ],
+  "red_flags": [
+   {
+    "id": "chest_pain",
+    "label": "Chest pain or pressure",
+    "label_local": "Seene mein dard ya dabav",
+    "evidence": "seene mein dard"
+   }
+  ],
+  "decision": {
+   "care_type": "emergency_112",
+   "urgency": "emergency",
+   "care_label": "Emergency: call for help now",
+   "care_label_local": "Emergency: abhi madad bulayein",
+   "urgency_label": "Now",
+   "urgency_label_local": "Abhi",
+   "confidence": 1.0,
+   "source": "safety_net",
+   "rule": "red_flag",
+   "specialty": null
+  },
+  "reasoning_local": "Emergency ke lakshan: Seene mein dard ya dabav. Booking ka intezaar mat karein, abhi 112 par call karein (Delhi mein ambulance 102).",
+  "follow_up": null,
+  "emergency": {
+   "title": "This may be an emergency",
+   "title_local": "Yeh emergency ho sakti hai",
+   "numbers": [
+    {
+     "label": "Emergency (all India)",
+     "label_local": "Emergency (poore Bharat mein)",
+     "number": "112"
+    },
+    {
+     "label": "Ambulance in Delhi (CATS, free)",
+     "label_local": "Delhi ambulance (CATS, free)",
+     "number": "102"
+    },
+    {
+     "label": "Ambulance in many states",
+     "label_local": "Kai rajyon mein ambulance",
+     "number": "108"
+    }
+   ],
+   "steps": [
+    "Call 112 now.",
+    "Stay with the patient.",
+    "Keep your phone on and share your location."
+   ],
+   "steps_local": [
+    "Abhi 112 par call karein.",
+    "Mareez ke saath rahein.",
+    "Phone chalu rakhein aur location share karein."
+   ]
+  },
+  "caregivers": [],
+  "timing_ms": 2.3,
+  "model": {
+   "name": "MuRIL (fine-tuned)",
+   "probabilities": {
+    "paramedic": 0.3,
+    "nurse": 0.02,
+    "lab": 0.01,
+    "gp": 0.25,
+    "emergency": 0.38,
+    "followup": 0.03,
+    "out_of_scope": 0.01
+   },
+   "urgency_probabilities": {
+    "routine": 0.1,
+    "same_day": 0.45,
+    "immediate": 0.45
+   },
+   "confidence": 0.38,
+   "band": "low",
+   "version": "student-2026-10-24",
+   "latency_ms": 41.7
+  },
+  "guardrails": [
+   {
+    "id": "safety_net",
+    "label": "Safety net (red-flag rules)",
+    "label_local": "Suraksha jaal (khatre ke niyam)",
+    "status": "fired",
+    "note_local": "Seene mein dard: khatre ka lakshan"
+   },
+   {
+    "id": "model_emergency",
+    "label": "Model emergency check",
+    "label_local": "Model ki emergency jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "vulnerable_floor",
+    "label": "Elderly, child or pregnancy floor",
+    "label_local": "Buzurg, bachche ya pregnancy ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "urgency_floor",
+    "label": "Urgency floor",
+    "label_local": "Jaldi ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "low_confidence",
+    "label": "Low confidence check",
+    "label_local": "Kam bharose ki jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "out_of_scope",
+    "label": "Out of scope",
+    "label_local": "Seva ke bahar",
+    "status": "pass"
+   },
+   {
+    "id": "llm_fallback",
+    "label": "Second check by Claude",
+    "label_local": "Claude se doosri jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "clinical_scope",
+    "label": "No diagnosis or medicine",
+    "label_local": "Bimari ya dawai ka naam nahi",
+    "status": "pass"
+   },
+   {
+    "id": "invariants",
+    "label": "Output checks",
+    "label_local": "Jawab ki jaanch",
+    "status": "pass"
+   }
+  ],
+  "safety_net_local": null
+ }
+}

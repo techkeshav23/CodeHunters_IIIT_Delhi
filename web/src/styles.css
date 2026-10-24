@@ -694,6 +694,28 @@ p {
 .option[data-value="yes"] {
   border-color: color-mix(in srgb, var(--sindoor) 35%, var(--line));
 }
+/* Haan / Nahi: two big buttons side by side, on phones too */
+.options.options--pair {
+  grid-template-columns: 1fr 1fr;
+}
+.options--pair .option {
+  min-height: 58px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+/* what the model understood, as quiet chips: "Samjha: Bukhar · 3 din se · Buzurg" */
+.understood-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.understood-row__label {
+  margin-right: 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
 
 /* decision */
 .decision {
@@ -751,6 +773,38 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+/* safety-netting under the reason: when to come back or call 112 */
+.safety-net {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.93rem;
+}
+.safety-net svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--haldi);
+}
+/* who decided and how sure, in plain words */
+.decision__source {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+}
+.decision__source svg {
+  flex: none;
+  margin-top: 2px;
+}
+.decision__source b {
+  font-weight: 600;
+  color: var(--ink-2);
 }
 .decision__actions {
   display: flex;
@@ -839,6 +893,28 @@ p {
   display: block;
   color: var(--ink-3);
   font-size: 0.82rem;
+}
+/* safety checks: the ones that acted are highlighted, the rest stay quiet */
+.checks li.is-fired {
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--haldi-soft);
+}
+.checks li.is-fired small {
+  color: var(--ink-2);
+}
+.checks li.is-pass {
+  align-items: center;
+  font-size: 0.88rem;
+  color: var(--ink-3);
+}
+.checks li.is-pass .ico {
+  width: 20px;
+  height: 20px;
+}
+.ico--fired {
+  background: var(--haldi);
+  color: var(--haldi-ink);
 }
 .why-text {
   font-size: 0.98rem;
@@ -1277,6 +1353,17 @@ p {
 .sos h1 {
   font-size: clamp(2.2rem, 7vw, 3.4rem);
   font-weight: 800;
+}
+.sos__why {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -10px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+.sos__why svg {
+  flex: none;
 }
 .call-big {
   display: flex;

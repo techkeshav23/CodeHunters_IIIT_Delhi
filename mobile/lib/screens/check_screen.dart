@@ -51,6 +51,13 @@ class _CheckScreenState extends State<CheckScreen> {
     if (added is EmergencyMsg) await openEmergency(context, added);
   }
 
+  /// "Aur jaankari jodein": the next message goes out with this decision's
+  /// conversation, and the text box is ready for it.
+  void _addMore(DecisionMsg m) {
+    AppScope.read(context).addMoreDetails(m);
+    _focus.requestFocus();
+  }
+
   void _seed(String s) {
     _input.value = TextEditingValue(
       text: s,
@@ -112,6 +119,7 @@ class _CheckScreenState extends State<CheckScreen> {
     }
 
     final lastQuestionId = msgs.last is QuestionMsg ? msgs.last.id : null;
+    final lastDecisionId = msgs.last is DecisionMsg ? msgs.last.id : null;
     return Column(
       children: [
         Expanded(
@@ -135,7 +143,10 @@ class _CheckScreenState extends State<CheckScreen> {
                   live: m.id == lastQuestionId && !state.busy,
                   onAnswer: (s) => _send(s),
                 ),
-                DecisionMsg() => DecisionCard(msg: m),
+                DecisionMsg() => DecisionCard(
+                  msg: m,
+                  onAddMore: m.id == lastDecisionId && !state.busy ? () => _addMore(m) : null,
+                ),
                 EmergencyMsg() => EmergencyInline(msg: m),
                 ErrorMsg() => ErrorCard(onRetry: () => _retry(m)),
               };

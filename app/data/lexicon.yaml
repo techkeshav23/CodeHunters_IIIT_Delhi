@@ -991,6 +991,13 @@ red_flags:
     label_hinglish: Turant care ki zarurat ke lakshan
     label_hi: तुरंत देखभाल की ज़रूरत के लक्षण
     patterns: []
+  - id: other_emergency
+    # raised by the fine-tuned model: poisoning, snake bite, severe burn, allergy swelling,
+    # pregnancy bleeding, head injury with vomiting... (no phrase of its own here)
+    label: Other emergency signs
+    label_hinglish: Emergency ke doosre lakshan
+    label_hi: इमरजेंसी के दूसरे लक्षण
+    patterns: []
   - id: emergency_requested
     label: Ambulance or emergency asked for
     label_hinglish: Ambulance ya emergency maangi

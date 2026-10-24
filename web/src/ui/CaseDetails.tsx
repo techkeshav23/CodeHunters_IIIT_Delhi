@@ -1,24 +1,46 @@
-import { Check, CircleHelp, TriangleAlert } from "lucide-react";
+import { Check, CircleHelp, ShieldAlert, TriangleAlert } from "lucide-react";
 import type { Lang, TriageResponse } from "../types";
 import { t } from "../i18n";
-import { decisionModelClass, fmtDays, modelClassKey, titleCase } from "../lib";
+import { decisionModelClass, fmtDays, modelClassKey, structuredChips, titleCase } from "../lib";
 
-// "What we understood / what we checked / why": shown in the desktop side panel
-// and inline under a decision on smaller screens.
+// "What we understood / what we checked / safety checks / why": shown in the desktop
+// side panel and inline under a decision on smaller screens.
 export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: Lang }) {
   const tr = res.trace;
   const u = tr.understood;
-  const chips: string[] = [];
-  if (u.patient.relation_label) chips.push(titleCase(u.patient.relation_label));
-  if (u.patient.age_years != null && u.patient.age_years >= 1) chips.push(`${Math.round(u.patient.age_years)}y`);
-  for (const s of u.symptoms ?? []) chips.push(s.label_local);
-  for (const s of u.services ?? []) chips.push(s.label_local);
-  const dur = fmtDays(u.duration_days, lang);
-  if (dur) chips.push(dur);
+  // the model's structured symptoms when the API sends them, else what the rules understood
+  const structured = structuredChips(tr, lang);
+  const chips: Array<{ text: string; warm: boolean }> = [];
+  if (structured) {
+    for (const c of structured) chips.push({ text: c.text, warm: c.kind === "who" });
+    const dur = structured.some((c) => c.kind === "duration") ? null : fmtDays(u?.duration_days ?? null, lang);
+    if (dur) chips.push({ text: dur, warm: false });
+  } else if (u) {
+    if (u.patient?.relation_label) chips.push({ text: titleCase(u.patient.relation_label), warm: true });
+    if (u.patient?.age_years != null && u.patient.age_years >= 1) chips.push({ text: `${Math.round(u.patient.age_years)}y`, warm: false });
+    for (const s of u.symptoms ?? []) chips.push({ text: s.label_local, warm: false });
+    for (const s of u.services ?? []) chips.push({ text: s.label_local, warm: false });
+    const dur = fmtDays(u.duration_days, lang);
+    if (dur) chips.push({ text: dur, warm: false });
+  }
   const checks = tr.checks ?? [];
+  // safety checks: the ones that changed or guarded the answer first
+  const guards = (tr.guardrails ?? [])
+    .filter((g) => g && (g.label_local || g.label))
+    .sort((a, b) => Number(b.status === "fired") - Number(a.status === "fired"));
   // the learned model's support for the decision shown, only when the model is loaded
   const top = decisionModelClass(res);
   const topKey = top ? modelClassKey(top.cls) : null;
+  const modelName = tr.model?.name ? tr.model.name : t(lang, "modelWord");
+  const modelTitle = [tr.model?.version ? `model ${tr.model.version}` : null, tr.model?.latency_ms != null ? `${tr.model.latency_ms} ms` : null]
+    .filter(Boolean)
+    .join(" · ");
+  const meta = [
+    tr.decision.rule,
+    tr.decision.source,
+    `${Math.round((tr.decision.confidence ?? 0) * 100)}%`,
+    `${tr.timing_ms} ms`,
+  ].filter(Boolean);
 
   return (
     <div className="details">
@@ -27,8 +49,8 @@ export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: 
         <div className="details__chips">
           {chips.length ? (
             chips.map((c, i) => (
-              <span key={i} className={i === 0 && u.patient.relation_label ? "chip chip--haldi" : "chip"}>
-                {c}
+              <span key={i} className={c.warm ? "chip chip--haldi" : "chip"}>
+                {c.text}
               </span>
             ))
           ) : (
@@ -61,15 +83,42 @@ export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: 
         </div>
       )}
 
+      {guards.length > 0 && (
+        <div className="details__group">
+          <h3>{t(lang, "safetyChecks")}</h3>
+          <ul className="checks">
+            {guards.map((g) => {
+              const fired = g.status === "fired";
+              return (
+                <li key={g.id} className={fired ? "is-fired" : "is-pass"}>
+                  <span className={fired ? "ico ico--fired" : "ico ico--absent"} aria-hidden="true">
+                    {fired ? <ShieldAlert size={14} /> : <Check size={13} />}
+                  </span>
+                  {fired ? (
+                    <span>
+                      <strong>{g.label_local || g.label}</strong>
+                      <small>{g.note_local || t(lang, "guardFired")}</small>
+                    </span>
+                  ) : (
+                    <span>
+                      {g.label_local || g.label}
+                      <span className="sr-only">: {t(lang, "guardPassed")}</span>
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <div className="details__group">
         <h3>{t(lang, "reasonTitle")}</h3>
         <p className="why-text">{tr.reasoning_local}</p>
-        <p className="meta-line">
-          {tr.decision.rule} | {Math.round((tr.decision.confidence ?? 0) * 100)}% | {tr.timing_ms} ms
-        </p>
+        <p className="meta-line">{meta.join(" | ")}</p>
         {top && (
-          <p className="meta-line" title={tr.model?.version ? `model ${tr.model.version}` : undefined}>
-            {t(lang, "modelLine", { x: topKey ? t(lang, topKey) : top.cls.replace(/_/g, " "), pct: top.pct })}
+          <p className="meta-line" title={modelTitle || undefined}>
+            {t(lang, "modelLine", { m: modelName, x: topKey ? t(lang, topKey) : top.cls.replace(/_/g, " "), pct: top.pct })}
           </p>
         )}
       </div>

@@ -1,0 +1,117 @@
+{
+ "follow_up_question": "Main sirf sehat ki dekhbhal mein madad kar sakta hoon. Batayein, kya taklif hai ya kis tarah ki care chahiye?",
+ "care_type": null,
+ "urgency": null,
+ "red_flags": [],
+ "reasoning": "Out of scope: asked what health help is needed.",
+ "matched_caregivers": [],
+ "trace": {
+  "version": "0.1.0",
+  "language": "hinglish",
+  "mode": "interactive",
+  "understood": {
+   "patient": {
+    "relation": "father",
+    "relation_label": "Papa",
+    "age_years": null,
+    "age_group": null,
+    "pregnant": null
+   },
+   "symptoms": [],
+   "duration_days": 2,
+   "duration_label": "2 days",
+   "services": [],
+   "severity": []
+  },
+  "checks": [],
+  "red_flags": [],
+  "decision": {
+   "care_type": null,
+   "urgency": null,
+   "care_label": null,
+   "care_label_local": null,
+   "urgency_label": null,
+   "urgency_label_local": null,
+   "confidence": 0.7,
+   "source": "model",
+   "rule": "acute_fever",
+   "specialty": null
+  },
+  "reasoning_local": "Faisle se pehle saans ki dikkat check kar rahe hain.",
+  "follow_up": {
+   "id": "q_scope",
+   "text": "Main sirf sehat ki dekhbhal mein madad kar sakta hoon. Batayein, kya taklif hai ya kis tarah ki care chahiye?",
+   "kind": "free_text",
+   "options": [],
+   "asked_so_far": 1,
+   "max": 4
+  },
+  "emergency": null,
+  "caregivers": [],
+  "timing_ms": 1.8,
+  "structured": {
+   "symptoms": [],
+   "who": "unknown",
+   "who_label_local": "",
+   "duration_days": null,
+   "age_years": null
+  },
+  "guardrails": [
+   {
+    "id": "safety_net",
+    "label": "Safety net (red-flag rules)",
+    "label_local": "Suraksha jaal (khatre ke niyam)",
+    "status": "pass"
+   },
+   {
+    "id": "model_emergency",
+    "label": "Model emergency check",
+    "label_local": "Model ki emergency jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "vulnerable_floor",
+    "label": "Elderly, child or pregnancy floor",
+    "label_local": "Buzurg, bachche ya pregnancy ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "urgency_floor",
+    "label": "Urgency floor",
+    "label_local": "Jaldi ka niyam",
+    "status": "pass"
+   },
+   {
+    "id": "low_confidence",
+    "label": "Low confidence check",
+    "label_local": "Kam bharose ki jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "out_of_scope",
+    "label": "Out of scope",
+    "label_local": "Seva ke bahar",
+    "status": "fired",
+    "note_local": "Yeh sehat ka sawaal nahi laga"
+   },
+   {
+    "id": "llm_fallback",
+    "label": "Second check by Claude",
+    "label_local": "Claude se doosri jaanch",
+    "status": "pass"
+   },
+   {
+    "id": "clinical_scope",
+    "label": "No diagnosis or medicine",
+    "label_local": "Bimari ya dawai ka naam nahi",
+    "status": "pass"
+   },
+   {
+    "id": "invariants",
+    "label": "Output checks",
+    "label_local": "Jawab ki jaanch",
+    "status": "pass"
+   }
+  ]
+ }
+}

@@ -94,6 +94,38 @@ String urgencyLabel(TriageResponse res, Lang lang) {
   return urgencyText(urgencyLevel(res.urgency ?? res.trace.decision.urgency), lang);
 }
 
+/// Confidence as plain words ("Pakka bharosa"), never a raw percentage.
+String bandText(ConfidenceBand band, Lang lang) => switch (band) {
+  ConfidenceBand.high => tm(lang, M.bandHigh),
+  ConfidenceBand.medium => tm(lang, M.bandMedium),
+  ConfidenceBand.low => tm(lang, M.bandLow),
+};
+
+/// "Decided by MuRIL model · High confidence" for the decision card, from
+/// trace.decision.source and trace.model. Null for responses from servers
+/// that predate the fine-tuned model (their "model" was a different one).
+String? decidedByText(Trace tr, Lang lang) {
+  final d = tr.decision;
+  final m = tr.model;
+  final fresh =
+      m?.name != null ||
+      m?.band != null ||
+      tr.guardrails.isNotEmpty ||
+      const {'model+safety_net', 'safety_net', 'llm'}.contains(d.source);
+  if (!fresh) return null;
+  final name = (m?.shortName.isNotEmpty ?? false) ? m!.shortName : 'MuRIL';
+  final band = m?.band;
+  final withBand = band == null ? '' : ' · ${bandText(band, lang)}';
+  return switch (d.source) {
+    'model' => tm(lang, M.srcModel, {'name': name}) + withBand,
+    'model+safety_net' => tm(lang, M.srcModelSafety, {'name': name}) + withBand,
+    'safety_net' => tm(lang, M.srcSafetyNet),
+    'llm' => tm(lang, M.srcLlm),
+    'rules' => tm(lang, M.srcRules),
+    _ => null,
+  };
+}
+
 String? fmtDays(double? days, Lang lang) {
   if (days == null) return null;
   final d = days.round();

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { ArrowLeft, Phone, RotateCcw, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Phone, RotateCcw, ShieldAlert, TriangleAlert } from "lucide-react";
 import type { Lang, TriageResponse } from "../types";
 import { t } from "../i18n";
+import { raisedBySafety } from "../lib";
 
 interface Props {
   res: TriageResponse;
@@ -46,6 +47,12 @@ export default function EmergencyTakeover({ res, userText, lang, onBack, onNewCh
           </button>
         </div>
         <h1 id="sos-title">{em?.title_local ?? t(lang, "sosPageTitle")}</h1>
+        {raisedBySafety(res) && (
+          <p className="sos__why">
+            <ShieldAlert size={18} aria-hidden="true" />
+            {t(lang, "sosRaised")}
+          </p>
+        )}
         <a ref={callRef} className="call-big" href="tel:112" aria-label={t(lang, "sosNow")}>
           <Phone size={34} aria-hidden="true" />
           <span className="call-big__text">

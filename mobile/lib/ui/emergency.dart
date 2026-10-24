@@ -171,6 +171,31 @@ class EmergencyTakeover extends StatelessWidget {
                       style: display(38, color: white, height: 1.08),
                     ),
                   ),
+                  if (res.trace.raisedBySafetyNet) ...[
+                    // the safety net, not the model alone, raised this case
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Icon(LucideIcons.shieldAlert, size: 18, color: white),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            tm(lang, M.sosBySafetyNet),
+                            style: body(
+                              15,
+                              weight: FontWeight.w600,
+                              color: white.withValues(alpha: 0.92),
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 26),
                   _BigCallButton(
                     label: t(lang, K.callNow),

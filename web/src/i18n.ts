@@ -58,6 +58,7 @@ const S = {
   // composer
   placeholder: { hinglish: "Likhein ya bolein…", hi: "लिखिए या बोलिए…", en: "Type or speak…" },
   placeholderAnswer: { hinglish: "Ya apne shabdon mein…", hi: "या अपने शब्दों में…", en: "Or in your own words…" },
+  placeholderMore: { hinglish: "Aur kya batana hai…", hi: "और क्या बताना है…", en: "What else should we know…" },
   send: { hinglish: "Bhejein", hi: "भेजिए", en: "Send" },
   micStart: { hinglish: "Bolkar batayein", hi: "बोलकर बताइए", en: "Speak" },
   micStop: { hinglish: "Sunna band karein", hi: "सुनना बंद करें", en: "Stop listening" },
@@ -75,6 +76,9 @@ const S = {
   questionOf: { hinglish: "Sawaal {n} / {max}", hi: "सवाल {n} / {max}", en: "Question {n} of {max}" },
   readAloud: { hinglish: "Sunaiye", hi: "सुनाइए", en: "Read aloud" },
   stopReading: { hinglish: "Rokein", hi: "रोकिए", en: "Stop" },
+  // fallback answers for a yes/no question that comes without options
+  optYes: { hinglish: "Haan", hi: "हाँ", en: "Yes" },
+  optNo: { hinglish: "Nahi", hi: "नहीं", en: "No" },
   errorText: {
     hinglish: "Server se jawab nahi aaya. Internet check karke dobara koshish karein. Emergency ho to 112 par call karein.",
     hi: "सर्वर से जवाब नहीं आया। इंटरनेट जाँचकर दोबारा कोशिश करें। इमरजेंसी हो तो 112 पर कॉल करें।",
@@ -95,7 +99,37 @@ const S = {
   careDoctor: { hinglish: "Doctor se baat", hi: "डॉक्टर से बात", en: "Talk to a doctor" },
   careEmergency: { hinglish: "Emergency", hi: "इमरजेंसी", en: "Emergency" },
   careFollowup: { hinglish: "Ek aur sawaal", hi: "एक और सवाल", en: "One more question" },
-  modelLine: { hinglish: "Model: {x} · {pct}% bharosa", hi: "मॉडल: {x} · {pct}% भरोसा", en: "Model: {x} · {pct}% confidence" },
+  careOutOfScope: { hinglish: "Health se alag baat", hi: "स्वास्थ्य से अलग बात", en: "Not a health need" },
+  modelWord: { hinglish: "Model", hi: "मॉडल", en: "Model" },
+  modelLine: { hinglish: "{m}: {x} · {pct}% bharosa", hi: "{m}: {x} · {pct}% भरोसा", en: "{m}: {x} · {pct}% confidence" },
+  // who decided, in plain words on the decision card (no percentages there)
+  decidedBy: { hinglish: "{x} model ne tay kiya", hi: "{x} मॉडल ने तय किया", en: "Decided by {x} model" },
+  bandHigh: { hinglish: "Pakka bharosa", hi: "पक्का भरोसा", en: "High confidence" },
+  bandMedium: { hinglish: "Kaafi bharosa", hi: "काफ़ी भरोसा", en: "Medium confidence" },
+  bandLow: { hinglish: "Kam bharosa", hi: "कम भरोसा", en: "Low confidence" },
+  srcLlm: {
+    hinglish: "Model ko pakka nahi tha, isliye doosri jaanch (Claude) se faisla hua",
+    hi: "मॉडल को पक्का नहीं था, इसलिए दूसरी जाँच (Claude) से फ़ैसला हुआ",
+    en: "The model wasn't sure, so a second check (Claude) made this call",
+  },
+  srcSafety: {
+    hinglish: "Suraksha jaanch ne zyada jaldi wali care chuni",
+    hi: "सुरक्षा जाँच ने ज़्यादा जल्दी वाली देखभाल चुनी",
+    en: "A safety check chose the more urgent care",
+  },
+  addMore: { hinglish: "Aur jaankari jodein", hi: "और जानकारी जोड़ें", en: "Add more details" },
+  // "Samjha: Bukhar · 3 din se · Buzurg"
+  understoodShort: { hinglish: "Samjha", hi: "समझा", en: "Understood" },
+  whoSelf: { hinglish: "Khud ke liye", hi: "ख़ुद के लिए", en: "For yourself" },
+  whoAdult: { hinglish: "Adult", hi: "वयस्क", en: "Adult" },
+  whoElderly: { hinglish: "Buzurg", hi: "बुज़ुर्ग", en: "Elderly" },
+  whoChild: { hinglish: "Bachcha", hi: "बच्चा", en: "Child" },
+  whoInfant: { hinglish: "Chhota bachcha", hi: "शिशु", en: "Infant" },
+  whoPregnant: { hinglish: "Pregnant", hi: "गर्भवती", en: "Pregnant" },
+  ageYears: { hinglish: "{n} saal", hi: "{n} साल", en: "{n} yrs" },
+  safetyChecks: { hinglish: "Suraksha jaanch", hi: "सुरक्षा जाँच", en: "Safety checks" },
+  guardFired: { hinglish: "Laagu hui", hi: "लागू हुई", en: "Applied" },
+  guardPassed: { hinglish: "Theek", hi: "ठीक", en: "Passed" },
   understood: { hinglish: "Humne kya samjha", hi: "हमने क्या समझा", en: "What we understood" },
   checked: { hinglish: "Humne kya jaancha", hi: "हमने क्या जाँचा", en: "What we checked" },
   reasonTitle: { hinglish: "Faisla", hi: "फ़ैसला", en: "The decision" },
@@ -172,6 +206,11 @@ const S = {
   sosBack: { hinglish: "Baatcheet par wapas", hi: "बातचीत पर वापस", en: "Back to the chat" },
   sosTag: { hinglish: "Khatre ke lakshan", hi: "ख़तरे के लक्षण", en: "Danger signs" },
   sosPageTitle: { hinglish: "Emergency madad", hi: "इमरजेंसी मदद", en: "Emergency help" },
+  sosRaised: {
+    hinglish: "Suraksha jaanch ne ise emergency maana",
+    hi: "सुरक्षा जाँच ने इसे इमरजेंसी माना",
+    en: "A safety check raised this to an emergency",
+  },
   sosPageSub: {
     hinglish: "Neeche diye lakshan dikhein to booking ka intezaar mat karein. Turant call karein.",
     hi: "नीचे दिए लक्षण दिखें तो बुकिंग का इंतज़ार मत कीजिए। तुरंत कॉल कीजिए।",

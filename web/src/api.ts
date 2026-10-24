@@ -24,10 +24,10 @@ export const API_BASE: string = RAW_BASE === "same-origin" ? "" : RAW_BASE;
 export const USE_MOCKS: boolean =
   (import.meta.env.VITE_USE_MOCKS as string | undefined) === "1";
 
-// Follow-up policy for /v1/triage (backend agent's call): "safety" adds a
-// breathing question for fever/cough so the smart-intake step shows in the demo.
-// One constant so we can flip it; the API default is "minimal".
-const TRIAGE_POLICY = "safety";
+// Follow-up policy for /v1/triage: "conversational" asks the 2-4 targeted
+// questions of the smart intake (danger signs, duration, who it is for) before
+// deciding. One constant so we can flip it ("safety", "minimal").
+const TRIAGE_POLICY = "conversational";
 
 const MOCK_DELAY_MS = 400;
 

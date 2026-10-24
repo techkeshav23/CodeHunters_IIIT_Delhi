@@ -209,7 +209,20 @@
         },
         "emergency": null,
         "caregivers": [],
-        "timing_ms": 7.0
+        "timing_ms": 7.0,
+        "structured": {
+          "symptoms": [
+            {
+              "id": "fever",
+              "label": "Fever",
+              "label_local": "Bukhar"
+            }
+          ],
+          "who": "unknown",
+          "who_label_local": null,
+          "duration_days": null,
+          "age_years": null
+        }
       }
     }
   }

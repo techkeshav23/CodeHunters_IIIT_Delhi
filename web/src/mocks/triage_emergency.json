@@ -65,7 +65,7 @@
         "urgency_label": "Now",
         "urgency_label_local": "Abhi",
         "confidence": 1.0,
-        "source": "rules",
+        "source": "model+safety_net",
         "rule": "red_flag",
         "specialty": null
       },
@@ -103,7 +103,90 @@
         ]
       },
       "caregivers": [],
-      "timing_ms": 63.6
+      "timing_ms": 63.6,
+      "structured": {
+        "symptoms": [
+          {
+            "id": "chest_pain",
+            "label": "Chest pain",
+            "label_local": "Seene mein dard"
+          },
+          {
+            "id": "sweating",
+            "label": "Sweating",
+            "label_local": "Pasina"
+          }
+        ],
+        "who": "adult",
+        "who_label_local": null,
+        "duration_days": null,
+        "age_years": null
+      },
+      "guardrails": [
+        {
+          "id": "safety_net",
+          "label": "Danger-sign rules",
+          "label_local": "Khatre ke lakshan ki jaanch",
+          "status": "fired",
+          "note_local": "Seene mein dard: seedha emergency"
+        },
+        {
+          "id": "model_emergency",
+          "label": "Model emergency check",
+          "label_local": "Model ki emergency jaanch",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "vulnerable_floor",
+          "label": "Extra care for elders, children, pregnancy",
+          "label_local": "Buzurg, bachche, pregnancy par zyada dhyan",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "urgency_floor",
+          "label": "Urgency never lowered",
+          "label_local": "Jaldi kabhi kam nahi ki",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "low_confidence",
+          "label": "Model unsure",
+          "label_local": "Model ko shak",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "out_of_scope",
+          "label": "Not a health need",
+          "label_local": "Health se alag baat",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "llm_fallback",
+          "label": "Second check (Claude)",
+          "label_local": "Doosri jaanch (Claude)",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "clinical_scope",
+          "label": "No diagnosis or medicine",
+          "label_local": "Bimari ya dawai ka naam nahi",
+          "status": "pass",
+          "note_local": null
+        },
+        {
+          "id": "invariants",
+          "label": "Answer is consistent",
+          "label_local": "Jawab sahi banawat mein",
+          "status": "pass",
+          "note_local": null
+        }
+      ]
     }
   }
 }

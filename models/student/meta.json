@@ -1,0 +1,190 @@
+{
+ "name": "MuRIL (fine-tuned)",
+ "base": "google/muril-base-cased",
+ "trained_at": "2026-10-24T21:37:31",
+ "max_len": 128,
+ "heads": {
+  "care": [
+   "paramedic",
+   "nurse",
+   "lab",
+   "gp",
+   "emergency",
+   "followup",
+   "out_of_scope"
+  ],
+  "urgency": [
+   "routine",
+   "same_day",
+   "immediate"
+  ],
+  "flags": [
+   "chest_pain",
+   "breathlessness",
+   "unconsciousness",
+   "severe_bleeding",
+   "stroke_symptoms",
+   "seizure",
+   "high_fever_infant",
+   "suicidal_ideation",
+   "severe_dehydration",
+   "other_emergency"
+  ],
+  "tags": [
+   "fever",
+   "cough",
+   "cold",
+   "sore_throat",
+   "headache",
+   "body_ache",
+   "vomiting",
+   "diarrhoea",
+   "stomach_pain",
+   "heartburn",
+   "back_pain",
+   "joint_pain",
+   "skin",
+   "weakness",
+   "dizziness",
+   "jaundice",
+   "urinary",
+   "eye",
+   "ear",
+   "tooth",
+   "wound",
+   "injury",
+   "blood_pressure",
+   "blood_sugar",
+   "palpitations",
+   "sweating",
+   "mental_health",
+   "constipation",
+   "swelling",
+   "minor_burn",
+   "animal_bite",
+   "pain",
+   "injection",
+   "iv_drip",
+   "dressing",
+   "catheter",
+   "bedsore",
+   "elderly_care",
+   "post_op",
+   "vaccination",
+   "sample_collection",
+   "vitals_check",
+   "checkup",
+   "teleconsult",
+   "report_review",
+   "chest_pain",
+   "breathlessness",
+   "unconscious",
+   "bleeding",
+   "stroke_signs",
+   "seizure",
+   "suicidal",
+   "dehydration",
+   "pregnancy",
+   "poisoning",
+   "burn",
+   "allergy",
+   "head_injury"
+  ],
+  "who": [
+   "self",
+   "adult",
+   "elderly",
+   "child",
+   "infant",
+   "pregnant",
+   "unknown"
+  ]
+ },
+ "temperature": {
+  "care": 1.05,
+  "urgency": 1.4
+ },
+ "thresholds": {
+  "emergency": 0.15,
+  "flag": 0.5,
+  "tag": 0.5,
+  "band_high": 0.85,
+  "band_low": 0.6
+ },
+ "training": {
+  "examples": 4140,
+  "epochs": 8,
+  "lr": 5e-05,
+  "head_lr": 0.001,
+  "batch": 32,
+  "data": "data/generated (Claude Opus 5.5 teacher; labels fixed per case family)",
+  "organiser_rows_used_for_training": 0
+ },
+ "holdout": {
+  "families": [
+   "E_chest_pain",
+   "E_suicidal",
+   "F_greeting",
+   "F_help",
+   "L_doctor_asked",
+   "L_urine_stool",
+   "N_iv_drip",
+   "N_postop_dressing",
+   "P_cold_elderly",
+   "P_swelling",
+   "T_acidity",
+   "T_reports"
+  ],
+  "n": 617,
+  "care_accuracy": 0.8314,
+  "per_epoch_care_accuracy": [
+   0.1734,
+   0.4068,
+   0.5203,
+   0.8169,
+   0.8136,
+   0.8233,
+   0.8201,
+   0.8314
+  ],
+  "temperature_care": 1.05,
+  "temperature_urgency": 1.4,
+  "emergency_threshold": 0.15,
+  "ece_after_calibration": 0.045,
+  "emergency_recall": 0.6542
+ },
+ "test_organiser_340": {
+  "n": 340,
+  "care_accuracy": 1.0,
+  "care_macro_f1": 1.0,
+  "urgency_macro_f1": 1.0,
+  "emergency_recall": 1.0,
+  "false_emergency_rate": 0.0,
+  "latency_ms_p50": 18.8,
+  "note": "care head alone, fp32 ONNX; organiser rows never trained on, but case families were added after error analysis"
+ },
+ "history": {
+  "v1_blind_organiser_340": {
+   "care_macro_f1": 0.9655,
+   "urgency_macro_f1": 0.9682,
+   "emergency_recall": 1.0,
+   "note": "first model, before any error analysis: the honest blind number"
+  },
+  "holdout_unseen_families": {
+   "care_accuracy": 0.8314,
+   "ece": 0.045,
+   "note": "12 whole case families held out (incl. chest pain, suicidal, IV drip)"
+  },
+  "added_after_error_analysis": [
+   "T_reports_talk",
+   "T_mild_self",
+   "P_fever_self",
+   "H_negated",
+   "H_minor_injury",
+   "H_worry",
+   "H_mood_low"
+  ]
+ },
+ "export": "ONNX opset 17, eager attention, fp32 (int8 dynamic quantization changed answers; not used)",
+ "emergency_policy": "112 only on a named red flag (rules lexicon or the flag heads); the care head's emergency class alone asks the danger-signs question"
+}

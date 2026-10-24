@@ -29,6 +29,13 @@ def client():
     config.NOW_OVERRIDE = before
 
 
+@pytest.fixture(autouse=True)
+def without_student(monkeypatch):
+    """These tests are about the older TF-IDF model, which only runs when the fine-tuned
+    model is not loaded (tests/test_student_path.py covers that one)."""
+    monkeypatch.setattr("app.pipeline.get_student", lambda: None)
+
+
 @pytest.fixture(scope="module")
 def deployed():
     if not tm.MODEL_PATH.exists():

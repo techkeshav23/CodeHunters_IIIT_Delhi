@@ -54,6 +54,10 @@ RED_FLAG_API: dict[str, str] = {
     "self_harm_risk": "suicidal_ideation",
     "severe_dehydration": "severe_dehydration",
 }
+# The other way round, for the fine-tuned model's flag head (organisers' names + other_emergency).
+RED_FLAG_INTERNAL: dict[str, str] = {api: key for key, api in RED_FLAG_API.items()}
+# Flags that name no particular sign; dropped when a specific flag is also present.
+GENERIC_FLAGS = ("possible_emergency", "other_emergency")
 
 # Extra spellings we accept when reading labelled files (lower-cased).
 LABEL_ALIASES: dict[str, str] = {
@@ -103,7 +107,7 @@ TELE_CARE = {"gp"}  # no home visit, so distance does not count
 
 # Follow-up questions.
 MAX_FOLLOWUPS = int(os.getenv("CC_MAX_FOLLOWUPS", "3"))
-FOLLOWUP_POLICY = os.getenv("CC_FOLLOWUP_POLICY", "minimal")  # minimal | safety
+FOLLOWUP_POLICY = os.getenv("CC_FOLLOWUP_POLICY", "minimal")  # minimal | safety | conversational
 
 # Matching.
 TOP_K = int(os.getenv("CC_TOP_K", "3"))

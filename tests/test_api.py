@@ -70,7 +70,9 @@ def test_history_as_question_answer_pairs(client):
 
 def test_hindi_follow_up_is_in_hindi(client):
     r = post(client, "मेरे बेटे को बुखार है")
-    assert r["follow_up_question"] == "बच्चे की उम्र कितनी है?"
+    # a child's fever: the age (a baby could be an emergency), or danger signs first when the model senses danger
+    assert r["follow_up_question"] in ("बच्चे की उम्र कितनी है?",
+                                       "क्या सांस लेने में दिक्कत, सीने में दर्द, बेहोशी या बहुत खून बहना जैसा कुछ है?")
 
 
 def test_bad_location_is_rejected(client):

@@ -89,6 +89,9 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [last, setLast] = useState<{ req: TriageRequest; res: TriageResponse } | null>(null);
   const [sos, setSos] = useState<Extract<Msg, { kind: "emergency" }> | null>(null);
+  // "Add more details" on a decision: the next message goes with that case's whole
+  // conversation, so the triage re-runs on everything said, not only the new words
+  const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +101,7 @@ export default function App() {
       if (!clean || busy) return;
       stopSpeaking();
       setView("check");
+      setAdding(false);
       if (!retry) setMessages((m) => [...m, { id: nid(), kind: "user", text: clean }]);
       setDraft("");
       setBusy(true);
@@ -146,10 +150,21 @@ export default function App() {
     stopSpeaking();
     setMessages([]);
     setHistory([]);
+    setAdding(false);
     setSos(null);
     setDraft("");
     setView("check");
     window.setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  // the decision's own request holds the conversation before it (questions with
+  // their ids, answers) and the message that led to it; the next send carries both
+  const addMore = (msg: Extract<Msg, { kind: "decision" }>) => {
+    stopSpeaking();
+    setHistory([...(msg.req.conversation_history ?? []), { role: "user", content: msg.req.user_input }]);
+    setAdding(true);
+    // focus in the tap itself so phones open the keyboard
+    inputRef.current?.focus();
   };
 
   // keep the newest message in view
@@ -222,6 +237,8 @@ export default function App() {
                     onRetry={retry}
                     onOpenEmergency={(m) => setSos(m)}
                     onNewCheck={newCheck}
+                    onAddMore={addMore}
+                    adding={adding}
                   />
                 )}
                 <div ref={endRef} />
@@ -233,6 +250,7 @@ export default function App() {
                 onSend={(s, v) => void send(s, v)}
                 busy={busy}
                 answering={answering}
+                adding={adding}
                 locationLabel={locationLabel}
                 locating={locating}
                 onUseLocation={useMyLocation}

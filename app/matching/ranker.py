@@ -20,23 +20,35 @@ Nobody eligible gives an empty list, as in the labels.
                eligibility rule, so this is 1 in every labelled row.
     rating     (rating - lowest) / (highest - lowest) over the roster (3.8 to 5.0).
 
+Tier: the roster's medic tier (base / standard / advanced / expert) gates the advanced
+procedures (IV drip, catheter care): when an advanced or expert medic is eligible and in
+range, only they are returned; when none is, the others are, and the reason says so. None of
+the labelled rows asks for these, so the labels are unchanged.
+
 Order: rounded score, ties in roster order. We return the top 3; each label keeps the first
 1, 2 or 3 of that list (chosen at random), so a label is always a prefix of our list.
-Availability is shown, not scored: the labels do not use it.
+Availability is not scored (the labels do not use it). It can break ties instead (`ties`,
+env CC_MATCH_TIES): "available" puts a same-day caregiver still free today ahead of an
+equal-score one whose window is over, "soonest" puts whoever is free sooner first. Both
+reorder labelled ties (the labels keep roster order), so the default is "roster"; see
+scripts/eval_matching.py for what each costs against the labels.
 
-Reasons are built only from computed facts, in the labels' style: "Hindi-speaking, 2.7 km
-away, free 15:00–21:00" and, for teleconsultation, "Hindi-speaking, free 13:00–16:00, ★4.9".
+Reasons are built only from computed facts, in the labels' style, with availability read
+from the clock (`ref`, default now in IST): "Hindi-speaking, 2.7 km away, free now till 9 pm"
+and, for teleconsultation, "Hindi-speaking, free from 1 pm, ★4.9" (the labels write the
+roster's window instead: "free 13:00–16:00").
 """
 from __future__ import annotations
 
 import math
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
 
 from .. import config
 from ..nlp.extract import Extraction
-from .caregivers import Caregiver, load, next_free, now
+from .caregivers import IST, Caregiver, load, next_free, now, open_until
 
 # README order; the order of the sum matters for how a few scores round
 WEIGHTS = {"language": 0.35, "distance": 0.30, "skill": 0.20, "rating": 0.15}
@@ -70,6 +82,14 @@ SKILL_SYNONYMS = {
 VISIT_SKILL = "vitals_monitoring"            # every reference Medic visit (paramedic_home_visit) needs it
 CONTEXT_SKILLS = {"post_surgical_care", "elderly_care"}  # needed only when no procedure is named
 ALSO_SATISFIES = {"vaccination": {"injection_im"}}       # an IM-injection skill covers a vaccine
+ADVANCED_SKILLS = {"injection_iv", "catheter_care"}      # procedures the higher medic tiers unlock
+SENIOR_TIERS = ("advanced", "expert")
+TIER_HI = {"base": "बेसिक", "standard": "स्टैंडर्ड", "advanced": "एडवांस्ड", "expert": "एक्सपर्ट"}
+
+# How equal scores are ordered: "roster" (the labels), "available" or "soonest" (module doc)
+TIE_MODES = ("roster", "available", "soonest")
+TIES = os.getenv("CC_MATCH_TIES", "roster").strip().lower()
+NEVER = datetime.max.replace(tzinfo=IST)
 
 # words that name each specialty in a caregiver's role, specialty or skills;
 # "*" marks a stem ("cardi*" matches cardiology and cardiac), the rest are whole words
@@ -103,6 +123,7 @@ class Match:
     slot_label: str | None
     slot_label_local: str | None
     features: dict
+    free_now: bool = False  # inside a listed window at the clock's time
 
 
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -188,50 +209,78 @@ def needed_skills(ex: Extraction, care: str, specialty: str | None = None) -> li
     return procedures or asked[:1]
 
 
-def _slot_labels(dt: datetime | None, ref: datetime) -> tuple[str | None, str | None, str | None]:
-    """English, Hinglish and Hindi labels: "4 pm" / "tomorrow 10 am" / "Sat 10 am"."""
-    if dt is None:
-        return None, None, None
+def _clock_words(dt: datetime) -> tuple[str, str, str]:
+    """"4 pm" / "shaam 4 baje" / "शाम 4 बजे"."""
     h12 = dt.hour % 12 or 12
     clock = f"{h12}" if dt.minute == 0 else f"{h12}:{dt.minute:02d}"
     ampm = "am" if dt.hour < 12 else "pm"
     part_hl = "subah" if dt.hour < 12 else "dopahar" if dt.hour < 16 else "shaam" if dt.hour < 19 else "raat"
     part_hi = {"subah": "सुबह", "dopahar": "दोपहर", "shaam": "शाम", "raat": "रात"}[part_hl]
+    return f"{clock} {ampm}", f"{part_hl} {clock} baje", f"{part_hi} {clock} बजे"
+
+
+def _slot_labels(dt: datetime | None, ref: datetime) -> tuple[str | None, str | None, str | None]:
+    """English, Hinglish and Hindi labels: "4 pm" / "tomorrow 10 am" / "Sat 10 am"."""
+    if dt is None:
+        return None, None, None
+    en, hl, hi = _clock_words(dt)
     days = (dt.date() - ref.date()).days
     if days <= 0:
-        return f"{clock} {ampm}", f"aaj {part_hl} {clock} baje", f"आज {part_hi} {clock} बजे"
+        return en, f"aaj {hl}", f"आज {hi}"
     if days == 1:
-        return f"tomorrow {clock} {ampm}", f"kal {part_hl} {clock} baje", f"कल {part_hi} {clock} बजे"
+        return f"tomorrow {en}", f"kal {hl}", f"कल {hi}"
     wd = dt.strftime("%a")
-    return f"{wd} {clock} {ampm}", f"{wd} {part_hl} {clock} baje", f"{wd} {part_hi} {clock} बजे"
+    return f"{wd} {en}", f"{wd} {hl}", f"{wd} {hi}"
 
 
-def _free_parts(cg: Caregiver, slot: datetime | None, ref: datetime) -> tuple[str, str, str]:
-    """"free 11:00–19:00" (the roster's window today), else the next listed start in 24h time."""
-    if cg.window:
-        return f"free {cg.window}", f"{cg.window} free", f"{cg.window} खाली"
+def _free_parts(slot: datetime | None, until: datetime | None, ref: datetime) -> tuple[str, str, str]:
+    """When the caregiver is free, read from the clock: "free now till 9 pm" (inside today's
+    window), "free from 4 pm" (it opens later today), "free tomorrow from 9 am" (today's is
+    over; the roster's window is taken as daily)."""
+    if until is not None:
+        en, hl, hi = _clock_words(until) if until.date() == ref.date() else _slot_labels(until, ref)
+        return f"free now till {en}", f"abhi free ({hl} tak)", f"अभी खाली ({hi} तक)"
     if slot is None:
         return "no free slot listed", "abhi koi free slot nahi", "अभी कोई खाली समय नहीं"
-    hm = f"{slot.hour:02d}:{slot.minute:02d}"
+    en = _clock_words(slot)[0]
+    _, hl, hi = _slot_labels(slot, ref)
     days = (slot.date() - ref.date()).days
-    if days <= 0:
-        return f"free {hm}", f"aaj {hm} se free", f"आज {hm} से खाली"
-    if days == 1:
-        return f"free tomorrow {hm}", f"kal {hm} se free", f"कल {hm} से खाली"
-    wd = slot.strftime("%a")
-    return f"free {wd} {hm}", f"{wd} {hm} se free", f"{wd} {hm} से खाली"
+    day = "" if days <= 0 else "tomorrow " if days == 1 else f"{slot.strftime('%a')} "
+    return f"free {day}from {en}", f"{hl} se free", f"{hi} से खाली"
+
+
+def _free_today(m: Match, ref: datetime) -> bool:
+    """Free now or later on the clock's day."""
+    return m.free_now or (m.next_slot is not None and m.next_slot.astimezone(ref.tzinfo).date() == ref.date())
+
+
+def _tier_note(m: Match, language: str, senior: bool) -> None:
+    """Add the medic's tier to the reason: "advanced-tier medic", or, when nobody senior is
+    in range, "standard-tier medic (no advanced-tier medic in range)"."""
+    tier = m.caregiver.tier
+    if senior:
+        en, hl, hi = f"{tier}-tier medic", f"{tier} medic", f"{TIER_HI.get(tier, tier)} मेडिक"
+    else:
+        en, hl, hi = "no advanced-tier medic in range", "paas mein advanced medic nahi", "पास में एडवांस्ड मेडिक नहीं"
+        if tier:
+            en, hl, hi = f"{tier}-tier medic ({en})", f"{tier} medic ({hl})", f"{TIER_HI.get(tier, tier)} मेडिक ({hi})"
+    m.reason += f", {en}"
+    m.reason_local += ", " + {"hi": hi, "hinglish": hl}.get(language, en)
 
 
 def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] | None,
          specialty: str | None = None, top_k: int | None = None,
-         caregivers: list[Caregiver] | None = None, ref: datetime | None = None) -> list[Match]:
-    """Top caregivers for a decided care type. `urgency` does not change the reference
-    ranking; `ref` (default: now) only sets the next free slot shown."""
+         caregivers: list[Caregiver] | None = None, ref: datetime | None = None,
+         ties: str | None = None) -> list[Match]:
+    """Top caregivers for a decided care type. `ref` is the clock (default: now in IST, or
+    CC_NOW): it sets the availability shown and, with `ties` (default TIES), how equal scores
+    are ordered; `urgency` matters only for ties="available". Scores never depend on it."""
     if care == "emergency":
         return []
     top_k = top_k or config.TOP_K
     pool = caregivers if caregivers is not None else load()[0]
     ref = ref or now()
+    ties = ties or TIES
     physio = any(h.id == "physiotherapy" for h in ex.services)
     # doctors are virtual: a GP or specialist consult is a teleconsultation (physiotherapy visits)
     tele = care in config.TELE_CARE or (care == "specialist" and not physio)
@@ -297,6 +346,7 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
         score = min(SCORE_CAP, round(sum(WEIGHTS[k] * v for k, v in feats.items()), 2))
 
         slot = next_free(cg.slots, ref)
+        until = open_until(cg.slots, ref)
         en_slot, hl_slot, hi_slot = _slot_labels(slot, ref)
         lang = spoken[0] if spoken else (cg.languages[0] if cg.languages else None)
         parts_en, parts_hl, parts_hi = [], [], []
@@ -308,7 +358,7 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
             parts_en.append(f"{dist:.1f} km away")
             parts_hl.append(f"{dist:.1f} km door")
             parts_hi.append(f"{dist:.1f} किमी दूर")
-        for parts, text in zip((parts_en, parts_hl, parts_hi), _free_parts(cg, slot, ref)):
+        for parts, text in zip((parts_en, parts_hl, parts_hi), _free_parts(slot, until, ref)):
             parts.append(text)
         if tele and cg.rating is not None:
             for parts in (parts_en, parts_hl, parts_hi):
@@ -323,7 +373,21 @@ def rank(care: str, urgency: str, ex: Extraction, location: tuple[float, float] 
             caregiver=cg, score=score, distance_km=None if dist is None else round(dist, 1),
             next_slot=slot, reason=", ".join(parts_en), reason_local=", ".join(local),
             slot_label=en_slot, slot_label_local={"hi": hi_slot, "hinglish": hl_slot}.get(ex.language, en_slot),
-            features={k: round(v, 2) for k, v in feats.items()},
+            features={k: round(v, 2) for k, v in feats.items()}, free_now=until is not None,
         ))
-    scored.sort(key=lambda m: -m.score)  # stable: ties keep roster order, as in the labels
+
+    # advanced procedures go to an advanced or expert medic when one is in range
+    if any(s in ADVANCED_SKILLS for s in want_skills) and any(cg.tier for cg in pool):
+        senior = [m for m in scored if m.caregiver.tier in SENIOR_TIERS]
+        for m in senior or scored:
+            _tier_note(m, ex.language, senior=bool(senior))
+        scored = senior or scored
+
+    # stable sorts: equal keys keep roster order, as in the labels
+    if ties == "soonest":
+        scored.sort(key=lambda m: (-m.score, ref if m.free_now else m.next_slot or NEVER))
+    elif ties == "available" and urgency in ("same_day", "immediate"):
+        scored.sort(key=lambda m: (-m.score, not _free_today(m, ref)))
+    else:
+        scored.sort(key=lambda m: -m.score)
     return scored[:top_k]

@@ -3,25 +3,40 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../i18n.dart';
 import '../models.dart';
+import '../strings_mobile.dart';
 import '../theme.dart';
 import '../util.dart';
 import 'common.dart';
 
-/// "What we understood / what we checked / why" (web CaseDetails.tsx).
+/// "What we understood / what we checked / safety checks / why" (web
+/// CaseDetails.tsx).
 class CaseDetails extends StatelessWidget {
   const CaseDetails({super.key, required this.res, required this.lang});
   final TriageResponse res;
   final Lang lang;
 
-  @override
-  Widget build(BuildContext context) {
-    final cc = CC.of(context);
+  /// Chips from trace.structured (the model's structured symptoms), or from
+  /// trace.understood on servers that do not send it. The first chip is
+  /// "who" (highlighted) when known.
+  (List<String>, bool) _chips() {
     final tr = res.trace;
     final u = tr.understood;
+    final st = tr.structured;
     final chips = <String>[];
-    if (u.patient.relationLabel != null && u.patient.relationLabel!.isNotEmpty) {
-      chips.add(titleCase(u.patient.relationLabel!));
+    if (st != null && !st.isEmpty) {
+      final who = st.whoChip;
+      if (who != null) chips.add(titleCase(who));
+      final age = st.ageYears ?? u.patient.ageYears;
+      if (age != null && age >= 1) chips.add('${age.round()}y');
+      for (final s in st.symptoms) {
+        chips.add(s.labelLocal);
+      }
+      final dur = fmtDays(st.durationDays ?? u.durationDays, lang);
+      if (dur != null) chips.add(dur);
+      return (chips, who != null);
     }
+    final hasRelation = u.patient.relationLabel != null && u.patient.relationLabel!.isNotEmpty;
+    if (hasRelation) chips.add(titleCase(u.patient.relationLabel!));
     final age = u.patient.ageYears;
     if (age != null && age >= 1) chips.add('${age.round()}y');
     for (final s in u.symptoms) {
@@ -32,12 +47,20 @@ class CaseDetails extends StatelessWidget {
     }
     final dur = fmtDays(u.durationDays, lang);
     if (dur != null) chips.add(dur);
-    final hasRelation = u.patient.relationLabel != null && u.patient.relationLabel!.isNotEmpty;
+    return (chips, hasRelation);
+  }
 
-    Widget heading(K k) => Padding(
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    final tr = res.trace;
+    final (chips, firstIsWho) = _chips();
+    final guards = tr.guardrailsFiredFirst;
+
+    Widget heading(String text) => Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
-        t(lang, k),
+        text,
         style: body(15, weight: FontWeight.w700, color: cc.ink2),
       ),
     );
@@ -45,7 +68,7 @@ class CaseDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        heading(K.understood),
+        heading(t(lang, K.understood)),
         if (chips.isEmpty)
           Text('-', style: body(15, color: cc.ink3))
         else
@@ -54,16 +77,21 @@ class CaseDetails extends StatelessWidget {
             runSpacing: 6,
             children: [
               for (var i = 0; i < chips.length; i++)
-                CCChip(chips[i], tone: i == 0 && hasRelation ? ChipTone.haldi : ChipTone.neutral),
+                CCChip(chips[i], tone: i == 0 && firstIsWho ? ChipTone.haldi : ChipTone.neutral),
             ],
           ),
         if (tr.checks.isNotEmpty) ...[
           const SizedBox(height: 18),
-          heading(K.checked),
+          heading(t(lang, K.checked)),
           for (final c in tr.checks) _CheckRow(check: c, lang: lang),
         ],
+        if (guards.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          heading(tm(lang, M.safetyChecks)),
+          for (final g in guards) _GuardrailRow(guard: g, lang: lang),
+        ],
         const SizedBox(height: 18),
-        heading(K.reasonTitle),
+        heading(t(lang, K.reasonTitle)),
         Text(tr.reasoningLocal, style: body(15.5, color: cc.ink)),
         const SizedBox(height: 6),
         Text(
@@ -107,6 +135,69 @@ class _CheckRow extends StatelessWidget {
               children: [
                 Text(check.labelLocal, style: body(15, color: cc.ink)),
                 Text(t(lang, label), style: body(13, color: cc.ink3)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One safety check (trace.guardrails). A check that changed the answer is
+/// highlighted on a haldi ground; one that passed is a plain row.
+class _GuardrailRow extends StatelessWidget {
+  const _GuardrailRow({required this.guard, required this.lang});
+  final Guardrail guard;
+  final Lang lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    final fired = guard.fired;
+    final label = guard.labelLocal.isNotEmpty ? guard.labelLocal : guard.id;
+    final status = tm(lang, fired ? M.grFired : M.grPass);
+    final note = guard.noteLocal.trim();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: fired ? const EdgeInsets.fromLTRB(10, 9, 10, 9) : EdgeInsets.zero,
+      decoration: fired
+          ? BoxDecoration(
+              color: cc.haldiSoft,
+              borderRadius: BorderRadius.circular(rMd),
+              border: Border.all(color: cc.haldi.withValues(alpha: 0.4)),
+            )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: fired ? cc.haldi : cc.ok.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              fired ? LucideIcons.shieldAlert : LucideIcons.check,
+              size: 14,
+              color: fired ? cc.haldiInk : cc.ok,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: body(15, weight: fired ? FontWeight.w700 : FontWeight.w400, color: cc.ink),
+                ),
+                Text(
+                  note.isEmpty ? status : '$status · $note',
+                  style: body(13, color: fired ? cc.ink2 : cc.ink3),
+                ),
               ],
             ),
           ),

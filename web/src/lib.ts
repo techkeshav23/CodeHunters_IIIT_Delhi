@@ -1,6 +1,6 @@
 // Small shared helpers and the app's own data types.
-import type { Lang, ModelOutput, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
-import type { Key } from "./i18n";
+import type { Lang, ModelOutput, Trace, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
+import { t, type Key } from "./i18n";
 
 export type View = "check" | "bookings" | "sos" | "how" | "settings";
 
@@ -106,12 +106,83 @@ export function careKey(careType: string | null | undefined): Key | null {
   return k ? CARE_KEY[k] : null;
 }
 
-// Model classes: paramedic, nurse, lab, gp, emergency, followup. Unknown
-// classes return null and are shown by their own name.
+// Model classes: paramedic, nurse, lab, gp, emergency, followup, out_of_scope.
+// Unknown classes return null and are shown by their own name.
 export function modelClassKey(cls: string): Key | null {
   if (cls === "followup" || cls === "follow_up") return "careFollowup";
+  if (cls === "out_of_scope") return "careOutOfScope";
   if (cls === "gp") return "careDoctor";
   return careKey(cls);
+}
+
+// ---- who decided (trace.decision.source) and how sure the model was ----
+
+export function decisionSource(res: TriageResponse): string {
+  return String(res.trace?.decision?.source ?? "").toLowerCase();
+}
+
+// the safety net raised this answer ("model+safety_net" or "safety_net")
+export function raisedBySafety(res: TriageResponse): boolean {
+  return decisionSource(res).includes("safety_net");
+}
+
+// For a non-emergency card: the source names the safety net and, when the API lists
+// its safety checks, one that raises care (danger signs, vulnerable people, urgency
+// floor) actually fired, so the card never claims a change that did not happen.
+const RAISING_CHECKS = ["safety_net", "vulnerable_floor", "urgency_floor"];
+export function safetyChoseUrgent(res: TriageResponse): boolean {
+  if (!raisedBySafety(res)) return false;
+  const checks = res.trace?.guardrails;
+  if (!Array.isArray(checks) || checks.length === 0) return true;
+  return checks.some((g) => RAISING_CHECKS.includes(g.id) && g.status === "fired");
+}
+
+const BAND_KEY: Record<string, Key> = { high: "bandHigh", medium: "bandMedium", low: "bandLow" };
+export function bandKey(band: string | null | undefined): Key | null {
+  return band ? BAND_KEY[band.toLowerCase()] ?? null : null;
+}
+
+// "MuRIL (fine-tuned)" -> "MuRIL" for the plain-words line
+export function modelShortName(model: ModelOutput | null | undefined): string {
+  return (model?.name ?? "").replace(/\s*\(.*?\)\s*/g, " ").trim() || "MuRIL";
+}
+
+// ---- Module 1's structured symptoms ----
+
+const WHO_KEY: Record<string, Key> = {
+  self: "whoSelf",
+  adult: "whoAdult",
+  elderly: "whoElderly",
+  child: "whoChild",
+  infant: "whoInfant",
+  pregnant: "whoPregnant",
+};
+
+export interface UnderstoodChip {
+  text: string;
+  kind: "symptom" | "duration" | "who" | "age";
+}
+
+// trace.structured as short chips ("Bukhar · 3 din se · Buzurg"), or null when the
+// API sent none (older builds) or it found nothing, so callers fall back to
+// trace.understood. Symptom labels come from the API in the user's language.
+export function structuredChips(tr: Trace | null | undefined, lang: Lang): UnderstoodChip[] | null {
+  const s = tr?.structured;
+  if (!s || typeof s !== "object") return null;
+  const out: UnderstoodChip[] = [];
+  const seen = new Set<string>();
+  const add = (text: string | null | undefined, kind: UnderstoodChip["kind"]) => {
+    const v = (text ?? "").trim();
+    if (!v || seen.has(v.toLowerCase())) return;
+    seen.add(v.toLowerCase());
+    out.push({ text: v, kind });
+  };
+  for (const sym of s.symptoms ?? []) add(sym.label_local || sym.label || sym.id?.replace(/_/g, " "), "symptom");
+  add(fmtDays(s.duration_days ?? null, lang), "duration");
+  const who = (s.who ?? "").toLowerCase();
+  if (who && who !== "unknown") add(s.who_label_local || (WHO_KEY[who] ? t(lang, WHO_KEY[who]) : null), "who");
+  if (s.age_years != null && s.age_years >= 1) add(t(lang, "ageYears", { n: Math.round(s.age_years) }), "age");
+  return out.length ? out : null;
 }
 
 export function topModelClass(model: ModelOutput | null | undefined): { cls: string; pct: number } | null {
@@ -135,8 +206,12 @@ const MODEL_CLASS: Record<CareKind, string> = {
 export function decisionModelClass(res: TriageResponse): { cls: string; pct: number } | null {
   const probs = res.trace?.model?.probabilities;
   if (!probs || typeof probs !== "object") return null;
+  // the second check (Claude) decided because the model was unsure: show what the model itself said
+  if (decisionSource(res) === "llm") return topModelClass(res.trace?.model);
   const kind = careKind(res.care_type);
-  const cls = res.follow_up_question ? "followup" : kind ? MODEL_CLASS[kind] : null;
+  const cls = res.follow_up_question
+    ? res.trace?.follow_up?.id === "q_scope" ? "out_of_scope" : "followup"
+    : kind ? MODEL_CLASS[kind] : null;
   const p = cls != null ? probs[cls] : undefined;
   if (typeof p === "number" && Number.isFinite(p)) return { cls: cls as string, pct: Math.round(p <= 1 ? p * 100 : p) };
   return topModelClass(res.trace?.model);

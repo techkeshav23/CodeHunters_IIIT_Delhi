@@ -117,17 +117,33 @@ def _join(items: list[str], language: str) -> str:
     return ", ".join(items[:-1]) + AND[language] + items[-1]
 
 
-def _symptom_phrase(ex: Extraction, language: str) -> str:
-    lang = lang_of(language)
-    labels = [h.entry.label_for(lang) for h in ex.symptoms] + [h.entry.label_for(lang) for h in ex.services]
-    if lang != "en":
+def _phrase(labels: list[str], lang: str) -> str:
+    if lang != "en" and labels:
         labels = [labels[0]] + [label[0].lower() + label[1:] if lang == "hinglish" else label for label in labels[1:]]
     return _join(labels, lang)
 
 
-def reasoning(ex: Extraction, care: str, urgency: str, breathing: str, language: str) -> str:
+def _symptom_phrase(ex: Extraction, language: str) -> str:
     lang = lang_of(language)
-    what = _symptom_phrase(ex, lang)
+    return _phrase([h.entry.label_for(lang) for h in ex.symptoms] + [h.entry.label_for(lang) for h in ex.services],
+                   lang)
+
+
+# the model decided but no symptom or service was named in words we know
+BASED_ON = {"en": "Based on your message", "hinglish": "Aapke sandesh ke hisaab se", "hi": "आपके संदेश के हिसाब से"}
+
+
+def reasoning(ex: Extraction, care: str, urgency: str, breathing: str, language: str,
+              labels: list[str] | None = None) -> str:
+    """`labels` (in `language`) replace the extraction's symptoms and services, for a
+    decision the fine-tuned model made from words the lexicon does not know."""
+    lang = lang_of(language)
+    what = _phrase(labels, lang) if labels is not None else _symptom_phrase(ex, lang)
+    if not what:
+        phrase = CARE_PHRASE[lang].get((care, urgency), "")
+        if lang == "en":
+            return f"{BASED_ON[lang]}; {NO_FLAGS_NOTE[lang]}, so {phrase}."
+        return f"{BASED_ON[lang]}, {NO_FLAGS_NOTE[lang]}{'।' if lang == 'hi' else '.'} {phrase}"
     dur = duration_label(ex.duration_days, lang)
     respiratory = any(h.entry.meta.get("respiratory") for h in ex.symptoms) or "fever" in ex.symptom_ids()
     note = (BREATHING_NOTE[breathing][lang] if respiratory and breathing in BREATHING_NOTE
@@ -189,6 +205,166 @@ _BANNED = re.compile(
 def scrub(text: str) -> str:
     """Remove medicine names, doses and disease names from generated text."""
     return re.sub(r"\s{2,}", " ", _BANNED.sub("", text or "")).strip()
+
+
+def has_banned(text: str) -> bool:
+    """Would `scrub` remove something (the clinical-scope guardrail)?"""
+    return bool(_BANNED.search(text or ""))
+
+
+# ---- intake ("structured" in the trace) -------------------------------------
+
+WHO_LABELS = {
+    "self": {"en": "The person writing", "hinglish": "Aap khud", "hi": "आप ख़ुद"},
+    "adult": {"en": "Adult", "hinglish": "Bade (adult)", "hi": "वयस्क"},
+    "elderly": {"en": "Older adult", "hinglish": "Buzurg", "hi": "बुज़ुर्ग"},
+    "child": {"en": "Child", "hinglish": "Bachcha", "hi": "बच्चा"},
+    "infant": {"en": "Baby", "hinglish": "Chhota baby", "hi": "छोटा शिशु"},
+    "pregnant": {"en": "Pregnant woman", "hinglish": "Garbhvati mahila", "hi": "गर्भवती महिला"},
+    "unknown": {"en": "Not known yet", "hinglish": "Abhi pata nahi", "hi": "अभी पता नहीं"},
+}
+# the model's tags that have no lexicon entry of the same id
+TAG_LABELS = {
+    "breathlessness": {"en": "Breathing difficulty", "hinglish": "Saans lene mein dikkat", "hi": "सांस लेने में दिक्कत"},
+    "bleeding": {"en": "Bleeding", "hinglish": "Khoon behna", "hi": "खून बहना"},
+    "suicidal": {"en": "Thoughts of self-harm", "hinglish": "Khud ko nuksan ke khayal", "hi": "ख़ुद को नुकसान के ख़याल"},
+    "dehydration": {"en": "Dehydration", "hinglish": "Paani ki kami", "hi": "पानी की कमी"},
+    "pregnancy": {"en": "Pregnancy", "hinglish": "Pregnancy", "hi": "गर्भावस्था"},
+    "burn": {"en": "Burn", "hinglish": "Jalna", "hi": "जलना"},
+    "allergy": {"en": "Allergy", "hinglish": "Allergy", "hi": "एलर्जी"},
+    "head_injury": {"en": "Head injury", "hinglish": "Sir mein chot", "hi": "सिर में चोट"},
+}
+
+
+def tag_label(tag: str, language: str) -> str:
+    lang = lang_of(language)
+    if tag in TAG_LABELS:
+        return TAG_LABELS[tag][lang]
+    return tag.replace("_", " ").capitalize()
+
+
+# ---- guardrails (trace.guardrails) -----------------------------------------
+# label, then the note for each status, in three languages
+
+GUARDRAILS: dict[str, dict[str, dict[str, str]]] = {
+    "safety_net": {
+        "label": {"en": "Danger-sign rules", "hinglish": "Khatre ke lakshan ke niyam", "hi": "ख़तरे के लक्षणों के नियम"},
+        "pass": {"en": "No danger sign found in the words used.",
+                 "hinglish": "Likhi baat mein koi khatre ka lakshan nahi mila.",
+                 "hi": "लिखी बात में कोई ख़तरे का लक्षण नहीं मिला।"},
+        "fired": {"en": "A danger sign was found, so this goes straight to emergency help.",
+                  "hinglish": "Khatre ka lakshan mila, isliye seedha emergency madad.",
+                  "hi": "ख़तरे का लक्षण मिला, इसलिए सीधे इमरजेंसी मदद।"},
+    },
+    "model_emergency": {
+        "label": {"en": "Model emergency check", "hinglish": "Model ki emergency jaanch", "hi": "मॉडल की इमरजेंसी जाँच"},
+        "pass": {"en": "The model found no sign of an emergency.", "hinglish": "Model ko emergency nahi lagi.",
+                 "hi": "मॉडल को इमरजेंसी नहीं लगी।"},
+        "fired": {"en": "The model found signs of an emergency.", "hinglish": "Model ko emergency ke lakshan lage.",
+                  "hi": "मॉडल को इमरजेंसी के लक्षण लगे।"},
+    },
+    "vulnerable_floor": {
+        "label": {"en": "Baby, older adult or pregnancy", "hinglish": "Baby, buzurg ya pregnancy",
+                  "hi": "शिशु, बुज़ुर्ग या गर्भावस्था"},
+        "pass": {"en": "Nothing here needs a sooner visit because of age or pregnancy.",
+                 "hinglish": "Umar ya pregnancy ki wajah se jaldi ki zarurat nahi.",
+                 "hi": "उम्र या गर्भावस्था की वजह से जल्दी की ज़रूरत नहीं।"},
+        "fired": {"en": "A baby, an older adult or a pregnancy: seen today at the latest.",
+                  "hinglish": "Baby, buzurg ya pregnancy: aaj hi dekhna zaroori.",
+                  "hi": "शिशु, बुज़ुर्ग या गर्भावस्था: आज ही देखना ज़रूरी।"},
+    },
+    "urgency_floor": {
+        "label": {"en": "Urgency never lowered", "hinglish": "Jaldi kabhi kam nahi", "hi": "जल्दी कभी कम नहीं"},
+        "pass": {"en": "The safety rules did not ask for a sooner time.",
+                 "hinglish": "Safety niyamon ne pehle ka time nahi maanga.",
+                 "hi": "सुरक्षा नियमों ने पहले का समय नहीं माँगा।"},
+        "fired": {"en": "The safety rules asked for a sooner time, so it was moved up.",
+                  "hinglish": "Safety niyamon ne pehle ka time maanga, isliye jaldi kiya.",
+                  "hi": "सुरक्षा नियमों ने पहले का समय माँगा, इसलिए जल्दी किया।"},
+    },
+    "low_confidence": {
+        "label": {"en": "Model confidence", "hinglish": "Model ka bharosa", "hi": "मॉडल का भरोसा"},
+        "pass": {"en": "The model is sure enough to decide.", "hinglish": "Model faisle ke liye kaafi pakka hai.",
+                 "hi": "मॉडल फ़ैसले के लिए काफ़ी पक्का है।"},
+        "fired": {"en": "The model was unsure, so a safer route was taken.",
+                  "hinglish": "Model pakka nahi tha, isliye surakshit raasta liya.",
+                  "hi": "मॉडल पक्का नहीं था, इसलिए सुरक्षित रास्ता लिया।"},
+    },
+    "out_of_scope": {
+        "label": {"en": "Home health care only", "hinglish": "Sirf ghar pe health care", "hi": "सिर्फ़ घर पर स्वास्थ्य देखभाल"},
+        "pass": {"en": "This is a health care request.", "hinglish": "Yeh health care ki baat hai.",
+                 "hi": "यह स्वास्थ्य देखभाल की बात है।"},
+        "fired": {"en": "This does not look like a home health care request.",
+                  "hinglish": "Yeh ghar pe health care ki request nahi lagti.",
+                  "hi": "यह घर पर स्वास्थ्य देखभाल का अनुरोध नहीं लगता।"},
+    },
+    "llm_fallback": {
+        "label": {"en": "Second opinion (Claude)", "hinglish": "Doosri raay (Claude)", "hi": "दूसरी राय (Claude)"},
+        "pass": {"en": "Not needed.", "hinglish": "Zarurat nahi padi.", "hi": "ज़रूरत नहीं पड़ी।"},
+        "fired": {"en": "The model was unsure, so Claude gave a second opinion.",
+                  "hinglish": "Model pakka nahi tha, isliye Claude se doosri raay li.",
+                  "hi": "मॉडल पक्का नहीं था, इसलिए Claude से दूसरी राय ली।"},
+    },
+    "clinical_scope": {
+        "label": {"en": "No diagnosis, no medicines", "hinglish": "Na bimari ka naam, na dawai",
+                  "hi": "न बीमारी का नाम, न दवा"},
+        "pass": {"en": "The reply names no disease and no medicine.",
+                 "hinglish": "Jawab mein na bimari ka naam hai, na dawai ka.",
+                 "hi": "जवाब में न बीमारी का नाम है, न दवा का।"},
+        "fired": {"en": "A disease or medicine name was taken out of the reply.",
+                  "hinglish": "Jawab se bimari ya dawai ka naam hataya gaya.",
+                  "hi": "जवाब से बीमारी या दवा का नाम हटाया गया।"},
+    },
+    "invariants": {
+        "label": {"en": "Final safety checks", "hinglish": "Aakhri safety jaanch", "hi": "आख़िरी सुरक्षा जाँच"},
+        "pass": {"en": "An emergency never gets a booking; nothing else is marked as an emergency.",
+                 "hinglish": "Emergency mein booking nahi; baaki kuch emergency nahi bataya.",
+                 "hi": "इमरजेंसी में बुकिंग नहीं; बाकी कुछ इमरजेंसी नहीं बताया।"},
+        "fired": {"en": "The reply was corrected to keep the safety rules.",
+                  "hinglish": "Safety niyam ke liye jawab theek kiya gaya.",
+                  "hi": "सुरक्षा नियम के लिए जवाब ठीक किया गया।"},
+    },
+}
+GUARDRAILS["fever_home_visit"] = {
+    "label": {"en": "Fever gets a home check", "hinglish": "Bukhar mein ghar par jaanch", "hi": "बुखार में घर पर जाँच"},
+    "pass": {"en": "No fever was sent to a phone call only.", "hinglish": "Bukhar ko sirf phone call par nahi bheja.",
+             "hi": "बुखार को सिर्फ़ फ़ोन कॉल पर नहीं भेजा।"},
+    "fired": {"en": "Fever: a medic visit instead of only a phone call, as in the organisers' labels.",
+              "hinglish": "Bukhar hai, isliye sirf phone call nahi, medic ghar aayenge.",
+              "hi": "बुखार है, इसलिए सिर्फ़ फ़ोन कॉल नहीं, मेडिक घर आएँगे।"},
+}
+GUARDRAIL_IDS = list(GUARDRAILS)
+
+
+def guardrails(fired: set[str], language: str) -> list[dict]:
+    """Every guardrail with its status for this request ("fired" when it changed or
+    decided something, else "pass")."""
+    lang = lang_of(language)
+    out = []
+    for gid, g in GUARDRAILS.items():
+        status = "fired" if gid in fired else "pass"
+        out.append({"id": gid, "label": g["label"]["en"], "label_local": g["label"][lang], "status": status,
+                    "note": g[status]["en"], "note_local": g[status][lang]})
+    return out
+
+
+# ---- safety-netting advice for non-emergency decisions ---------------------
+
+def safety_net(language: str, fever: bool = False, child: bool = False) -> str:
+    """When to come back or call 112. Plain words, no diagnosis."""
+    lang = lang_of(language)
+    if lang == "en":
+        extra = ", or the child becomes very drowsy or stops feeding" if child else ""
+        tail = ", or the fever lasts more than 3 days" if fever else ", or things get worse"
+        return f"If there is trouble breathing, chest pain or fainting{extra}{tail}, call 112 right away or tell us."
+    if lang == "hi":
+        extra = ", बच्चा बहुत सुस्त हो जाए या दूध / खाना छोड़ दे" if child else ""
+        tail = ", या बुखार 3 दिन से ज़्यादा रहे" if fever else ", या तकलीफ़ बढ़ जाए"
+        return f"अगर सांस लेने में दिक्कत, सीने में दर्द या बेहोशी हो{extra}{tail}, तो तुरंत 112 पर कॉल करें या हमें बताएँ।"
+    extra = ", bachcha bahut sust ho jaye ya doodh / khana chhod de" if child else ""
+    tail = ", ya bukhar 3 din se zyada rahe" if fever else ", ya taklif badh jaye"
+    return (f"Agar saans lene mein dikkat, seene mein dard, behoshi{extra}{tail}, "
+            "to turant 112 par call karein ya hamein batayein.")
 
 
 def speech_lang(language: str) -> str:

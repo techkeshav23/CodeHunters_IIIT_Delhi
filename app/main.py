@@ -12,7 +12,9 @@ from .matching.caregivers import IST, load
 from .nlp.lexicon import get_lexicon
 from .pipeline import run
 from .schemas import Booking, BookingRequest, TriageRequest, TriageResponse, TriageResponseWithTrace
+from .triage import llm_fallback
 from .triage.model import get_model
+from .triage.student import get_student
 
 app = FastAPI(
     title="CareCompass API",
@@ -30,25 +32,41 @@ def _warm() -> None:
     get_lexicon()
     load()
     get_model()
+    get_student()
 
 
 @app.get("/health")
 def health() -> dict:
     caregivers, source = load()
     model = get_model()
-    return {"status": "ok", "version": config.VERSION, "caregivers_source": source,
-            "caregivers": len(caregivers),
-            "model": "rules+model" if model else "rules",
-            "model_trained_at": model.meta.get("trained_at") if model else None,
-            "model_test_accuracy": (model.meta.get("scores", {}).get("test") or {}).get("accuracy") if model else None}
+    out = {"status": "ok", "version": config.VERSION, "caregivers_source": source,
+           "caregivers": len(caregivers),
+           "model": "rules+model" if model else "rules",
+           "model_trained_at": model.meta.get("trained_at") if model else None,
+           "model_test_accuracy": (model.meta.get("scores", {}).get("test") or {}).get("accuracy") if model else None,
+           "student": None, "llm_fallback": llm_fallback.enabled()}
+    student = get_student()
+    if student is not None:  # model-first: the fine-tuned model decides, the rules are the safety net
+        meta = getattr(student, "meta", {}) or {}
+        test = meta.get("test_organiser_340") or {}
+        out.update({
+            "model": "student (MuRIL)",
+            "model_trained_at": meta.get("trained_at"),
+            "model_test_accuracy": test.get("care_accuracy"),
+            "student": {"name": getattr(student, "name", None), "trained_at": meta.get("trained_at"),
+                        "test_organiser_340": test or None, "holdout": meta.get("holdout"),
+                        "thresholds": meta.get("thresholds")},
+        })
+    return out
 
 
 @app.post("/v1/triage", response_model=TriageResponseWithTrace | TriageResponse, response_model_exclude_none=False)
 @app.post("/triage", response_model=TriageResponseWithTrace | TriageResponse, include_in_schema=False)
 def triage(req: TriageRequest,
            explain: bool = Query(False, description="Add `trace` for the web app"),
-           policy: str | None = Query(None, pattern="^(minimal|safety)$",
-                                      description="Follow-up policy: minimal (default) or safety")):
+           policy: str | None = Query(None, pattern="^(minimal|safety|conversational)$",
+                                      description="Follow-up policy: minimal (default), safety or "
+                                                  "conversational (web and app)")):
     return run(req, mode="interactive", policy=policy, explain=explain)
 
 
