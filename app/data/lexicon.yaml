@@ -410,6 +410,12 @@ red_flags:
     conditional:
       - patterns: [confused, confusion, ajeeb baat]
         requires: [sudden, older_adult, fever]
+  - id: possible_emergency
+    # raised by the learned model, not by a phrase
+    label: Signs that need urgent care
+    label_hinglish: Turant care ki zarurat ke lakshan
+    label_hi: तुरंत देखभाल की ज़रूरत के लक्षण
+    patterns: []
   - id: emergency_requested
     label: Ambulance or emergency asked for
     label_hinglish: Ambulance ya emergency maangi

@@ -11,7 +11,9 @@ from .config import VERSION, api_care, api_urgency
 from .matching.ranker import rank
 from .nlp.extract import Extraction, extract
 from .schemas import MatchedCaregiver, TriageRequest, TriageResponse, TriageResponseWithTrace
+from .config import URGENCY_ORDER, urgency_rank
 from .triage import followup, text
+from .triage.model import blend_care, choose_urgency, get_model
 from .triage.rules import Decision, decide
 
 USER_ROLES = {"user", "patient", "human", "customer", "client"}
@@ -109,7 +111,8 @@ def _understood(ex: Extraction, language: str) -> dict:
     }
 
 
-def _decision_trace(care: str | None, urgency: str | None, d: Decision, language: str) -> dict:
+def _decision_trace(care: str | None, urgency: str | None, d: Decision, language: str,
+                    source: str = "rules") -> dict:
     lang = text.lang_of(language)
     return {
         "care_type": api_care(care), "urgency": api_urgency(urgency),
@@ -117,13 +120,37 @@ def _decision_trace(care: str | None, urgency: str | None, d: Decision, language
         "care_label_local": text.CARE_LABELS[care][lang] if care else None,
         "urgency_label": text.URGENCY_LABELS[urgency]["en"] if urgency else None,
         "urgency_label_local": text.URGENCY_LABELS[urgency][lang] if urgency else None,
-        "confidence": round(d.confidence, 2), "source": "rules", "rule": d.rule,
+        "confidence": round(d.confidence, 2), "source": source, "rule": d.rule,
         "specialty": d.specialty,
     }
 
 
+def _apply_model(ex: Extraction, d: Decision, combined: str) -> tuple[Decision, bool, str]:
+    """Blend the learned model (if one is trained) with the rules decision.
+    Returns (decision, model_says_emergency, source)."""
+    model = get_model()
+    if model is None or d.care is None:
+        return d, False, "rules"
+    s = model.settings
+    care_p, urg_p = model.probs(combined)
+    if care_p.get("emergency", 0.0) >= s["emergency_threshold"] or urg_p.get("immediate", 0.0) >= s["emergency_threshold"]:
+        return d, True, "model"
+    care_b = blend_care({k: v for k, v in care_p.items() if k != "emergency"}, d.care, s["rules_weight"])
+    care = max(care_b, key=care_b.get)
+    w = s["rules_weight"]
+    urg_b = {u: (1 - w) * urg_p.get(u, 0.0) + w * (1.0 if u == d.urgency else 0.0) for u in URGENCY_ORDER}
+    urgency = choose_urgency(urg_b, s["under_cost"])
+    if urgency == "immediate":
+        return d, True, "model"
+    # a rules bump for a baby, child, older adult or severe pain is a floor
+    if "+" in d.rule and urgency_rank(d.urgency) > urgency_rank(urgency):
+        urgency = d.urgency
+    return (Decision(care, urgency, round(care_b[care], 2), d.rule + "+model", needs=d.needs,
+                     specialty=d.specialty if care == d.care else None), False, "blend")
+
+
 def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None,
-        explain: bool = False) -> TriageResponse:
+        explain: bool = False, use_model: bool = True) -> TriageResponse:
     t0 = time.perf_counter()
     turns = read_history(req.conversation_history) + [Turn("user", req.user_input or "")]
 
@@ -170,24 +197,28 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     trace: dict[str, Any] = {"version": VERSION, "language": language, "mode": mode,
                              "understood": _understood(ex, language)}
 
-    # 1) emergency path: skips matching
-    if flag_ids:
-        labels_en = [lex[f].label for f in flag_ids]
-        labels_local = [lex[f].label_for(language) for f in flag_ids]
+    def emergency(flags: list[str], rule: str, source: str) -> TriageResponse:
+        """Emergency path: skips matching, always shows call-for-help."""
+        labels_en = [lex[f].label for f in flags]
+        labels_local = [lex[f].label_for(language) for f in flags]
         why_en, why_local = text.emergency_reasoning(labels_en, labels_local, language)
-        d = Decision("emergency", "immediate", 1.0, "red_flag")
+        d_em = Decision("emergency", "immediate", 1.0, rule)
         resp = dict(follow_up_question=None, care_type=api_care("emergency"), urgency=api_urgency("immediate"),
-                    red_flags=flag_ids, reasoning=why_local if out_lang != "en" else why_en, matched_caregivers=[])
+                    red_flags=flags, reasoning=why_local if out_lang != "en" else why_en, matched_caregivers=[])
         evidence = {h.id: h.evidence for h in ex.red_flags}
         trace.update({
-            "checks": _checks(ex, breathing, flag_ids, language),
+            "checks": _checks(ex, breathing, flags, language),
             "red_flags": [{"id": f, "label": lex[f].label, "label_local": lex[f].label_for(language),
-                           "evidence": evidence.get(f, answers.get("q_breathing", ""))} for f in flag_ids],
-            "decision": _decision_trace("emergency", "immediate", d, language),
+                           "evidence": evidence.get(f, answers.get("q_breathing", ""))} for f in flags],
+            "decision": _decision_trace("emergency", "immediate", d_em, language, source),
             "reasoning_local": why_local, "follow_up": None,
-            "emergency": text.emergency_block(flag_ids, language), "caregivers": [],
+            "emergency": text.emergency_block(flags, language), "caregivers": [],
         })
         return _finish(resp, trace, t0, explain)
+
+    # 1) red flag: emergency path
+    if flag_ids:
+        return emergency(flag_ids, "red_flag", "rules")
 
     # 2) decide, or ask one question
     d = decide(ex)
@@ -206,6 +237,12 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "emergency": None, "caregivers": [],
         })
         return _finish(resp, trace, t0, explain)
+
+    source = "rules"
+    if use_model:
+        d, model_emergency, source = _apply_model(ex, d, combined)
+        if model_emergency:
+            return emergency(["possible_emergency"], "model_emergency", "model")
 
     care, urgency = d.care, d.urgency
     if care is None:  # nothing understood and no more questions: safe default
@@ -229,7 +266,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     )
     trace.update({
         "checks": _checks(ex, breathing, [], language), "red_flags": [],
-        "decision": _decision_trace(care, urgency, d, language),
+        "decision": _decision_trace(care, urgency, d, language, source),
         "reasoning_local": text.scrub(why_local), "follow_up": None, "emergency": None,
         "caregivers": [{
             "caregiver_id": m.caregiver.id, "name": m.caregiver.name, "role": m.caregiver.role,
