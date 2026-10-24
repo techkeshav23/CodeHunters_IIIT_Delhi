@@ -115,3 +115,15 @@ def test_other_apps_question_wording(client):
     r = post(client, "3 din se, aur ulti bhi", [{"role": "user", "content": "Papa ko bukhar hai"},
                                                {"role": "assistant", "content": "Kab se hai?"}], explain=True)
     assert [s["id"] for s in r["trace"]["understood"]["symptoms"]] == ["fever", "vomiting"]
+
+
+def test_speech_reads_hinglish_in_devanagari(client):
+    # a Hindi voice reads Roman-script Hindi with English sounds, so read-aloud gets Devanagari
+    r = post(client, "papa ko 3 din se bukhar hai, umar 70 saal", explain=True)
+    sp = r["trace"]["speech"]
+    assert r["trace"]["language"] == "hinglish" and sp["locale"] == "hi-IN"
+    assert any("ऀ" <= ch <= "ॿ" for ch in sp["text"])
+    em = post(client, "seene me dard aur saans phool rahi hai", explain=True)["trace"]["speech"]
+    assert "1 1 2" in em["text"]  # numbers read digit by digit
+    en = post(client, "I have had fever for 2 days, age 30", explain=True)["trace"]["speech"]
+    assert en["locale"] == "en-IN" and en["text"].startswith("Fever")

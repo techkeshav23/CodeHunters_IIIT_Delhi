@@ -409,6 +409,25 @@ class TraceCaregiver {
   }
 }
 
+/// What to read aloud and in which voice (trace.speech): Devanagari with
+/// "hi-IN" for Hindi and Hinglish, "en-IN" for English. [alt] is the on-screen
+/// text, read with an English voice when the phone has no Hindi voice.
+class Speech {
+  final String text;
+  final String locale;
+  final String? alt;
+  const Speech(this.text, this.locale, {this.alt});
+
+  static Speech? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final m = _m(j);
+    final text = _s(m['text']).trim();
+    if (text.isEmpty) return null;
+    final locale = _s(m['locale']);
+    return Speech(text, locale.isEmpty ? 'hi-IN' : locale);
+  }
+}
+
 class Trace {
   final String version;
   final Lang language;
@@ -420,6 +439,7 @@ class Trace {
   final FollowUp? followUp;
   final Emergency? emergency;
   final List<TraceCaregiver> caregivers;
+  final Speech? speech;
   final double timingMs;
 
   /// trace.model.probabilities (class -> probability), when a model ran.
@@ -435,6 +455,7 @@ class Trace {
     this.followUp,
     this.emergency,
     this.caregivers = const [],
+    this.speech,
     this.timingMs = 0,
     this.modelProbabilities = const {},
   });
@@ -477,6 +498,7 @@ class Trace {
       followUp: fu is Map ? FollowUp.fromJson(_m(fu)) : null,
       emergency: em is Map ? Emergency.fromJson(_m(em)) : null,
       caregivers: _l(j['caregivers']).map((e) => TraceCaregiver.fromJson(_m(e))).toList(),
+      speech: Speech.fromJson(j['speech']),
       timingMs: _d(j['timing_ms']),
       modelProbabilities: _m(_m(j['model'])['probabilities']).map((k, v) => MapEntry(k, _d(v))),
     );

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryItem, Lang, LatLng, TraceCaregiver, TriageRequest, TriageResponse } from "./types";
 import { t } from "./i18n";
 import { triage, health, USE_MOCKS } from "./api";
-import { speak, stopSpeaking, voiceSupported } from "./voice";
+import { speak, speechFor, stopSpeaking, voiceSupported } from "./voice";
 import { isEmergency, readJSON, writeJSON, type BookingTarget, type Msg, type SavedBooking, type View } from "./lib";
 import { Sidebar, TopBar, BottomNav, type Backend } from "./ui/Nav";
 import Composer from "./ui/Composer";
@@ -111,7 +111,7 @@ export default function App() {
           setMessages((m) => [...m, msg]);
           setHistory([]);
           setSos(msg);
-          if (usedVoice && autoRead) speak(`${res.trace.emergency?.title_local ?? ""}. ${t(lang, "sosNow")}`, voiceLang);
+          if (usedVoice && autoRead) speak(speechFor(res.trace.speech, `${res.trace.emergency?.title_local ?? ""}. ${t(lang, "sosNow")}`, voiceLang));
         } else if (res.follow_up_question) {
           setMessages((m) => [...m, { id: nid(), kind: "question", req, res }]);
           setHistory((h) => [
@@ -119,13 +119,13 @@ export default function App() {
             { role: "user", content: clean },
             { role: "assistant", content: res.follow_up_question as string, question_id: res.trace.follow_up?.id },
           ]);
-          if (usedVoice && autoRead) speak(res.follow_up_question, voiceLang);
+          if (usedVoice && autoRead) speak(speechFor(res.trace.speech, res.follow_up_question, voiceLang));
         } else {
           setMessages((m) => [...m, { id: nid(), kind: "decision", req, res }]);
           setHistory([]);
           if (usedVoice && autoRead) {
             const d = res.trace.decision;
-            speak([d.care_label_local, d.urgency_label_local, res.trace.reasoning_local].filter(Boolean).join(". "), voiceLang);
+            speak(speechFor(res.trace.speech, [d.care_label_local, d.urgency_label_local, res.trace.reasoning_local].filter(Boolean).join(". "), voiceLang));
           }
         }
       } catch {

@@ -109,6 +109,10 @@ each come from `GET /v1/labels`.
 `trace.model` (when the learned model is loaded): `probabilities` over paramedic, nurse,
 lab, gp, emergency and followup for this message, and the model's training date.
 
+`trace.speech`: what the apps read aloud, `{"locale": "hi-IN" | "en-IN", "text": ...}`. For
+Hindi and Hinglish it is the Hindi (Devanagari) wording, because a Hindi voice reads
+Roman-script Hindi with English sounds; phone numbers are spaced digit by digit ("1 1 2").
+
 ---
 
 ## POST /v1/triage?explain=true (for the web app)
@@ -168,6 +172,7 @@ screen and caregiver cards. `*_local` strings are in the user's language
       "reason_local": "Hindi bolte hain, 2.1 km door, aaj 4 baje free"
     }
   ],
+  "speech": {"locale": "hi-IN", "text": "2 दिन से बुखार और खांसी, सांस की दिक्कत नहीं बताई। आज एक पैरामेडिक घर आकर जाँच करेंगे।"},
   "timing_ms": 9.4
 }
 ```

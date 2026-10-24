@@ -7,6 +7,7 @@ import '../models.dart';
 import '../state.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../voice.dart';
 
 enum ChipTone { neutral, brand, haldi, danger }
 
@@ -157,12 +158,14 @@ class _EntryAnimationState extends State<EntryAnimation> with SingleTickerProvid
   }
 }
 
-/// "Sunaiye" / "Rokein" button that reads [text] aloud with flutter_tts.
+/// "Sunaiye" / "Rokein" button that reads aloud with flutter_tts: the API's
+/// [speech] when it sent one, else [text] in the voice for [voiceLang].
 class ReadAloudButton extends StatelessWidget {
-  const ReadAloudButton({super.key, required this.id, required this.text, required this.voiceLang});
+  const ReadAloudButton({super.key, required this.id, required this.text, required this.voiceLang, this.speech});
   final String id;
   final String text;
   final Lang voiceLang;
+  final Speech? speech;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +176,7 @@ class ReadAloudButton extends StatelessWidget {
       builder: (context, speaking, _) {
         final on = speaking == id;
         return TextButton.icon(
-          onPressed: () => on ? state.voice.stopSpeaking() : state.voice.speak(text, voiceLang, id: id),
+          onPressed: () => on ? state.voice.stopSpeaking() : state.voice.speak(speechFor(speech, text, voiceLang), id: id),
           style: TextButton.styleFrom(foregroundColor: on ? cc.brand2 : cc.ink2),
           icon: Icon(on ? LucideIcons.square : LucideIcons.volume2, size: on ? 16 : 18),
           label: Text(t(state.lang, on ? K.stopReading : K.readAloud)),

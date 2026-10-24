@@ -74,8 +74,15 @@ export interface RecognizerCallbacks {
   onError?: (error: string) => void;
 }
 
-// Create a one-shot recognizer. Streams interim transcripts so the user can
-// see/fix the text before sending. Stops after a pause (continuous = false).
+// Android Chrome repeats final results in continuous mode, so phones keep the
+// one-shot mode (stops after a pause); desktop listens continuously and stops
+// itself after a short silence, so a pause mid-sentence does not cut the user off.
+const ONE_SHOT = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+const SILENCE_MS = 2200;
+const MAX_MS = 60_000;
+
+// Create a recognizer. Streams the whole transcript so far (interim + final) so
+// the user can see and fix the text before sending.
 export function createRecognizer(
   lang: Lang,
   cb: RecognizerCallbacks,
@@ -85,24 +92,47 @@ export function createRecognizer(
 
   const rec = new Ctor();
   rec.lang = localeFor(lang);
-  rec.continuous = false;
+  rec.continuous = !ONE_SHOT;
   rec.interimResults = true;
   rec.maxAlternatives = 1;
 
-  rec.onstart = () => cb.onStart?.();
-  rec.onend = () => cb.onEnd?.();
+  let silence = 0;
+  let cap = 0;
+  const clearTimers = () => {
+    window.clearTimeout(silence);
+    window.clearTimeout(cap);
+  };
+  const stopSoon = (ms: number) => {
+    window.clearTimeout(silence);
+    silence = window.setTimeout(() => {
+      try {
+        rec.stop();
+      } catch {
+        /* ignore */
+      }
+    }, ms);
+  };
+
+  rec.onstart = () => {
+    if (!ONE_SHOT) cap = window.setTimeout(() => rec.stop(), MAX_MS);
+    cb.onStart?.();
+  };
+  rec.onend = () => {
+    clearTimers();
+    cb.onEnd?.();
+  };
   rec.onerror = (e) => cb.onError?.(e.error);
   rec.onresult = (e) => {
-    let interim = "";
-    let finalText = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    let text = "";
+    let allFinal = true;
+    for (let i = 0; i < e.results.length; i++) {
       const r = e.results[i];
-      const text = r[0].transcript;
-      if (r.isFinal) finalText += text;
-      else interim += text;
+      text += r[0].transcript;
+      if (!r.isFinal) allFinal = false;
     }
-    if (finalText) cb.onTranscript(finalText, true);
-    else if (interim) cb.onTranscript(interim, false);
+    text = text.replace(/\s+/g, " ").trim();
+    if (text) cb.onTranscript(text, allFinal);
+    if (!ONE_SHOT) stopSoon(allFinal ? SILENCE_MS : SILENCE_MS + 1500);
   };
 
   return {
@@ -114,6 +144,7 @@ export function createRecognizer(
       }
     },
     stop: () => {
+      clearTimers();
       try {
         rec.stop();
       } catch {
@@ -121,6 +152,7 @@ export function createRecognizer(
       }
     },
     abort: () => {
+      clearTimers();
       try {
         rec.abort();
       } catch {
@@ -141,46 +173,143 @@ function loadVoices(): SpeechSynthesisVoice[] {
   return cachedVoices;
 }
 
+// Chrome fills the voice list asynchronously; wait briefly for it once.
+function whenVoices(): Promise<void> {
+  if (loadVoices().length) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", done);
+      loadVoices();
+      resolve();
+    };
+    window.speechSynthesis.addEventListener("voiceschanged", done);
+    window.setTimeout(done, 1200);
+  });
+}
+
 if (ttsSupported()) {
   loadVoices();
-  window.speechSynthesis.onvoiceschanged = () => loadVoices();
+  window.speechSynthesis.addEventListener("voiceschanged", () => loadVoices());
 }
 
-function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
-  const voices = loadVoices();
-  const prefix = lang === "en" ? "en" : "hi";
-  return (
-    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ??
-    // For Hinglish, an English Indian voice is an acceptable fallback.
-    (lang !== "en"
-      ? voices.find((v) => v.lang.toLowerCase().startsWith("en")) ?? null
-      : null)
-  );
+// Rank voices for a locale: neural/online voices (Edge "... Online (Natural)",
+// Chrome "Google हिन्दी") sound human; the old Windows desktop voices
+// (Kalpana, Hemant, Heera, Ravi) sound robotic and come first in the list.
+function voiceScore(v: SpeechSynthesisVoice, locale: string): number {
+  const lang = v.lang.toLowerCase().replace("_", "-");
+  const want = locale.toLowerCase();
+  if (!lang.startsWith(want.slice(0, 2))) return -Infinity;
+  const name = v.name.toLowerCase();
+  let s = lang === want ? 30 : 0;
+  if (/natural|neural|wavenet|enhanced|premium/.test(name)) s += 100;
+  if (/google/.test(name)) s += 50;
+  if (/online/.test(name) || !v.localService) s += 40;
+  if (/swara|neerja/.test(name)) s += 5;
+  if (/kalpana|hemant|heera|\bravi\b|zira|david|\bmark\b|espeak/.test(name)) s -= 40;
+  return s;
 }
 
-export function speak(
-  text: string,
-  lang: Lang,
-  opts?: { onEnd?: () => void },
-): void {
-  if (!ttsSupported() || !text.trim()) {
+export function pickVoice(locale: string): SpeechSynthesisVoice | null {
+  let best: SpeechSynthesisVoice | null = null;
+  let bestScore = -Infinity;
+  for (const v of loadVoices()) {
+    const s = voiceScore(v, locale);
+    if (s > bestScore) {
+      best = v;
+      bestScore = s;
+    }
+  }
+  return best;
+}
+
+// Short chunks: Chrome's online voices stop after ~15 s of one utterance.
+function chunks(text: string): string[] {
+  const out: string[] = [];
+  for (const sentence of text.split(/(?<=[.!?।])\s+/)) {
+    let rest = sentence.trim();
+    while (rest.length > 180) {
+      const cut = Math.max(rest.lastIndexOf(", ", 180), rest.lastIndexOf(" ", 180));
+      const at = cut > 40 ? cut + 1 : 180;
+      out.push(rest.slice(0, at).trim());
+      rest = rest.slice(at).trim();
+    }
+    if (rest) out.push(rest);
+  }
+  return out;
+}
+
+// Keep utterances referenced until they finish (Chrome can drop onend otherwise).
+let live: SpeechSynthesisUtterance[] = [];
+let generation = 0;
+let ending: (() => void) | null = null; // onEnd of what is playing now
+
+function finish(): void {
+  const f = ending;
+  ending = null;
+  f?.();
+}
+
+/** What to say and in which voice: the API's trace.speech ("hi-IN" Devanagari or "en-IN").
+ * `alt` is the on-screen text, read with an English voice when there is no Hindi voice. */
+export interface Speech {
+  text: string;
+  locale: string;
+  alt?: string;
+}
+
+export function speechFor(spoken: Speech | null | undefined, shown: string, lang: Lang): Speech {
+  return spoken?.text ? { ...spoken, alt: shown } : { text: shown, locale: localeFor(lang) };
+}
+
+export function speak(s: Speech, opts?: { onEnd?: () => void }): void {
+  if (!ttsSupported() || !s.text.trim()) {
     opts?.onEnd?.();
     return;
   }
   const synth = window.speechSynthesis;
+  const busy = synth.speaking || synth.pending;
   synth.cancel(); // stop anything already speaking
-  const u = new SpeechSynthesisUtterance(text);
-  const voice = pickVoice(lang);
-  if (voice) u.voice = voice;
-  u.lang = localeFor(lang);
-  u.rate = 0.9; // slightly slow (spec section 7)
-  if (opts?.onEnd) {
-    u.onend = () => opts.onEnd?.();
-    u.onerror = () => opts.onEnd?.();
-  }
-  synth.speak(u);
+  finish(); // the button that was reading goes back to "Sunaiye"
+  const gen = ++generation;
+  ending = opts?.onEnd ?? null;
+  const go = () => {
+    if (gen !== generation) return; // stopped or replaced meanwhile
+    let voice = pickVoice(s.locale);
+    let text = s.text;
+    if (!voice && s.alt && !s.locale.startsWith("en") && loadVoices().length) {
+      // no Hindi voice on this device: read the on-screen text with an Indian English voice
+      voice = pickVoice("en-IN");
+      if (voice) text = s.alt;
+    }
+    const parts = chunks(text);
+    live = parts.map((part, i) => {
+      const u = new SpeechSynthesisUtterance(part);
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang ?? s.locale;
+      u.rate = 0.95; // a touch slower than normal, for older listeners
+      u.pitch = 1;
+      if (i === parts.length - 1) {
+        u.onend = () => {
+          if (gen === generation) finish();
+        };
+      }
+      u.onerror = () => {
+        if (gen === generation) {
+          synth.cancel();
+          finish();
+        }
+      };
+      return u;
+    });
+    live.forEach((u) => synth.speak(u));
+  };
+  // Chrome can drop an utterance queued in the same tick as cancel().
+  void whenVoices().then(() => (busy ? window.setTimeout(go, 80) : go()));
 }
 
 export function stopSpeaking(): void {
+  generation++;
+  live = [];
   if (ttsSupported()) window.speechSynthesis.cancel();
+  finish();
 }

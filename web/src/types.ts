@@ -155,6 +155,8 @@ export interface Trace {
   follow_up: FollowUp | null;
   emergency: Emergency | null;
   caregivers: TraceCaregiver[];
+  /** Read-aloud text: Devanagari for Hindi and Hinglish ("hi-IN"), English otherwise ("en-IN"). */
+  speech?: { locale: string; text: string } | null;
   timing_ms: number;
 }
 

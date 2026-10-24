@@ -181,7 +181,7 @@ class QuestionCard extends StatelessWidget {
                 t(lang, K.questionOf, {'n': n, 'max': max}),
                 style: body(13.5, weight: FontWeight.w600, color: cc.ink3),
               ),
-              ReadAloudButton(id: 'q${msg.id}', text: text, voiceLang: voiceLang),
+              ReadAloudButton(id: 'q${msg.id}', text: text, voiceLang: voiceLang, speech: res.trace.speech),
             ],
           ),
           const SizedBox(height: 8),
@@ -366,7 +366,12 @@ class _DecisionCardState extends State<DecisionCard> {
             child: Wrap(
               spacing: 2,
               children: [
-                ReadAloudButton(id: 'd${widget.msg.id}', text: decisionSummary(res), voiceLang: res.trace.language),
+                ReadAloudButton(
+                  id: 'd${widget.msg.id}',
+                  text: decisionSummary(res),
+                  voiceLang: res.trace.language,
+                  speech: res.trace.speech,
+                ),
                 TextButton.icon(
                   onPressed: () => setState(() => _why = !_why),
                   iconAlignment: IconAlignment.end,

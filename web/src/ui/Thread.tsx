@@ -7,7 +7,7 @@ import { BrandMark } from "./Brand";
 import Dial from "./Dial";
 import CaseDetails from "./CaseDetails";
 import CaregiverCard from "./CaregiverCard";
-import { speak, stopSpeaking, ttsSupported } from "../voice";
+import { speak, speechFor, stopSpeaking, ttsSupported, type Speech } from "../voice";
 
 interface Props {
   messages: Msg[];
@@ -86,7 +86,7 @@ export default function Thread(p: Props) {
   );
 }
 
-function ReadAloud({ text, lang }: { text: string; lang: Lang }) {
+function ReadAloud({ text, lang, speech }: { text: string; lang: Lang; speech?: Speech | null }) {
   const [on, setOn] = useState(false);
   if (!ttsSupported()) return null;
   return (
@@ -100,7 +100,7 @@ function ReadAloud({ text, lang }: { text: string; lang: Lang }) {
           setOn(false);
         } else {
           setOn(true);
-          speak(text, lang, { onEnd: () => setOn(false) });
+          speak(speechFor(speech, text, lang), { onEnd: () => setOn(false) });
         }
       }}
     >
@@ -125,7 +125,7 @@ function Question({ res, lang, live, onAnswer }: { res: TriageResponse; lang: La
           ))}
           <span style={{ marginLeft: 6 }}>{t(lang, "questionOf", { n, max })}</span>
         </span>
-        <ReadAloud text={text} lang={voiceLang} />
+        <ReadAloud text={text} lang={voiceLang} speech={res.trace.speech} />
       </div>
       <p className="question__text" lang={voiceLang === "hi" ? "hi" : undefined}>
         {text}
@@ -229,7 +229,7 @@ function Decision({
         </div>
       </div>
       <div className="decision__actions">
-        <ReadAloud text={summary} lang={voiceLang} />
+        <ReadAloud text={summary} lang={voiceLang} speech={res.trace.speech} />
         <button type="button" className="btn btn--quiet why-toggle" aria-expanded={why} onClick={() => setWhy((w) => !w)}>
           {t(lang, "whyThis")}
           <ChevronDown size={18} aria-hidden="true" style={{ transform: why ? "rotate(180deg)" : undefined }} />

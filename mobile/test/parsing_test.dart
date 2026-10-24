@@ -226,6 +226,19 @@ void main() {
     expect(r.trace.caregivers.single.score, 0.5);
     expect(r.trace.caregivers.single.languages, isEmpty);
     expect(r.isEmergency, isFalse);
+    expect(r.trace.speech, isNull);
+  });
+
+  test('read-aloud text (trace.speech) parses', () {
+    final r = TriageResponse.fromJson({
+      'trace': {
+        'language': 'hinglish',
+        'speech': {'locale': 'hi-IN', 'text': 'आज एक पैरामेडिक घर आकर जाँच करेंगे।'},
+      },
+    });
+    expect(r.trace.speech?.locale, 'hi-IN');
+    expect(r.trace.speech?.text, startsWith('आज'));
+    expect(Speech.fromJson({'text': '  '}), isNull);
   });
 
   test('request JSON matches the API contract', () {

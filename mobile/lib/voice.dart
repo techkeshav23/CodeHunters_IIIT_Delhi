@@ -1,7 +1,9 @@
 // Voice in (speech_to_text) and voice out (flutter_tts). Degrades quietly:
 // if the phone has no recogniser, the mic button explains and does nothing.
 // Hindi and Hinglish use hi-IN (people speak Hindi words), English en-IN,
-// the same choice as the web client.
+// the same choice as the web client. Read-aloud uses the API's trace.speech
+// (Devanagari for Hindi and Hinglish), Google's TTS engine when installed, and
+// the best installed voice for the locale rather than the engine default.
 
 import 'dart:async';
 
@@ -15,9 +17,17 @@ import 'models.dart';
 
 String localeFor(Lang lang) => lang == Lang.en ? 'en-IN' : 'hi-IN';
 
+/// The API's read-aloud text when it sent one, else the on-screen text.
+Speech speechFor(Speech? spoken, String shown, Lang lang) =>
+    spoken != null ? Speech(spoken.text, spoken.locale, alt: shown) : Speech(shown, localeFor(lang));
+
+const _googleTts = 'com.google.android.tts';
+const _quality = {'very high': 5, 'high': 4, 'normal': 3, 'low': 2, 'very low': 1};
+
 class Voice {
   final SpeechToText _stt = SpeechToText();
   FlutterTts? _tts;
+  final Map<String, Map<String, String>?> _voices = {};
   bool _sttReady = false;
   bool? _sttAvailable;
 
@@ -97,26 +107,71 @@ class Voice {
     try {
       await tts.awaitSpeakCompletion(false);
     } catch (_) {}
+    // Phone makers' own engines (Samsung, Xiaomi) often have weak Hindi voices.
+    try {
+      final engines = await tts.getEngines;
+      if (engines is List && engines.contains(_googleTts) && await tts.getDefaultEngine != _googleTts) {
+        await tts.setEngine(_googleTts).timeout(const Duration(seconds: 4));
+      }
+    } catch (_) {}
     _tts = tts;
     return tts;
   }
 
-  /// Reads [text] aloud in the voice for [lang] (slightly slow, like the web).
-  Future<void> speak(String text, Lang lang, {String? id}) async {
-    if (text.trim().isEmpty) return;
+  /// Best installed voice for [locale]: highest quality, the exact locale
+  /// (Indian English over US English), and on-device over network voices.
+  Future<Map<String, String>?> _bestVoice(FlutterTts tts, String locale) async {
+    final want = locale.toLowerCase();
+    Map<String, String>? best;
+    var bestScore = -1;
+    try {
+      final list = await tts.getVoices;
+      if (list is! List) return null;
+      for (final raw in list) {
+        if (raw is! Map) continue;
+        final name = '${raw['name'] ?? ''}';
+        final loc = '${raw['locale'] ?? ''}';
+        final l = loc.toLowerCase().replaceAll('_', '-');
+        if (name.isEmpty || !l.startsWith(want.substring(0, 2))) continue;
+        if ('${raw['features'] ?? ''}'.contains('notInstalled')) continue;
+        var s = (_quality['${raw['quality']}'] ?? 3) * 10;
+        if (l == want) s += 15;
+        if ('${raw['network_required']}' == '1') s -= 3;
+        if (s > bestScore) {
+          best = {'name': name, 'locale': loc};
+          bestScore = s;
+        }
+      }
+    } catch (_) {}
+    return best;
+  }
+
+  /// Sets the voice for [locale]; false when the phone cannot speak it.
+  Future<bool> _useLocale(FlutterTts tts, String locale) async {
+    if (!_voices.containsKey(locale)) _voices[locale] = await _bestVoice(tts, locale);
+    final v = _voices[locale];
+    if (v != null && await tts.setVoice(v) == 1) return true;
+    if (await tts.isLanguageAvailable(locale) == true) {
+      await tts.setLanguage(locale);
+      return true;
+    }
+    return false;
+  }
+
+  /// Reads [s] aloud (a touch slower than normal, like the web).
+  Future<void> speak(Speech s, {String? id}) async {
+    if (s.text.trim().isEmpty) return;
     try {
       final tts = await _ensureTts();
       await tts.stop();
-      final locale = localeFor(lang);
-      var ok = await tts.isLanguageAvailable(locale);
-      if (ok == true) {
-        await tts.setLanguage(locale);
-      } else if (lang != Lang.en) {
-        // Hinglish in Roman script reads acceptably with an Indian English voice.
-        ok = await tts.isLanguageAvailable('en-IN');
-        if (ok == true) await tts.setLanguage('en-IN');
+      var text = s.text;
+      if (!await _useLocale(tts, s.locale)) {
+        // No Hindi voice on this phone: the on-screen text with an Indian English voice.
+        if (s.alt == null || !await _useLocale(tts, 'en-IN')) return;
+        text = s.alt!;
       }
-      await tts.setSpeechRate(0.45);
+      await tts.setSpeechRate(0.47);
+      await tts.setPitch(1.0);
       speaking.value = id ?? text;
       await tts.speak(text);
     } catch (_) {

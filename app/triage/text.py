@@ -189,3 +189,25 @@ _BANNED = re.compile(
 def scrub(text: str) -> str:
     """Remove medicine names, doses and disease names from generated text."""
     return re.sub(r"\s{2,}", " ", _BANNED.sub("", text or "")).strip()
+
+
+def speech_lang(language: str) -> str:
+    """Read-aloud language: Hinglish is spoken from the Hindi (Devanagari) text,
+    because a Hindi voice reads Roman-script Hindi with English sounds."""
+    return "en" if lang_of(language) == "en" else "hi"
+
+
+def speech(parts: list[str], language: str) -> dict:
+    """Text for read-aloud, cleaned for a voice: sentence ends, "/" as "or",
+    no brackets, and phone numbers digit by digit (112 is "1 1 2", not "one hundred twelve")."""
+    sl = speech_lang(language)
+    end = "।" if sl == "hi" else "."
+    said = []
+    for p in parts:
+        p = scrub(p or "").strip()
+        if p:
+            said.append(p if p[-1] in ".!?।" else p + end)
+    s = " ".join(said).replace(" / ", " या " if sl == "hi" else " or ")
+    s = re.sub(r"[()]", "", s)
+    s = re.sub(r"\b\d{3,}\b", lambda m: " ".join(m.group()), s)
+    return {"locale": "en-IN" if sl == "en" else "hi-IN", "text": re.sub(r"\s{2,}", " ", s).strip()}

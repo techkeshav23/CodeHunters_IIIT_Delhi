@@ -51,7 +51,7 @@ The problem statement's example ("papa ko do din se bukhar hai aur khansi bhi") 
 | Learned triage model | TF-IDF (character 2–5 and word 1–2 n-grams over the normalised tokens, plus tags for recognised services, symptoms and red flags) + multinomial logistic regression, scikit-learn, trained on the organisers' dataset (`scripts/train_triage.py`, `models/triage.joblib`, 206 KB). About 2 ms per message |
 | Red flags, extraction, matching | Team-written rules and lexicon (`app/data/lexicon.yaml`), Python, FastAPI |
 | Fuzzy spelling match | RapidFuzz (Levenshtein ratio) |
-| Voice / read-aloud | Browser Web Speech API (`hi-IN`, `en-IN`) and `speechSynthesis`; the Android app (Flutter, `mobile/`) uses the phone's speech services |
+| Voice / read-aloud | Browser Web Speech API (`hi-IN`, `en-IN`) and `speechSynthesis`; the Android app (Flutter, `mobile/`) uses the phone's speech services (Google's engine when installed). Read-aloud speaks the API's Devanagari `trace.speech` and picks the most natural installed voice (neural/online first, old desktop voices last) |
 | External LLMs or paid APIs | None at runtime |
 
 **Why this model, and not a transformer or an LLM.** We tested two multilingual transformer

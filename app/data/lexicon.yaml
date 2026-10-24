@@ -643,6 +643,18 @@ red_flags:
       - mar jaane ka mann
       - mar jane ka man
       - marne ki ichha
+      # "mann karta hai mar jaun", "dil karta hai mar jaaun": the wish, not pain hyperbole
+      - mann karta hai mar
+      - man karta hai mar
+      - mann karta hai marna
+      - man karta hai marna
+      - dil karta hai mar
+      - jee karta hai mar
+      - ji karta hai mar
+      - marne ko jee
+      - marne ka dil
+      - mar jane ka dil
+      - mar jaane ka dil
       - marna chahta
       - marna chahti
       - want to die

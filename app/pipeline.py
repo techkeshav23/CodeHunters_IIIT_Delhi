@@ -230,6 +230,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     lex = ex_entries(ex)
     trace: dict[str, Any] = {"version": VERSION, "language": language, "mode": mode,
                              "understood": _understood(ex, language)}
+    sl = text.speech_lang(language)  # read-aloud text is Hindi or English (trace.speech)
 
     def emergency(flags: list[str], rule: str, source: str) -> TriageResponse:
         """Emergency path: skips matching, always shows call-for-help."""
@@ -248,6 +249,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "decision": _decision_trace("emergency", "immediate", d_em, language, source),
             "reasoning_local": why_local, "follow_up": None,
             "emergency": text.emergency_block(flags, language), "caregivers": [],
+            "speech": text.speech([text.EMERGENCY_TITLE[sl], *text.EMERGENCY_STEPS[sl][:2]], language),
         })
         return _finish(resp, trace, t0, explain)
 
@@ -281,6 +283,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "follow_up": {"id": q.id, "text": q.text, "kind": q.kind, "options": q.options,
                           "asked_so_far": len(asked) + 1, "max": config.MAX_FOLLOWUPS},
             "emergency": None, "caregivers": [],
+            "speech": text.speech([followup.question(qid, sl).text], language),
         })
         return _finish(resp, trace, t0, explain)
 
@@ -294,9 +297,11 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     matches = rank(care, urgency, ex, loc, specialty=d.specialty)
     why_en = text.reasoning(ex, care, urgency, breathing, "en") if ex.symptoms or ex.services else \
         "The problem was not clear; a doctor teleconsult today is the safe default."
-    why_local = text.reasoning(ex, care, urgency, breathing, language) if ex.symptoms or ex.services else \
-        {"en": why_en, "hinglish": "Taklif saaf nahi hui; aaj doctor se phone par baat karna sabse surakshit hai.",
-         "hi": "तकलीफ़ साफ़ नहीं हुई; आज डॉक्टर से फ़ोन पर बात करना सबसे सुरक्षित है।"}[text.lang_of(language)]
+    unclear = {"en": why_en, "hinglish": "Taklif saaf nahi hui; aaj doctor se phone par baat karna sabse surakshit hai.",
+               "hi": "तकलीफ़ साफ़ नहीं हुई; आज डॉक्टर से फ़ोन पर बात करना सबसे सुरक्षित है।"}
+    understood_any = bool(ex.symptoms or ex.services)
+    why_local = text.reasoning(ex, care, urgency, breathing, language) if understood_any else unclear[text.lang_of(language)]
+    why_said = text.reasoning(ex, care, urgency, breathing, sl) if understood_any else unclear[sl]
     resp = dict(
         follow_up_question=None, care_type=api_care(care), urgency=api_urgency(urgency), red_flags=[],
         reasoning=text.scrub(why_local if out_lang != "en" else why_en),
@@ -308,6 +313,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         "checks": _checks(ex, breathing, [], language), "red_flags": [],
         "decision": _decision_trace(care, urgency, d, language, source),
         "reasoning_local": text.scrub(why_local), "follow_up": None, "emergency": None,
+        "speech": text.speech([why_said], language),
         "caregivers": [{
             "caregiver_id": m.caregiver.id, "name": m.caregiver.name, "role": m.caregiver.role,
             "languages": m.caregiver.languages, "skills": m.caregiver.skills,

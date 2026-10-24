@@ -183,7 +183,7 @@ class AppState extends ChangeNotifier {
         added = EmergencyMsg(_nextId++, req, res, clean);
         history = [];
         if (usedVoice && autoRead) {
-          voice.speak('${res.trace.emergency?.titleLocal ?? ''}. ${t(lang, K.sosNow)}', voiceLang);
+          voice.speak(speechFor(res.trace.speech, '${res.trace.emergency?.titleLocal ?? ''}. ${t(lang, K.sosNow)}', voiceLang));
         }
       } else if (res.questionText != null) {
         final q = res.questionText!;
@@ -193,11 +193,11 @@ class AppState extends ChangeNotifier {
           HistoryItem(role: 'user', content: clean),
           HistoryItem(role: 'assistant', content: q, questionId: res.trace.followUp?.id),
         ];
-        if (usedVoice && autoRead) voice.speak(q, voiceLang);
+        if (usedVoice && autoRead) voice.speak(speechFor(res.trace.speech, q, voiceLang));
       } else {
         added = DecisionMsg(_nextId++, req, res);
         history = [];
-        if (usedVoice && autoRead) voice.speak(decisionSummary(res), voiceLang);
+        if (usedVoice && autoRead) voice.speak(speechFor(res.trace.speech, decisionSummary(res), voiceLang));
       }
     } catch (_) {
       // Never fabricate a result: show the error with a retry button.
