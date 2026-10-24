@@ -1,0 +1,63 @@
+name: carecompass
+description: "CareCompass: care triage and caregiver matching (thin Android client)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+# Versions are pinned exactly; they resolve with Flutter 3.41.9 / Dart 3.11.5.
+dependencies:
+  flutter:
+    sdk: flutter
+  http: 1.6.0
+  shared_preferences: 2.5.6
+  url_launcher: 6.3.3
+  speech_to_text: 7.4.0
+  flutter_tts: 4.2.5
+  lucide_icons_flutter: 4.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Fonts are the same files the web app ships (fontsource, OFL), converted
+  # from WOFF to TTF so the app needs no network to look right.
+  fonts:
+    - family: AnekLatin
+      fonts:
+        - asset: assets/fonts/AnekLatin-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/AnekLatin-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AnekLatin-ExtraBold.ttf
+          weight: 800
+    - family: AnekDevanagari
+      fonts:
+        - asset: assets/fonts/AnekDevanagari-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/AnekDevanagari-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AnekDevanagari-ExtraBold.ttf
+          weight: 800
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
+    - family: NotoSansDevanagari
+      fonts:
+        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansDevanagari-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
+          weight: 700

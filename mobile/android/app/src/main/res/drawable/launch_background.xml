@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch screen: chuna background with the compass mark, until Flutter draws. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/cc_bg" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/splash_mark" />
+    </item>
+</layer-list>
