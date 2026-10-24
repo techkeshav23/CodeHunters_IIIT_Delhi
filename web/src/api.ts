@@ -16,8 +16,9 @@ import nurseMock from "./mocks/triage_nurse.json";
 import specialistMock from "./mocks/triage_specialist.json";
 import bookingMock from "./mocks/booking.json";
 
-export const API_BASE: string =
-  (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8000";
+// "same-origin": the site's own server proxies /v1 and /health to the API (production)
+const RAW_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8000";
+export const API_BASE: string = RAW_BASE === "same-origin" ? "" : RAW_BASE;
 
 export const USE_MOCKS: boolean =
   (import.meta.env.VITE_USE_MOCKS as string | undefined) === "1";
