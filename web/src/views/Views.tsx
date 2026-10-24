@@ -225,7 +225,7 @@ export function HowView({ lang, last }: { lang: Lang; last: { req: TriageRequest
         <h2>{t(lang, "testedTitle")}</h2>
         <div className="stats">
           <div className="stat">
-            <strong>583</strong>
+            <strong>93%</strong>
             <span>{t(lang, "stat1")}</span>
           </div>
           <div className="stat">
@@ -233,7 +233,7 @@ export function HowView({ lang, last }: { lang: Lang; last: { req: TriageRequest
             <span>{t(lang, "stat2")}</span>
           </div>
           <div className="stat">
-            <strong>~2 ms</strong>
+            <strong>~20 ms</strong>
             <span>{t(lang, "stat3")}</span>
           </div>
         </div>

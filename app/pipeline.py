@@ -214,6 +214,10 @@ def _model_emergency(so: StudentOutput, ex: Extraction) -> bool:
     if so.says_emergency:
         return True
     sure = so.top_care == "emergency" and so.care.get("emergency", 0.0) >= MODEL_SURE_EMERGENCY
+    if sure and "fever" in ex.symptom_ids() and ex.age_years is None:
+        # "beti ko bukhar hai": the model reads a child's fever as a baby's; the age decides
+        # (under 3 months is an emergency in the rules), so it is asked instead
+        return False
     return sure and not ex.negated_flags
 
 
@@ -281,7 +285,7 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     p_care = so.care.get("gp" if care == "specialist" else care, 0.0)
     qid = None
     if interactive:
-        if (so.care.get("emergency", 0.0) >= 0.5 and "q_danger" not in asked
+        if (so.care.get("emergency", 0.0) >= 0.5 and "q_danger" not in asked and "age" not in needs
                 and len(asked) < config.MAX_FOLLOWUPS):
             # the model senses danger but no red flag is named: ask about danger signs first
             # (a "Haan" goes to the emergency path) rather than calling 112 on the model alone

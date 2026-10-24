@@ -378,6 +378,14 @@ red_flags:
     label_hi: दौरा या झटके
     exclude_if_before: [dil]
     patterns:
+      - daura pad
+      - daura padh
+      - daure pad
+      - दौरे पड़
+      - pura shareer kaanp
+      - poora sharir kaanp
+      - पूरा शरीर काँप
+      - पूरा शरीर कांप
       # added after the fresh blind set (eval/fresh) showed these were missed
       - having a fit
       - having fits

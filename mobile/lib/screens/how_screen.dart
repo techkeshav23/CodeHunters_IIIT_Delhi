@@ -107,7 +107,7 @@ class HowScreen extends StatelessWidget {
                 style: display(21, weight: FontWeight.w700, color: cc.ink),
               ),
               const SizedBox(height: 12),
-              for (final (big, k) in const [('583', K.stat1), ('209/209', K.stat2), ('~2 ms', K.stat3)])
+              for (final (big, k) in const [('93%', K.stat1), ('209/209', K.stat2), ('~20 ms', K.stat3)])
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 10),

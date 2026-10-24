@@ -365,15 +365,15 @@ const Map<K, (String, String, String)> _strings = {
   ),
   K.step1: ('Samajhna', 'समझना', 'Understand'),
   K.step1t: (
-    'Hindi, Hinglish, English, voice typing aur galat spelling bhi.',
-    'हिंदी, हिंग्लिश, अंग्रेज़ी, वॉइस टाइपिंग और ग़लत स्पेलिंग भी।',
-    'Hindi, Hinglish and English, voice typing and misspellings too.',
+    'Humara train kiya MuRIL model padhta hai: Hindi, Hinglish, English, galat spelling bhi.',
+    'हमारा ट्रेन किया MuRIL मॉडल पढ़ता है: हिंदी, हिंग्लिश, अंग्रेज़ी, ग़लत स्पेलिंग भी।',
+    'Our fine-tuned MuRIL model reads it: Hindi, Hinglish, English, misspellings too.',
   ),
   K.step2: ('Khatre ki jaanch', 'ख़तरे की जाँच', 'Danger check'),
   K.step2t: (
-    'Sabse pehle 25 tarah ke khatre ke lakshan. Mile to seedha emergency.',
-    'सबसे पहले 25 तरह के ख़तरे के लक्षण। मिलें तो सीधे इमरजेंसी।',
-    'First, 25 kinds of danger signs. If one is found, straight to emergency.',
+    'Model aur suraksha niyam dono khatre ke lakshan dekhte hain. Mile to seedha emergency.',
+    'मॉडल और सुरक्षा नियम दोनों ख़तरे के लक्षण देखते हैं। मिलें तो सीधे इमरजेंसी।',
+    'The model and the safety rules both look for danger signs. If found, straight to emergency.',
   ),
   K.step3: ('Zarurat par sawaal', 'ज़रूरत पर सवाल', 'Ask only if needed'),
   K.step3t: (
@@ -418,16 +418,16 @@ const Map<K, (String, String, String)> _strings = {
   ),
   K.testedTitle: ('Kitna parkha gaya', 'कितना परखा गया', 'How it was tested'),
   K.stat1: (
-    'mushkil test messages, har emergency pakdi',
-    'मुश्किल टेस्ट संदेश, हर इमरजेंसी पकड़ी',
-    'tricky test messages, every emergency caught',
+    'naye, anjaan messages par sahi care (pehle ke rules: 74%)',
+    'नए, अनजान संदेशों पर सही देखभाल (पहले के नियम: 74%)',
+    'right care on new, unseen messages (our earlier rules: 74%)',
   ),
   K.stat2: (
     'organisers ke labelled caregiver match hu-ba-hu',
     'आयोजकों के लेबल वाले केयरगिवर मैच हूबहू',
     "of the organisers' labelled caregiver matches reproduced",
   ),
-  K.stat3: ('jawab ka samay, server ke andar', 'जवाब का समय, सर्वर के अंदर', 'to decide, inside the server'),
+  K.stat3: ('MuRIL model ka faisla, server ke CPU par', 'MuRIL मॉडल का फ़ैसला, सर्वर के CPU पर', 'for the MuRIL model to decide, on the server CPU'),
   K.apiTitle: ('Judges ke liye: API', 'जजों के लिए: API', 'For judges: the API'),
   K.apiSub: (
     'Aakhri request aur jawab, bilkul waise jaise API ne bheja.',

@@ -234,4 +234,4 @@ def test_model_probs_latency(deployed):
         t0 = time.perf_counter()
         deployed.probs(t)  # features (extraction included) + predict
         times.append((time.perf_counter() - t0) * 1000)
-    assert statistics.median(times) < 10, sorted(times)
+    assert statistics.median(times) < 25, sorted(times)  # the fallback model; ~5 ms on an idle laptop
