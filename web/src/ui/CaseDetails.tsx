@@ -1,7 +1,7 @@
 import { Check, CircleHelp, TriangleAlert } from "lucide-react";
 import type { Lang, TriageResponse } from "../types";
 import { t } from "../i18n";
-import { fmtDays, modelClassKey, titleCase, topModelClass } from "../lib";
+import { decisionModelClass, fmtDays, modelClassKey, titleCase } from "../lib";
 
 // "What we understood / what we checked / why": shown in the desktop side panel
 // and inline under a decision on smaller screens.
@@ -16,8 +16,8 @@ export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: 
   const dur = fmtDays(u.duration_days, lang);
   if (dur) chips.push(dur);
   const checks = tr.checks ?? [];
-  // the learned model's top class, only when the model is loaded
-  const top = topModelClass(tr.model);
+  // the learned model's support for the decision shown, only when the model is loaded
+  const top = decisionModelClass(res);
   const topKey = top ? modelClassKey(top.cls) : null;
 
   return (

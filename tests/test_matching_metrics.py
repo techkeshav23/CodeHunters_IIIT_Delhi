@@ -41,7 +41,7 @@ def test_next_free_formats():
     assert next_free(["today 09:00", "tomorrow 10:00"], REF).day == 25
     assert next_free(["daily 09:00-20:00"], REF) == REF
     assert next_free(["2026-10-24T15:30:00+05:30"], REF).minute == 30
-    assert next_free(["today 09:00-15:00"], REF) == REF  # the roster's window, already open
+    assert next_free(["daily 09:00-15:00"], REF) == REF  # the roster's window, already open
 
 
 def test_home_visit_nearest_same_language_first():
@@ -186,7 +186,7 @@ def test_loader_reads_the_organisers_roster(tmp_path):
     c = rows["CG_002"]
     assert (c.role, c.lat, c.lng, c.radius_km, c.area) == ("medic", 28.4704, 77.5004, 5.0, "Greater Noida")
     assert c.languages == ["Hindi", "English", "Punjabi"] and "injection_im" in c.skills
-    assert (c.free_from, c.free_until, c.window, c.slots) == ("09:00", "15:00", "09:00–15:00", ["today 09:00-15:00"])
+    assert (c.free_from, c.free_until, c.window, c.slots) == ("09:00", "15:00", "09:00–15:00", ["daily 09:00-15:00"])
     assert (c.tier, c.qualification, c.experience_years, c.gender, c.rating) == ("base", "B.Sc Nursing", 9.0, "male", 4.2)
     assert not rows["CG_007"].active and rows["CG_001"].tier is None
     p = tmp_path / "roster.csv"

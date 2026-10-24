@@ -425,7 +425,7 @@ const Map<K, (String, String, String)> _strings = {
   K.stat2: (
     'organisers ke labelled caregiver match hu-ba-hu',
     'आयोजकों के लेबल वाले केयरगिवर मैच हूबहू',
-    'of the organisers' labelled caregiver matches reproduced',
+    "of the organisers' labelled caregiver matches reproduced",
   ),
   K.stat3: ('jawab ka samay, server ke andar', 'जवाब का समय, सर्वर के अंदर', 'to decide, inside the server'),
   K.apiTitle: ('Judges ke liye: API', 'जजों के लिए: API', 'For judges: the API'),

@@ -126,6 +126,22 @@ export function topModelClass(model: ModelOutput | null | undefined): { cls: str
   return { cls: best.cls, pct: Math.round(best.p <= 1 ? best.p * 100 : best.p) };
 }
 
+// The model's probability for the class that was actually decided (care type, or
+// "followup" when a question was asked), so the line backs up what the user sees
+// instead of naming a different class. Falls back to the top class.
+const MODEL_CLASS: Record<CareKind, string> = {
+  paramedic: "paramedic", nurse: "nurse", lab: "lab", doctor: "gp", emergency: "emergency",
+};
+export function decisionModelClass(res: TriageResponse): { cls: string; pct: number } | null {
+  const probs = res.trace?.model?.probabilities;
+  if (!probs || typeof probs !== "object") return null;
+  const kind = careKind(res.care_type);
+  const cls = res.follow_up_question ? "followup" : kind ? MODEL_CLASS[kind] : null;
+  const p = cls != null ? probs[cls] : undefined;
+  if (typeof p === "number" && Number.isFinite(p)) return { cls: cls as string, pct: Math.round(p <= 1 ? p * 100 : p) };
+  return topModelClass(res.trace?.model);
+}
+
 export function fmtDays(days: number | null, lang: Lang): string | null {
   if (days == null) return null;
   const d = Math.round(days);

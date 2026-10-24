@@ -142,11 +142,12 @@ def normalise(d: dict, index: int = 0) -> Caregiver:
     elif isinstance(slots, dict):  # {"start": ..., "end": ...}
         slots = [slots]
     slots = [json.dumps(s) if isinstance(s, dict) else str(s) for s in (slots or [])]
-    # the organisers' roster: one window today (free_from / free_until, 24h IST)
+    # the organisers' roster: one working window (free_from / free_until, 24h IST), taken as
+    # daily so a booking after today's window gets tomorrow's start, not an empty slot
     free_from = _clock(_first(d, "free_from", "available_from", "shift_start", "start_time", "from_time"))
     free_until = _clock(_first(d, "free_until", "available_until", "free_to", "shift_end", "end_time", "to_time"))
     if free_from and not slots:
-        slots = [f"today {free_from}-{free_until}" if free_until else f"today {free_from}"]
+        slots = [f"daily {free_from}-{free_until}" if free_until else f"daily {free_from}"]
     gender = str(_first(d, "gender", "sex", default="")).strip().lower()
     radius = _float(_first(d, "max_radius_km", "radius_km", "service_radius_km", "max_radius", "radius"))
     return Caregiver(

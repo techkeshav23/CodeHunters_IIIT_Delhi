@@ -412,7 +412,8 @@ class _DecisionCardState extends State<DecisionCard> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  tm(lang, M.modelConfidence, {'p': (res.trace.modelTopProbability! * 100).round()}),
+                                  tm(lang, M.modelConfidence,
+                                      {'p': ((res.trace.modelSupportFor(res.careType) ?? 0) * 100).round()}),
                                   style: body(13, weight: FontWeight.w600, color: cc.ink3),
                                 ),
                               ),

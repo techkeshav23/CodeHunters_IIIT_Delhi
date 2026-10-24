@@ -442,6 +442,27 @@ class Trace {
   /// Highest model probability (0-1), or null when no model output came back.
   double? get modelTopProbability =>
       modelProbabilities.isEmpty ? null : modelProbabilities.values.reduce((a, b) => a > b ? a : b);
+
+  /// The model's probability for the class that was decided (care type, or "followup"),
+  /// so the line backs up what the user sees; falls back to the top probability.
+  double? modelSupportFor(String? careType, {bool followUp = false}) {
+    if (modelProbabilities.isEmpty) return null;
+    final c = (careType ?? '').toLowerCase();
+    final cls = followUp
+        ? 'followup'
+        : c.startsWith('emergency')
+            ? 'emergency'
+            : c.contains('lab')
+                ? 'lab'
+                : c.contains('nurs')
+                    ? 'nurse'
+                    : c.contains('paramedic')
+                        ? 'paramedic'
+                        : (c.contains('teleconsult') || c.contains('specialist') || c == 'gp')
+                            ? 'gp'
+                            : null;
+    return (cls != null ? modelProbabilities[cls] : null) ?? modelTopProbability;
+  }
   factory Trace.fromJson(Map<String, Object?> j) {
     final fu = j['follow_up'];
     final em = j['emergency'];
