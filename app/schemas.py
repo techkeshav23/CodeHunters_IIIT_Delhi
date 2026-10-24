@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Location(BaseModel):
@@ -12,16 +12,24 @@ class Location(BaseModel):
     lng: float = Field(ge=-180, le=180)
 
 
+MAX_INPUT_CHARS = 4000
+
+
 class TriageRequest(BaseModel):
     # Extra fields are tolerated so an early client of the final schema still works.
     model_config = ConfigDict(extra="allow")
 
-    user_input: str = Field(default="", max_length=4000)
+    user_input: str = ""  # a very long message is cut to MAX_INPUT_CHARS, not refused
     language: str = "auto"
     location: Location | None = None
     # Format not fixed yet: we accept strings, {"role", "content"},
     # {"question", "answer"} and similar dicts (see pipeline.read_history).
     conversation_history: list[str | dict[str, Any]] = Field(default_factory=list)
+
+    @field_validator("user_input", mode="before")
+    @classmethod
+    def _cut(cls, v):
+        return v[:MAX_INPUT_CHARS] if isinstance(v, str) else v
 
 
 class MatchedCaregiver(BaseModel):

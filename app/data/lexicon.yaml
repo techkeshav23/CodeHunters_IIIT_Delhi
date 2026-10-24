@@ -144,6 +144,26 @@ red_flags:
     label_hinglish: Saans lene mein dikkat
     label_hi: सांस लेने में दिक्कत
     patterns:
+      # missed in the 25 Oct sweep (the live lexicon missed them too)
+      - saans ukhad
+      - "=isn't breathing"
+      - "=isnt breathing"
+      - "=stopped breathing"
+      - "=has stopped breathing"
+      - saans nahi chal
+      - sans nahi chal
+      - साँस नहीं चल
+      - सांस नहीं चल
+      - "=baby is blue"
+      - "=baby turned blue"
+      - "=face turned blue"
+      - "=lips turned blue"
+      - sans ukhad
+      - साँस उखड़
+      - सांस उखड़
+      - "=saans bahut dheemi"
+      - "=साँस बहुत धीमी"
+      - "=सांस बहुत धीमी"
       - saans nahi aa
       - saans nahi le
       - saans nahi ho
@@ -352,6 +372,20 @@ red_flags:
       # added after the fresh blind set (eval/fresh) showed these were missed
       - not waking up
       - wont wake up
+      - "=she collapsed"
+      - "=collapsed and isnt"
+      - "=collapsed and isn't"
+      - "=collapsed and is not"
+      - "=he collapsed"
+      - "=suddenly collapsed"
+      - "=she won't wake up"
+      - "=he won't wake up"
+      - "=baby won't wake up"
+      - "=won't wake up at all"
+      - "=can't wake her"
+      - "=can't wake him"
+      - "=cannot wake her"
+      - "=cannot wake him"
       - behosh
       - hosh nahi
       - hosh mein nahi
@@ -549,6 +583,15 @@ red_flags:
     label_hinglish: Zeher, chemical ya zyada dawai kha li
     label_hi: ज़हर, केमिकल या ज़्यादा दवाई खा ली
     patterns:
+      # missed by the lexicon on 25 Oct; written exact (=) so look-alikes ("don't want to live in Delhi") stay quiet
+      - "=chuhe marne ki dawa kha"
+      - "=chuhe marne ki dawai kha"
+      - "=ate rat poison"
+      - "=drank rat poison"
+      - "=rat poison kha liya"
+      - "=rat poison kha li"
+      - "=rat poison pi"
+      - "=चूहे मारने की दवा खा"
       # added after the fresh blind set (eval/fresh) showed these were missed
       - phenyl pi
       - phenyl pee
@@ -613,6 +656,8 @@ red_flags:
     label_hinglish: Saanp ya bichhu ne kaata
     label_hi: सांप या बिच्छू ने काटा
     patterns:
+      # missed by the lexicon on 25 Oct; written exact (=) so look-alikes ("don't want to live in Delhi") stay quiet
+      - "=bitten by a snake"
       - saanp kaat
       - kaat saanp
       - bichhu kaat
@@ -627,6 +672,11 @@ red_flags:
     label_hi: गंभीर जलना या करंट लगना
     exclude_if_before: [nishan, nishaan, daag, scar, mark, marks]   # "burn ka nishan kala ho gaya": an old scar
     patterns:
+      # missed by the lexicon on 25 Oct; written exact (=) so look-alikes ("don't want to live in Delhi") stay quiet
+      - "=buri tarah jal"
+      - "=badly burned"
+      - "=badly burnt"
+      - "=बुरी तरह जल"
       - current laga
       - current lag
       - bijli jhatka
@@ -645,12 +695,13 @@ red_flags:
       - करंट लगा
     conditional:
       - group: burn
-        patterns: [jal gaya, jal gayi, jal gaye, jhulas, burn, burns, burnt, burned, scald]
+        patterns: [jal gaya, jal gayi, jal gaye, jhulas, burn, burns, burnt, burned, scald, boiling water, khaulta paani]
         requires: [severe, infant, child, pair]
       # a large area or large blisters
       - group: area
         patterns: [bade chhale, bade bade chhale, big blisters, large blisters, pura haath, poora haath, pura pair,
-                   whole arm, whole hand, whole leg, kai jagah, bahut jagah]
+                   whole arm, whole hand, whole leg, kai jagah, bahut jagah, chamdi utar, khaal utar, skin peeling,
+                   skin is peeling, skin came off, चमड़ी उतर, खाल उतर]
         requires: [pair]
         pair_with: [burn]
       # a deep burn: the skin has gone black or charred after a burn, hot oil or boiling water
@@ -675,6 +726,38 @@ red_flags:
     # "dawai ka course khatam karne ka plan", "kaam khatam karna": finishing something
     exclude_if_before: [course, kaam, project, padhai, syllabus, series, chapter]
     patterns:
+      # missed by the lexicon on 25 Oct; written exact (=) so look-alikes ("don't want to live in Delhi") stay quiet
+      - khud ko khatam
+      - khud ko khatm
+      - apne aap ko khatam
+      - खुद को खत्म
+      - ख़ुद को ख़त्म
+      - अपने आप को खत्म
+      - "=khud ko maar"
+      - "=खुद को मार"
+      - "=don't want to live anymore"
+      - "=dont want to live anymore"
+      - "=do not want to live anymore"
+      - "=don't want to live any more"
+      - "=don't want to be alive"
+      - "=dont want to be alive"
+      - "=ending my life"
+      - "=end my own life"
+      - "=nobody will miss me"
+      - "=miss me if i die"
+      - "=ab jeena nahi"
+      - "=mujhe jeena nahi hai"
+      - "=jeena nahi chahta"
+      - "=jeena nahi chahti"
+      - "=zindagi khatam karna chahta"
+      - "=zindagi khatam karna chahti"
+      - "=apni zindagi khatam kar"
+      - "=अब जीना नहीं"
+      - "=मुझे जीना नहीं है"
+      - "=जीना नहीं चाहता"
+      - "=जीना नहीं चाहती"
+      - "=ज़िंदगी ख़त्म कर"
+      - "=जिंदगी खत्म कर"
       # added after the fresh blind set (eval/fresh) showed these were missed
       - no point in living
       - end it tonight
@@ -1316,6 +1399,7 @@ services:
     label: Injection at home
     label_hinglish: Ghar pe injection
     label_hi: घर पर इंजेक्शन
+    exclude_if_after: [molding, moulding, mould, mold, machine]   # not a care request (25 Oct sweep)
     patterns: [injection, sui, insulin, इंजेक्शन]
     care: nurse
     skill: injection
@@ -1323,6 +1407,7 @@ services:
     label: Drip at home
     label_hinglish: Ghar pe drip
     label_hi: घर पर ड्रिप
+    exclude_if_after: [irrigation, coffee, system]   # not a care request (25 Oct sweep)
     patterns: [drip, iv, glucose chadh, bottle chadh, ड्रिप]
     care: nurse
     skill: iv
@@ -1330,6 +1415,7 @@ services:
     label: Wound dressing
     label_hinglish: Patti / dressing
     label_hi: पट्टी / ड्रेसिंग
+    exclude_if_after: [sense, style, table, room, gown]   # not a care request (25 Oct sweep)
     patterns: [dressing, patti, wound care, ghaav saaf, पट्टी]
     care: nurse
     skill: wound care
@@ -1380,6 +1466,8 @@ services:
     label: Lab test at home
     label_hinglish: Ghar se sample / lab test
     label_hi: घर से सैंपल / लैब टेस्ट
+    exclude_if_before: [unit, cricket, driving]
+    exclude_if_after: [match, series, cricket, paper, drive, case, cases, failed, pass]   # not a care request (25 Oct sweep)
     patterns: [blood test, khoon ki jaanch, khoon jaanch, sample, lab test, test karwana, cbc, thyroid, full body,
                sugar test, home collection, sample collection, test ghar, सैंपल, टेस्ट]
     care: lab

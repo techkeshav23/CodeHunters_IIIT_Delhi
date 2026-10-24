@@ -28,7 +28,7 @@ WHO = ["self", "adult", "elderly", "child", "infant", "pregnant", "unknown"]
 THRESHOLDS = {"emergency": 0.3, "flag": 0.5, "tag": 0.5, "band_high": 0.85, "band_low": 0.6}
 LOC = {"lat": 28.54, "lng": 77.27}
 GUARDS = {"safety_net", "model_emergency", "vulnerable_floor", "urgency_floor", "low_confidence", "out_of_scope",
-          "llm_fallback", "clinical_scope", "invariants", "fever_home_visit"}
+          "llm_fallback", "clinical_scope", "invariants", "fever_home_visit", "not_understood"}
 
 
 def output(care: str = "paramedic", p: float = 0.95, urgency: str | dict = "same_day", flags=(), tags=(),
@@ -305,6 +305,56 @@ def test_conversational_unclear_then_default(client, no_student):
          turn("q_danger")]
     r = post(client, "Nahi", h, policy="conversational")
     assert (r["care_type"], r["urgency"]) == ("teleconsultation", "same_day")  # safe default
+
+
+def test_nonsense_is_not_guessed(client, student):
+    # a mentor's test: "अब्बा डब्बा जब्बा", then "दो जमा दो" read as home nursing with high confidence
+    student(output("nurse", 0.95))
+    r = post(client, "अब्बा डब्बा जब्बा", policy="conversational")
+    assert r["trace"]["follow_up"]["id"] == "q_main_symptom"
+    assert r["follow_up_question"].startswith("माफ़ कीजिए, मैं समझ नहीं पाया")
+    h = [{"role": "user", "content": "अब्बा डब्बा जब्बा"},
+         {"role": "assistant", "content": r["follow_up_question"], "question_id": "q_main_symptom"}]
+    r = post(client, "दो जमा दो", h, policy="conversational")
+    assert r["follow_up_question"].startswith("माफ़ कीजिए, अभी भी समझ नहीं आया")  # asks again, with an example
+    h += [{"role": "user", "content": "दो जमा दो"},
+          {"role": "assistant", "content": r["follow_up_question"], "question_id": "q_main_symptom"},
+          {"role": "user", "content": "राधे राधे"},
+          {"role": "assistant", "content": r["follow_up_question"], "question_id": "q_main_symptom"}]
+    r = post(client, "चाय ले लो चाय", h, policy="conversational")
+    assert (r["care_type"], r["urgency"]) == ("teleconsultation", "same_day")  # after 3: the safe default, not nursing
+    assert r["trace"]["decision"]["source"] == "rules" and guards(r)["not_understood"] == "fired"
+
+
+def test_words_the_lists_do_not_know_go_to_claude(client, student, monkeypatch):
+    # "muscle me kheench" names nothing the word lists know: Claude decides when it is on
+    monkeypatch.setattr("app.pipeline.llm_fallback.ask", lambda t, h=None: opinion("paramedic", "same_day"))
+    student(output("emergency", 0.98))  # the care head over-reads unfamiliar words
+    r = post(client, "kandhe ki muscle me kheench lag gayi kal gym me", policy="conversational")
+    assert r["care_type"] != "emergency_112" and r["trace"]["decision"]["source"] == "llm"
+    assert "samajh nahi" not in (r["follow_up_question"] or "")  # Claude understood: the usual checks follow
+    r = post(client, "kandhe ki muscle me kheench lag gayi kal gym me")  # the API default decides
+    assert (r["care_type"], r["trace"]["decision"]["source"]) == ("paramedic_home_visit", "llm")
+
+
+def test_words_the_lists_do_not_know_without_claude(client, student):
+    # Claude off: the model's 112 stands as before (a missed emergency costs more than a false one);
+    # a decision it would make on words naming nothing is asked about instead
+    student(output("emergency", 0.98))
+    assert post(client, "the cat sat on the mat", policy="conversational")["care_type"] == "emergency_112"
+    student(output("nurse", 0.95))
+    r = post(client, "the cat sat on the mat", policy="conversational")
+    assert r["care_type"] is None and r["follow_up_question"].startswith("Sorry, I could not understand")
+
+
+def test_claude_checks_a_model_emergency_with_no_medical_words(client, student, monkeypatch):
+    monkeypatch.setattr("app.pipeline.llm_fallback.ask", lambda t, h=None: opinion(None, None))
+    student(output("emergency", 0.98))
+    r = post(client, "the baby elephant at the zoo is cute", policy="conversational")
+    assert r["care_type"] is None and r["trace"]["decision"]["source"] == "llm"
+    # a danger sign the lexicon names is never sent to Claude and never removed
+    r = post(client, "my father isn't breathing", policy="conversational")
+    assert r["care_type"] == "emergency_112" and "breathing_difficulty" in r["trace"]["red_flags"][0]["id"]
 
 
 def test_question_limit(client, student):

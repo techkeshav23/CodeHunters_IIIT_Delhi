@@ -290,6 +290,15 @@ GUARDRAILS: dict[str, dict[str, dict[str, str]]] = {
                   "hinglish": "Model pakka nahi tha, isliye surakshit raasta liya.",
                   "hi": "मॉडल पक्का नहीं था, इसलिए सुरक्षित रास्ता लिया।"},
     },
+    "not_understood": {
+        "label": {"en": "Words understood", "hinglish": "Baat samjhi gayi", "hi": "बात समझी गई"},
+        "pass": {"en": "The words name a symptom, a service or a danger sign we know.",
+                 "hinglish": "Shabdon mein koi pehchani taklif, service ya khatre ka lakshan hai.",
+                 "hi": "शब्दों में कोई पहचानी तकलीफ़, सेवा या ख़तरे का लक्षण है।"},
+        "fired": {"en": "Nothing medical was recognised in the words, so the model's guess was not trusted.",
+                  "hinglish": "Shabdon mein kuch medical samajh nahi aaya, isliye model ke andaaze par bharosa nahi kiya.",
+                  "hi": "शब्दों में कुछ मेडिकल समझ नहीं आया, इसलिए मॉडल के अंदाज़े पर भरोसा नहीं किया।"},
+    },
     "out_of_scope": {
         "label": {"en": "Home health care only", "hinglish": "Sirf ghar pe health care", "hi": "सिर्फ़ घर पर स्वास्थ्य देखभाल"},
         "pass": {"en": "This is a health care request.", "hinglish": "Yeh health care ki baat hai.",

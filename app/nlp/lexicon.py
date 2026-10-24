@@ -137,6 +137,7 @@ class Entry:
     patterns: list[Pattern]
     meta: dict = field(default_factory=dict)
     exclude_if_before: frozenset[str] = frozenset()
+    exclude_if_after: frozenset[str] = frozenset()   # "test match", "injection molding": not care
 
     def label_for(self, language: str) -> str:
         return {"hi": self.label_hi, "hinglish": self.label_hinglish}.get(language, self.label)
@@ -227,13 +228,15 @@ class Lexicon:
             pats += [p for p in (self._pattern(str(t), req, group, pair_with, within)
                                  for t in cond.get("patterns") or []) if p]
         meta = {k: v for k, v in item.items() if k not in {"id", "label", "label_hinglish", "label_hi",
-                                                            "patterns", "conditional", "exclude_if_before"}}
+                                                            "patterns", "conditional", "exclude_if_before",
+                                                            "exclude_if_after"}}
         excl = frozenset(self._canon_plain(phon(str(w))) for w in item.get("exclude_if_before") or [])
+        excl_after = frozenset(self._canon_plain(phon(str(w))) for w in item.get("exclude_if_after") or [])
         label = item.get("label") or item["id"].replace("_", " ")
         return Entry(id=item["id"], kind=kind, label=label,
                      label_hinglish=item.get("label_hinglish") or label,
                      label_hi=item.get("label_hi") or item.get("label_hinglish") or label,
-                     patterns=pats, meta=meta, exclude_if_before=excl)
+                     patterns=pats, meta=meta, exclude_if_before=excl, exclude_if_after=excl_after)
 
     # ---- canonicalising input --------------------------------------------
     @lru_cache(maxsize=20000)
@@ -421,6 +424,8 @@ class Lexicon:
                 if end is None:
                     continue
                 if entry.exclude_if_before and any(t in entry.exclude_if_before for t in tokens[max(0, i - 2):i]):
+                    continue
+                if entry.exclude_if_after and any(t in entry.exclude_if_after for t in tokens[end:end + 2]):
                     continue
                 negated = False if (pat.has_negation or kind in ("modifier", "relation")) else self._negated(tokens, i, end)
                 hits.append(Hit(entry=entry, start=i, end=end, pattern=pat, negated=negated,

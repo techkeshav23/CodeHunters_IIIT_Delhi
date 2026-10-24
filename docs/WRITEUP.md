@@ -34,6 +34,14 @@ CPU in about 20 ms.
 - Fever goes to an in-person check.
 - When the model is unsure, Claude gives a second opinion. It can choose the care type or
   raise an emergency, never remove one.
+- A softmax model is confident even on words it never saw. Its emergency class gives 97% to "my
+  stomach is upset" and to "the cat sat on the mat". So when the words name nothing the danger and
+  symptom lists know, the model's pick goes to Claude for a second opinion. In the app, when nothing
+  is recognised at all (no symptom, service, danger sign, person, age, duration or request, as in
+  "अब्बा डब्बा जब्बा"), it says it did not understand, up to three times, then offers a doctor call.
+  Without Claude, the model's 112 still stands: a missed emergency costs more than a false one.
+- The model is shown the main-problem question in its training wording. The app's longer
+  text names nursing and lab tests, and in testing that pulled answers towards home nursing.
 - Every response lists which guardrails fired (`trace.guardrails`).
 
 **Smart intake questions.** The app asks at most three questions, the danger-sign question

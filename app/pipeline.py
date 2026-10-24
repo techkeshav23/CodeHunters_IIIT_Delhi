@@ -206,6 +206,38 @@ def _is_service(ex: Extraction, care: str | None) -> bool:
     return care in ("nurse", "lab") or (bool(ex.services) and not ex.symptoms)
 
 
+def _health_words(ex: Extraction) -> bool:
+    """The words name something medical the lexicon knows: a symptom, a service, a pregnancy or
+    a danger sign (said, denied or settled)."""
+    return bool(ex.symptoms or ex.services or ex.red_flags or ex.negated_flags or ex.settled_flags
+                or ex.negated_symptoms or ex.pregnant)
+
+
+# asking for help, a greeting or a booking: understood, though the problem is not named yet
+ASKING_WORDS = ("help madad मदद doctor डॉक्टर nurse नर्स hospital book बुक appointment checkup dawai "
+                "दवाई ilaj इलाज tabiyat तबीयत beemar बीमार problem dikkat दिक्कत taklif तकलीफ़ sick unwell hello hi "
+                "hey namaste नमस्ते anyone feeling feel")
+_asking: set[str] = set()
+
+# the main-problem question as the model saw it in training (scripts/train_student.py, ASK)
+MODEL_MAIN_QUESTION = {
+    "hinglish": "Zaroor madad karenge. Kiske liye hai, aur kya takleef ya zaroorat hai?",
+    "hi": "ज़रूर मदद करेंगे। किसके लिए है, और क्या तकलीफ़ या ज़रूरत है?",
+    "en": "Happy to help. Who is this for, and what is the problem or service you need?",
+}
+
+
+def _said_anything(ex: Extraction) -> bool:
+    """Anything the word lists understand: medical words, someone other than the writer, an age,
+    a duration, or a request for help. "अब्बा डब्बा जब्बा" is not, and neither is "my stomach is
+    upset" (its words are not in the lists), so in the app those go to Claude or get a question."""
+    if _health_words(ex) or ex.relation not in (None, "self") or ex.age_years is not None or ex.duration_days is not None:
+        return True
+    if not _asking:
+        _asking.update(tok for w in ASKING_WORDS.split() for tok in extract(w).tokens)
+    return bool(set(ex.tokens) & _asking)
+
+
 MODEL_SURE_EMERGENCY = 0.97  # the care head alone calls 112 only when this sure (see docs/RESULTS_MODELS.md)
 
 
@@ -232,7 +264,21 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     """The decision when the fine-tuned model is loaded. `fired` collects the guardrails
     that changed or decided something."""
     # 1) emergency: the rules' red flags (the safety net) or the model
+    nothing_said = not _said_anything(ex)
     model_em = _model_emergency(so, ex)
+    opinion = None
+    if model_em and not rule_flags and not so.says_emergency and not _health_words(ex):
+        # the care head alone, on words that name nothing medical ("मेरी बिल्ली खो गई", "the baby
+        # elephant at the zoo"): a softmax is sure even of words it never saw, so check first
+        opinion = llm_fallback.ask(user_text, history)  # None when switched off or on any error
+        if opinion is not None:
+            fired.add("llm_fallback")
+            if opinion.says_emergency:
+                flags = [RED_FLAG_INTERNAL.get(f, f) for f in opinion.red_flags] or ["possible_emergency"]
+                return Route(Decision("emergency", "immediate", 1.0, "llm_emergency"), "llm", emergency=flags,
+                             flag_source={f: "llm" for f in flags}, llm=opinion)
+            model_em = False
+        # without Claude the model's 112 stands, as before: a missed emergency costs more than a false one
     if rule_flags or model_em:
         flags = list(rule_flags)
         source_of = {f: "rules" for f in rule_flags}
@@ -256,10 +302,17 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     care = max(probs, key=probs.get)
     source, rule, llm_urgency = "model", f"model_{care}", None
     ask_unsure = False
-    opinion = None
-    if so.band == "low":
-        fired.add("low_confidence")
-        opinion = llm_fallback.ask(user_text, history)  # None when switched off or on any error
+    # a softmax is sure even of words it never saw ("दो जमा दो" read as nursing): a pick from words
+    # that name nothing medical gets a second opinion, and when nothing at all was understood the
+    # app asks instead of guessing
+    app_chat = interactive and policy == "conversational"
+    no_medical = care in CARE_KEYS and not _health_words(ex)
+    unknown_words = care in CARE_KEYS and nothing_said
+    if so.band == "low" or no_medical or (nothing_said and interactive) or opinion is not None:
+        if so.band == "low":
+            fired.add("low_confidence")
+        if opinion is None:
+            opinion = llm_fallback.ask(user_text, history)  # None when switched off or on any error
         if opinion is not None:
             fired.add("llm_fallback")
             if opinion.says_emergency:  # Claude may add an emergency, never remove one
@@ -267,10 +320,15 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
                 return Route(Decision("emergency", "immediate", 1.0, "llm_emergency"), "llm", emergency=flags,
                              flag_source={f: "llm" for f in flags}, llm=opinion)
             care, source, rule, llm_urgency = opinion.care or FOLLOWUP, "llm", "llm", opinion.urgency
-        elif policy == "conversational" and interactive:
+        elif unknown_words and app_chat:
+            care = FOLLOWUP  # nothing understood: ask what is needed instead of guessing
             ask_unsure = True
-        elif d_rules.care:
+        elif so.band == "low" and app_chat:
+            ask_unsure = True
+        elif so.band == "low" and d_rules.care:
             care, source, rule = d_rules.care, "safety_net", d_rules.rule + "+model_unsure"
+        if nothing_said and (opinion is not None or app_chat):
+            fired.add("not_understood")
     if care == FOLLOWUP and so.band != "high" and d_rules.care and source == "model":
         # the model would ask, without much confidence, but the words already name a service or a
         # symptom the rules can route: decide instead of asking (fewer questions, same safety)
@@ -290,7 +348,13 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     p_care = so.care.get("gp" if care == "specialist" else care, 0.0)
     qid = None
     if interactive:
-        if (policy == "conversational" and so.care.get("emergency", 0.0) >= 0.5 and not followup.danger_asked(asked)
+        if nothing_said and care != OUT_OF_SCOPE and policy == "conversational" and (opinion is None or opinion.care is None):
+            # nothing understood: say so (up to the question limit), then the safe default; no
+            # danger or duration checks built on a guess
+            if len(asked) < config.MAX_FOLLOWUPS:
+                qid = "q_main_symptom"
+        elif (policy == "conversational" and so.care.get("emergency", 0.0) >= 0.5 and not followup.danger_asked(asked)
+                and opinion is None  # Claude has already weighed the danger
                 and "age" not in needs and len(asked) < config.MAX_FOLLOWUPS):
             # the model senses danger but no red flag is named: ask about danger signs first
             # (a "Haan" goes to the emergency path) rather than calling 112 on the model alone
@@ -513,10 +577,14 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     history = [(t.role, t.text) for t in turns[:-1]]
     if student is not None:
         try:
-            # Devanagari typed without spaces is cut into words first, as the lexicon does
+            # Devanagari typed without spaces is cut into words first, as the lexicon does; our
+            # main-problem question is shown to the model in its training wording (the app's
+            # longer text names nursing, injection and lab tests, which pulled answers to nursing)
             lexicon = get_lexicon()
+            seen = [(t.role, MODEL_MAIN_QUESTION[text.lang_of(language)] if t.question_id == "q_main_symptom" else t.text)
+                    for t in turns[:-1]]
             so = student.predict(lexicon.space_devanagari(req.user_input or ""),
-                                 [(role, lexicon.space_devanagari(t)) for role, t in history])
+                                 [(role, lexicon.space_devanagari(t)) for role, t in seen])
         except Exception:  # never take the API down because of the model
             log.exception("student prediction failed; using rules + the old model")
     if so is not None:
@@ -590,7 +658,9 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     if qid:
         main = ex.symptoms[0].entry if ex.symptoms else None  # names the complaint in "kitne din se?"
         topic = {"en": main.label, "hinglish": main.label_hinglish, "hi": main.label_hi} if main else None
-        q = followup.question(qid, language, topic)
+        unclear = qid == "q_main_symptom" and not _said_anything(ex)  # "अब्बा डब्बा जब्बा"
+        again = unclear and "q_main_symptom" in asked
+        q = followup.question(qid, language, topic, unclear, again)
         resp = dict(follow_up_question=q.text, care_type=None, urgency=None, red_flags=[],
                     reasoning=ASK_REASON[qid]["en" if out_lang == "en" else text.lang_of(language)],
                     matched_caregivers=[])
@@ -602,7 +672,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "follow_up": {"id": q.id, "text": q.text, "kind": q.kind, "options": q.options,
                           "asked_so_far": len(asked) + 1, "max": config.MAX_FOLLOWUPS},
             "emergency": None, "caregivers": [],
-            "speech": text.speech([followup.question(qid, sl, topic).text], language),
+            "speech": text.speech([followup.question(qid, sl, topic, unclear, again).text], language),
             "guardrails": text.guardrails(fired, language),
         })
         return _finish(resp, trace, t0, explain)
@@ -611,6 +681,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     if care is None:  # nothing understood and no more questions: safe default
         care, urgency = "gp", "same_day"
         d = Decision(care, urgency, 0.2, "fallback_unclear")
+        source = "rules"  # a fixed default, not the model's pick
 
     # 3) match caregivers
     loc = (req.location.lat, req.location.lng) if req.location else None

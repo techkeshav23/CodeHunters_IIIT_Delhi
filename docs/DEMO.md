@@ -115,6 +115,14 @@ emergency path you cannot miss."
   honest numbers: 83% on 12 whole case families the model never saw, and 0.966 care F1 on the
   organisers' rows before any error analysis. Training accuracy is 99.6%, so there is a gap on
   brand-new kinds of request; that is what the guardrails and the follow-up questions are for.
+- **"Type nonsense: why doesn't it say it did not understand?"** It does now. A classifier
+  always picks one of its classes, and it is confident even on words it never saw. So when the
+  words name nothing medical, Claude gives a second opinion. When nothing is recognised at all,
+  the app says "Maaf kijiye, main samajh nahi paaya..." up to three times, then offers a doctor
+  call. It never books a nurse on a guess. The "Suraksha jaanch" list shows this as "Baat samjhi
+  gayi". We tested 1,345 nonsense, off-topic and mixed chats this way.
+- **"New chat, incognito, history?"** In the Android app's top row: History (saved on the phone
+  only), Incognito (never saved, with a banner), and + Nayi chat.
 - **"Why not just call an LLM?"** Seconds per answer, health details sent outside, network
   needed during scoring. MuRIL answers in ~20 ms on the server's CPU; Claude is asked only when
   the model is unsure, and it can never remove an emergency.

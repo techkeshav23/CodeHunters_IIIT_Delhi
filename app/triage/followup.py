@@ -39,6 +39,24 @@ QUESTIONS: dict[str, dict] = {
             "hi": "ज़रूर मदद करेंगे। किसके लिए है, और क्या चाहिए: कोई तकलीफ़ जैसे बुखार या दर्द, "
                   "घर पर नर्सिंग (इंजेक्शन, ड्रेसिंग), लैब टेस्ट, या डॉक्टर से बात?",
         },
+        # when nothing in the words was understood ("अब्बा डब्बा जब्बा")
+        "text_unclear": {
+            "en": "Sorry, I could not understand that. What is the problem (for example fever, pain or an "
+                  "injury), or what is needed: a nurse at home, a lab test, or a doctor consult?",
+            "hinglish": "Maaf kijiye, main samajh nahi paaya. Kya taklif hai (jaise bukhar, dard ya chot), "
+                        "ya kya chahiye: ghar pe nurse, lab test, ya doctor se baat?",
+            "hi": "माफ़ कीजिए, मैं समझ नहीं पाया। क्या तकलीफ़ है (जैसे बुखार, दर्द या चोट), "
+                  "या क्या चाहिए: घर पर नर्स, लैब टेस्ट, या डॉक्टर से बात?",
+        },
+        # still not understood after that: ask for plain words, with an example
+        "text_unclear_again": {
+            "en": "Sorry, I still could not understand. Please write the problem in simple words, for example "
+                  "\"my father has fever\" or \"I need an injection at home\".",
+            "hinglish": "Maaf kijiye, abhi bhi samajh nahi aaya. Kripya taklif seedhe shabdon mein likhein, jaise "
+                        "\"papa ko bukhar hai\" ya \"ghar pe injection lagwana hai\".",
+            "hi": "माफ़ कीजिए, अभी भी समझ नहीं आया। कृपया तकलीफ़ सीधे शब्दों में लिखें, जैसे "
+                  "\"पापा को बुखार है\" या \"घर पर इंजेक्शन लगवाना है\"।",
+        },
         "options": [
             ("fever", {"en": "Fever", "hinglish": "Bukhar", "hi": "बुखार"}),
             ("pain", {"en": "Pain", "hinglish": "Dard", "hi": "दर्द"}),
@@ -312,12 +330,16 @@ class Question:
     options: list[dict]
 
 
-def question(qid: str, language: str, topic: dict[str, str] | None = None) -> Question:
+def question(qid: str, language: str, topic: dict[str, str] | None = None, unclear: bool = False,
+             again: bool = False) -> Question:
     """A bank question in one language. `topic` (the main complaint's label in each
-    language) makes the duration question name it: "Bukhar kitne din se hai?"."""
+    language) makes the duration question name it: "Bukhar kitne din se hai?". `unclear`:
+    nothing in the words was understood, so the main-problem question says so (`again`: a
+    second time, with an example)."""
     q = QUESTIONS[qid]
     lang = language if language in ("en", "hi", "hinglish") else "en"
-    text = q["text"][lang]
+    key = "text_unclear_again" if again else "text_unclear" if unclear else "text"
+    text = q[key][lang] if key in q else q["text"][lang]
     if topic and topic.get(lang):
         x = topic[lang]
         if qid == "q_duration":
@@ -366,7 +388,7 @@ def identify(text: str, question_id: str | None = None, keywords: bool = True) -
         return question_id
     norm = (text or "").strip().lower()
     for qid, q in QUESTIONS.items():
-        if any(norm == t.lower() for t in q["text"].values()):
+        if any(norm == t.lower() for key in ("text", "text_unclear", "text_unclear_again") for t in q.get(key, {}).values()):
             return qid
     if keywords and norm.endswith("?") and not OTHER_SUBJECT.search(norm):
         hits = [qid for qid, words in QUESTION_WORDS.items() if words.search(norm)]
