@@ -24,5 +24,7 @@ RUN npm run build
 FROM nginx:1.27-alpine AS serve
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+# a checkout made with a strict umask (e.g. 0007) would leave the icons unreadable to nginx (403)
+RUN chmod -R a+rX /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
