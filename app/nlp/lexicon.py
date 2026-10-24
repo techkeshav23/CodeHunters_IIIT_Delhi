@@ -25,7 +25,7 @@ MAX_SPAN_GAP = 6   # total words allowed between two pattern words
 FILLERS = {phon(w) for w in (
     "mein me ho raha rahi rahe hai hain tha thi the ka ki ke ko pe bhi bahut tez thoda sa si se hi to "
     "in my of a an is his her on at uske unke mere meri mera neeche upar daayein baayein dayi bayi "
-    "daahine taraf side right left hisse wale wali"
+    "daahine taraf side right left hisse wale wali bilkul"
 ).split()}
 NEG_WINDOW = 3     # words between "no" / "nahi" and the symptom
 LIST_WINDOW = 30   # how far back a negated list can start ("No A, B, C, D or E")
@@ -233,7 +233,8 @@ class Lexicon:
         index = self._first[kind]
         for i, tok in enumerate(tokens):
             for entry, pat in index.get(tok, ()):
-                end = self._match_from(tokens, i, pat.tokens)
+                # modifiers ("hosh mein hain", "ab theek") must not jump over a "nahi"
+                end = self._match_from(tokens, i, pat.tokens, strict=kind == "modifier")
                 if end is None:
                     continue
                 if entry.exclude_if_before and any(t in entry.exclude_if_before for t in tokens[max(0, i - 2):i]):
@@ -243,7 +244,7 @@ class Lexicon:
                                 evidence=" ".join(surface[i:end])))
         return hits
 
-    def _match_from(self, tokens: list[str], i: int, pat: tuple[str, ...]) -> int | None:
+    def _match_from(self, tokens: list[str], i: int, pat: tuple[str, ...], strict: bool = False) -> int | None:
         pos = i
         for k, want in enumerate(pat):
             if k == 0:
@@ -253,7 +254,7 @@ class Lexicon:
                 continue
             # next to a negation word only small words may sit in between:
             # "not feeding" must not match "not blue and is feeding"
-            max_gap = 0 if (want in self.negation_words or pat[k - 1] in self.negation_words) else MAX_GAP
+            max_gap = 0 if (strict or want in self.negation_words or pat[k - 1] in self.negation_words) else MAX_GAP
             found = None
             content = 0
             for j in range(pos, min(len(tokens), pos + MAX_SPAN_GAP + 1)):
@@ -277,11 +278,14 @@ class Lexicon:
         for k in range(start + 1, end - 1):
             if tokens[k] in self.neg_after and tokens[k - 1] not in self.not_after:
                 return True
-        # after: "dikkat nahi", "dard to nahi hai" (but not "dard kam nahi ho raha")
+        # after: "dikkat nahi", "dard to nahi hai" (but not "dard kam nahi ho raha"),
+        # and the fear form "stroke na ho" ("let it not be a stroke")
         for k in range(end, min(len(tokens), end + NEG_WINDOW)):
             t = tokens[k]
             if t in (BOUNDARY, COMMA) or t in self.breakers:
                 break
+            if t == "na" and k + 1 < len(tokens) and tokens[k + 1] in ("ho", "hua", "hoga", "hoye"):
+                return True
             if t in self.neg_after:
                 prev = tokens[k - 1] if k - 1 >= 0 else ""
                 if prev in self.not_after:
@@ -301,6 +305,9 @@ class Lexicon:
             if t in self.neg_before:
                 # "No, he has chest pain" is an answer, not a negated list
                 return not (in_list and k + 1 < len(tokens) and tokens[k + 1] == COMMA)
+            # "aisa kuch nahi ki khud ko nuksan ..." puts the negation before the symptom
+            if t in self.neg_after and k + 1 < len(tokens) and tokens[k + 1] in ("ki", "ke"):
+                return True
             item_len += 1
             if item_len >= (LIST_ITEM if in_list else NEG_WINDOW):
                 return False

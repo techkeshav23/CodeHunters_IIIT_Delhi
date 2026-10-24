@@ -92,13 +92,14 @@ episodic: [sometimes, kabhi kabhi, kabhi kabhar, occasionally, on and off, with 
 # Phrases saying the problem has settled. They only cancel flags marked `soft`;
 # chest pain, fainting and the like stay emergencies even if "ab theek hain".
 resolved: [ab theek, ab thik, ab sahi, aaram aa gaya, aaram mil gaya, theek ho gaya, theek ho gayi,
+           theek ho gaye, bilkul theek, hosh mein hain, hosh mein hai, chal pa rahe, chal pa rahi,
            feels better, feeling better, better now]
 
 modifiers:
   # checked within 3 words of the symptom, same sentence
   severe: [bahut tez, bahut zyada, bahut dard, tez dard, tez bukhar, severe, unbearable, asahniya, "bardasht nahi", extreme, worst, intense, "very bad", "very severe", sar phat]
   sudden: [achanak, ekdam, "ek dam se", "all of a sudden", "abhi abhi"]
-  mild: [halka, thoda, "thoda sa", mild, slight, "a bit", "little bit"]
+  mild: [halka, halki, halke, thoda, thodi, "thoda sa", mild, slight, "a bit", "little bit"]
 
 # Red flags. `patterns` always fire. `conditional` patterns fire only with
 # one of `requires`: severe, sudden, infant, child, older_adult, pregnant, fever.
@@ -204,6 +205,15 @@ red_flags:
       - muh ek taraf
       - munh ek taraf
       - chehra ek taraf
+      - muh latak
+      - munh latak
+      - chehra latak
+      - hont latak
+      - ek taraf latak
+      - ek taraf ka hissa
+      - hissa kaam karna band
+      - hissa kaam nahi
+      - ek taraf kaam nahi
       - ek taraf kamzori
       - ek side kamzori
       - ek taraf sunn
@@ -224,7 +234,7 @@ red_flags:
     conditional:
       - patterns: [bolne dikkat, bol nahi pa, speech problem, "can't speak", haath nahi uth, baazu nahi uth,
                    pair nahi uth, cannot lift, "can't lift", "can not lift", unable to lift,
-                   haath sunn, pair sunn, haath pair sunn, haath aur pair sunn, ladkhada]
+                   haath sunn, pair sunn, haath pair sunn, haath aur pair sunn, ladkhada, bolna band]
         requires: [sudden, older_adult]
   - id: unconscious
     label: Unconscious or not responding
@@ -603,11 +613,14 @@ red_flags:
       - aankh chemical
       - eye injury
   - id: severe_bp
-    # raised from numbers in the text (BP 180 or more), see extract.py
+    # also raised from numbers in the text (BP 180 or more), see extract.py
     label: Very high blood pressure
     label_hinglish: BP bahut zyada
     label_hi: बीपी बहुत ज़्यादा
-    patterns: []
+    conditional:
+      # "BP bahut high" with a bad headache, vomiting, blurred vision or chest pain
+      - patterns: [bp tez, bp bahut tez, bp badh, bp bahut badh, bp shoot]
+        requires: [bp_danger]
   - id: possible_emergency
     # raised by the learned model, not by a phrase
     label: Signs that need urgent care
@@ -984,7 +997,8 @@ services:
 relations:
   father: [papa, pitaji, pita, dad, father, abbu, babuji]
   mother: [mummy, mumma, mummi, maa, mother, mom, ammi, mataji]
-  grandparent: [dadi, dada, nani, nana, grandmother, grandfather, grandma, grandpa]
+  grandparent: [dadi, dada, nani, nana, dadaji, dadiji, nanaji, naniji, dadu, nanu, grandmother, grandfather,
+                grandma, grandpa]
   elderly: [bujurg, buzurg, elderly]
   child: [bachcha, beta, bete, beti, betiyan, son, daughter, ladka, ladke, ladki]
   infant: [navjaat, infant]

@@ -80,6 +80,12 @@ def decide(ex: Extraction) -> Decision:
         urgency = _bump(urgency, "same_day")
         rule += "+severe"
 
+    # chest pain or breathlessness that came and settled still needs someone to look today
+    if ex.settled_flags:
+        urgency = _bump(urgency, "same_day")
+        if care in ("gp", "specialist", "nurse"):
+            care = "paramedic"
+        rule += "+settled_" + "_".join(sorted(ex.settled_flags))
     # a child with fever whose age we do not know: a young baby would be an emergency
     if "fever" in ex.symptom_ids() and ex.age_years is None and ex.relation == "child":
         needs.append("age")

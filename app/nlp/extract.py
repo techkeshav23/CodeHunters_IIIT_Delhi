@@ -68,6 +68,7 @@ class Extraction:
     tokens: list[str]                     # canonical tokens
     red_flags: list[Hit] = field(default_factory=list)          # confirmed (not negated, conditions met)
     negated_flags: set[str] = field(default_factory=set)
+    settled_flags: set[str] = field(default_factory=set)       # happened earlier and has settled: same-day check
     symptoms: list[Hit] = field(default_factory=list)
     negated_symptoms: set[str] = field(default_factory=set)
     services: list[Hit] = field(default_factory=list)
@@ -154,6 +155,8 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
     return age, duration, preg_months
 
 
+RESOLVABLE = {"chest_pain", "breathing_difficulty", "major_injury"}
+_PAST_TENSE = {"tha", "thi", "the", "pehle", "was", "were", "had"}
 _NOT = {"not", "no", "na", "nahi", "never"}
 _MAYBE = {"could", "maybe", "might", "may", "shayad", "kya", "if", "agar", "whether", "possibly"}
 
@@ -264,6 +267,9 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
         context.add("diabetic")
     if any(tok in tb["heat"] for tok in tokens):
         context.add("heat")
+    if ("severe" in ex.severity or "vomiting" in ex.symptom_ids() or "dhundhla" in tokens
+            or "blurred" in tokens or "sina" in tokens):
+        context.add("bp_danger")
     for i, tok in enumerate(tokens):  # "BP 200 ho gaya"
         if tok == tb["bp"]:
             for j in range(i + 1, min(len(tokens), i + 4)):
@@ -300,6 +306,20 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
             continue
         if h.id not in [f.id for f in ex.red_flags]:
             ex.red_flags.append(h)
+    # "pehle seene mein dard laga tha ... gas thi ... ab bilkul theek": a past, settled episode of
+    # chest pain or breathlessness is a same-day check, not an emergency (fainting, stroke signs etc. stay)
+    if "resolved" in ex.severity:
+        keep = []
+        for h in ex.red_flags:
+            # WhatsApp text often has no punctuation, so look at the words around the symptom
+            around = set(tokens[max(0, h.start - 3):min(len(tokens), h.end + 6)])
+            now = any(m.start >= h.start - 3 and m.start < h.end + 3 for m in current)
+            settled = h.id in RESOLVABLE and around & _PAST_TENSE and not now
+            if settled:
+                ex.settled_flags.add(h.id)
+            else:
+                keep.append(h)
+        ex.red_flags = keep
     long_standing = ex.duration_days is not None and ex.duration_days >= 14
     worse_now = "severe" in ex.severity or "current" in ex.severity  # "this episode is different, now..."
     if long_standing and "episodic" in ex.severity and not worse_now:  # "sometimes breathless, for 3 months"

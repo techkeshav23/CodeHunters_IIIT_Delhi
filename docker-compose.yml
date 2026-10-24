@@ -1,6 +1,9 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      # host network for pip/npm downloads: avoids stalls on networks with a small MTU
+      network: host
     ports:
       - "8000:8000"
     environment:
@@ -12,6 +15,7 @@ services:
   web:
     build:
       context: ./web
+      network: host
       args:
         VITE_API_BASE: http://localhost:8000
     ports:
