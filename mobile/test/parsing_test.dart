@@ -158,7 +158,7 @@ void main() {
       expect(r.trace.modelTopProbability, closeTo(0.506, 1e-9));
       expect(r.careKind, CareKind.paramedic);
       expect(r.trace.caregivers, isNotEmpty);
-      expect(roleLabel(r.trace.caregivers.first.role, Lang.hinglish), 'Medic (nurse)');
+      expect(roleLabel(r.trace.caregivers.first.role, Lang.hinglish), 'Medic');
       expect(roleLabel('phlebotomist', Lang.en), 'Sample collector');
       expect(roleLabel('doctor', Lang.hi), 'डॉक्टर');
       // the older sample roster keeps the web app's labels

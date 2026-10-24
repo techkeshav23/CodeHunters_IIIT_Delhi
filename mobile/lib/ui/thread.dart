@@ -339,7 +339,7 @@ class _DecisionCardState extends State<DecisionCard> {
                   style: body(14, weight: FontWeight.w600, color: cc.ink3),
                 ),
                 const SizedBox(height: 4),
-                Text(care, style: dv(display(26, color: cc.ink, height: 1.12), care)),
+                Text(care, style: dv(display(22, color: cc.ink, height: 1.2), care)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,

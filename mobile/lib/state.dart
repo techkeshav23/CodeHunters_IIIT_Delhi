@@ -67,7 +67,7 @@ class AppState extends ChangeNotifier {
   Lang lang = Lang.hinglish;
   bool autoRead = true;
   bool largeText = false;
-  ThemePref theme = ThemePref.auto;
+  ThemePref theme = ThemePref.light; // light by default, as on the web
 
   // ---- navigation ----
   int tab = 0;
@@ -99,7 +99,7 @@ class AppState extends ChangeNotifier {
       lang = langFromCode(p.getString('cc_lang'));
       autoRead = p.getBool('cc_autoread') ?? true;
       largeText = p.getBool('cc_large') ?? false;
-      theme = ThemePref.values.asNameMap()[p.getString('cc_theme')] ?? ThemePref.auto;
+      theme = ThemePref.values.asNameMap()[p.getString('cc_theme')] ?? ThemePref.light;
       final raw = p.getString('cc_bookings');
       if (raw != null) {
         final list = jsonDecode(raw);

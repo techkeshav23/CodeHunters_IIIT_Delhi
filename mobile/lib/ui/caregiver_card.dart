@@ -60,8 +60,9 @@ class _CaregiverCardState extends State<CaregiverCard> {
         .where((e) => !(widget.tele && e.key == 'distance'))
         .toList();
 
-    final border = widget.best ? Color.lerp(cc.line, cc.haldi, 0.6)! : cc.line;
-    final bg = widget.best ? Color.lerp(cc.bg, cc.haldiSoft, 0.45)! : cc.bg;
+    // quiet cards; the best match gets a thin brand accent on its left edge
+    final border = widget.best ? Color.lerp(cc.line, cc.brand, 0.45)! : cc.line;
+    final bg = cc.surface;
 
     Widget fact(IconData icon, String text) => Row(
       mainAxisSize: MainAxisSize.min,
@@ -81,7 +82,8 @@ class _CaregiverCardState extends State<CaregiverCard> {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(rLg),
-        border: Border.all(color: border, width: widget.best ? 1.4 : 1),
+        border: Border.all(color: border, width: 1),
+        boxShadow: widget.best ? [BoxShadow(color: cc.brand, offset: const Offset(-3, 0))] : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -22,7 +22,7 @@ const Map<M, (String, String, String)> _m = {
   M.urgScheduled: ('Time fix karke', 'समय तय करके', 'Scheduled'),
   M.careLab: ('Ghar par sample / lab test', 'घर पर सैंपल / लैब टेस्ट', 'Home lab test'),
   M.roleLab: ('Lab technician', 'लैब टेक्नीशियन', 'Lab technician'),
-  M.roleMedic: ('Medic (nurse)', 'मेडिक (नर्स)', 'Medic (nurse)'),
+  M.roleMedic: ('Medic', 'मेडिक', 'Medic'),
   M.roleDoctor: ('Doctor', 'डॉक्टर', 'Doctor'),
   M.roleSampleCollector: ('Sample collector', 'सैंपल कलेक्टर', 'Sample collector'),
   M.modelConfidence: ('Model ka bharosa: {p}%', 'मॉडल का भरोसा: {p}%', 'Model confidence: {p}%'),

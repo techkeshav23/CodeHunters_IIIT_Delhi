@@ -203,7 +203,7 @@ class _StartView extends StatelessWidget {
           child: Text(
             hello,
             textAlign: TextAlign.center,
-            style: dv(display(29, color: cc.ink, height: 1.12), hello),
+            style: dv(display(26, color: cc.ink, height: 1.2), hello),
           ),
         ),
         const SizedBox(height: 26),
@@ -212,38 +212,29 @@ class _StartView extends StatelessWidget {
           child: Composer(controller: controller, focusNode: focusNode, onSend: onSend, hero: true),
         ),
         const SizedBox(height: 30),
-        label(K.quickPicks),
-        // 2-column grid of equal tiles (web start screen).
-        for (var r = 0; r < _picks.length; r += 2)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = r; i < r + 2; i++) ...[
-                    if (i > r) const SizedBox(width: 8),
-                    Expanded(
-                      child: i < _picks.length
-                          ? EntryAnimation(
-                              delay: Duration(milliseconds: 140 + 30 * i),
-                              offset: 8,
-                              child: _PickTile(
-                                icon: _picks[i].$1,
-                                label: t(lang, _picks[i].$2),
-                                onTap: () => onSeed(t(lang, _picks[i].$3)),
-                              ),
-                            )
-                          : const SizedBox(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 24),
-        label(K.tryExample),
+        Center(child: label(K.quickPicks)),
+        // small one-line pills, centred (web start screen)
         Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var i = 0; i < _picks.length; i++)
+              EntryAnimation(
+                delay: Duration(milliseconds: 140 + 30 * i),
+                offset: 8,
+                child: _PickTile(
+                  icon: _picks[i].$1,
+                  label: t(lang, _picks[i].$2),
+                  onTap: () => onSeed(t(lang, _picks[i].$3)),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Center(child: label(K.tryExample)),
+        Wrap(
+          alignment: WrapAlignment.center,
           spacing: 8,
           runSpacing: 8,
           children: [
@@ -274,28 +265,20 @@ class _PickTile extends StatelessWidget {
       child: Pressable(
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 58),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.fromLTRB(12, 9, 15, 9),
           decoration: BoxDecoration(
             color: cc.surface,
-            borderRadius: BorderRadius.circular(rLg),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(color: cc.line),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(color: cc.brandSoft, borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, size: 18, color: cc.brand2),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: body(15, weight: FontWeight.w600, color: cc.ink, height: 1.25),
-                ),
-              ),
+              Icon(icon, size: 17, color: cc.brand),
+              const SizedBox(width: 7),
+              // wraps to a second line only with large text on a narrow phone
+              Flexible(child: Text(label, style: body(14.5, weight: FontWeight.w600, color: cc.ink, height: 1.2))),
             ],
           ),
         ),
@@ -319,12 +302,13 @@ class _Example extends StatelessWidget {
       child: Pressable(
         onTap: onTap,
         child: CustomPaint(
-          painter: _DashedPill(color: Color.lerp(cc.line, cc.ink3, 0.4)!),
+          painter: _DashedPill(color: Colors.transparent),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
+            constraints: const BoxConstraints(minHeight: 40),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Text(text, style: body(14.5, color: cc.ink2, height: 1.3)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Text(text, textAlign: TextAlign.center,
+                  style: body(14.5, weight: FontWeight.w600, color: cc.brand, height: 1.3)),
             ),
           ),
         ),

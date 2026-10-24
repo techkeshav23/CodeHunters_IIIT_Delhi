@@ -49,23 +49,23 @@ class CC extends ThemeExtension<CC> {
   static const Color sosDeep = Color(0xFF9E1D12);
 
   static const light = CC(
-    bg: Color(0xFFEEF4F0),
+    bg: Color(0xFFF5F7F6),
     surface: Color(0xFFFFFFFF),
-    surface2: Color(0xFFE4EEE8),
-    surface3: Color(0xFFD5E5DC),
-    ink: Color(0xFF10302B),
-    ink2: Color(0xFF4A6660),
+    surface2: Color(0xFFF0F3F2),
+    surface3: Color(0xFFE3E9E6),
+    ink: Color(0xFF111C1A),
+    ink2: Color(0xFF47554F),
     // Web token is #6F8A84; darkened a step so small grey text passes WCAG AA
     // (4.5:1) on the chuna background and on surface-2.
-    ink3: Color(0xFF557069),
-    line: Color(0xFFCFDFD7),
-    brand: Color(0xFF0D5A50),
-    brand2: Color(0xFF0A463E),
+    ink3: Color(0xFF5E6C67),
+    line: Color(0xFFE1E7E4),
+    brand: Color(0xFF0C5C52),
+    brand2: Color(0xFF094A42),
     brandInk: Color(0xFFFFFFFF),
-    brandSoft: Color(0xFFD7EBE4),
+    brandSoft: Color(0xFFE8F3F0),
     haldi: Color(0xFFD99A06),
     haldiInk: Color(0xFF2D2100),
-    haldiSoft: Color(0xFFFBEFCC),
+    haldiSoft: Color(0xFFFDF3DA),
     sindoor: Color(0xFFC62A1C),
     sindoor2: Color(0xFF9E1D12),
     sindoorSoft: Color(0xFFFDE6E2),
@@ -73,10 +73,10 @@ class CC extends ThemeExtension<CC> {
     sos: sosFixed,
     focus: Color(0xFFE0A10A),
     shadow: [
-      BoxShadow(color: Color(0x0F10302B), blurRadius: 2, offset: Offset(0, 1)),
-      BoxShadow(color: Color(0x1210302B), blurRadius: 24, offset: Offset(0, 8)),
+      BoxShadow(color: Color(0x0A111C1A), blurRadius: 2, offset: Offset(0, 1)),
+      BoxShadow(color: Color(0x0A111C1A), blurRadius: 8, offset: Offset(0, 2)),
     ],
-    shadowLift: [BoxShadow(color: Color(0x2E10302B), blurRadius: 40, offset: Offset(0, 12))],
+    shadowLift: [BoxShadow(color: Color(0x1F111C1A), blurRadius: 30, offset: Offset(0, 10))],
   );
 
   static const dark = CC(
@@ -146,18 +146,17 @@ class CC extends ThemeExtension<CC> {
 }
 
 // Radii (web --r-*)
-const double rXl = 28, rLg = 20, rMd = 14, rSm = 10;
+const double rXl = 18, rLg = 14, rMd = 10, rSm = 8;
 
-// Font families. Latin text uses Anek Latin / Noto Sans; Devanagari glyphs
-// fall back to Anek Devanagari / Noto Sans Devanagari (bundled), so mixed
-// Hinglish + Hindi text renders in the brand faces.
-const String fDisplay = 'AnekLatin';
-const List<String> fDisplayFallback = ['AnekDevanagari', 'NotoSansDevanagari'];
+// One family throughout, as on the web: Noto Sans, with Noto Sans Devanagari for
+// Hindi glyphs (bundled), so mixed Hinglish + Hindi text stays clean and even.
+const String fDisplay = 'NotoSans';
+const List<String> fDisplayFallback = ['NotoSansDevanagari'];
 const String fBody = 'NotoSans';
 const List<String> fBodyFallback = ['NotoSansDevanagari'];
 
-/// Display (headline) text style: Anek, heavy, slightly tight.
-TextStyle display(double size, {FontWeight weight = FontWeight.w800, Color? color, double height = 1.15}) => TextStyle(
+/// Headline text style: Noto Sans bold, slightly tight.
+TextStyle display(double size, {FontWeight weight = FontWeight.w700, Color? color, double height = 1.2}) => TextStyle(
   fontFamily: fDisplay,
   fontFamilyFallback: fDisplayFallback,
   fontSize: size,
@@ -221,7 +220,7 @@ ThemeData buildTheme(Brightness b) {
   final baseText = ThemeData(brightness: b).textTheme.apply(fontFamily: fBody, bodyColor: cc.ink, displayColor: cc.ink);
   TextStyle? fb(TextStyle? s) => s?.copyWith(fontFamilyFallback: fBodyFallback);
   TextStyle? fd(TextStyle? s) =>
-      s?.copyWith(fontFamily: fDisplay, fontFamilyFallback: fDisplayFallback, fontWeight: FontWeight.w800);
+      s?.copyWith(fontFamily: fDisplay, fontFamilyFallback: fDisplayFallback, fontWeight: FontWeight.w700);
 
   final text = baseText.copyWith(
     displayLarge: fd(baseText.displayLarge),
@@ -270,20 +269,20 @@ ThemeData buildTheme(Brightness b) {
       style: FilledButton.styleFrom(
         backgroundColor: cc.brand,
         foregroundColor: cc.brandInk,
-        minimumSize: const Size(64, 52),
-        padding: const EdgeInsets.symmetric(horizontal: 22),
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
-        textStyle: body(16, weight: FontWeight.w700),
+        textStyle: body(15.5, weight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: cc.ink,
-        minimumSize: const Size(64, 52),
-        padding: const EdgeInsets.symmetric(horizontal: 22),
-        side: BorderSide(color: cc.line, width: 1.5),
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        side: BorderSide(color: cc.line, width: 1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
-        textStyle: body(16, weight: FontWeight.w700),
+        textStyle: body(15.5, weight: FontWeight.w600),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
