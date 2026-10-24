@@ -8,7 +8,8 @@ from dataclasses import dataclass
 
 from .translit import devanagari_ratio, transliterate
 
-BOUNDARY = "<b>"  # clause boundary token: . , ! ? ; and the Devanagari danda
+BOUNDARY = "<b>"  # sentence boundary: . ! ? ; : and the Devanagari danda
+COMMA = "<c>"     # comma: ends a phrase but keeps "No fever, cough, chest pain" one negated list
 
 _ZERO_WIDTH = dict.fromkeys(map(ord, "​‌‍﻿"), None)
 _TOKEN_RE = re.compile(r"[a-z]+|\d+(?:\.\d+)?|[.,!?;:\n]")
@@ -48,7 +49,7 @@ def phon(token: str) -> str:
     """Phonetic key so common spelling variants meet: bukhaar/bukhar,
     khaansi/khansi, seene/sine, saans/sans, zyada/jyada, ulty/ulti."""
     t = token.lower()
-    if not t or t == BOUNDARY or t.isdigit():
+    if not t or t in (BOUNDARY, COMMA) or t.isdigit():
         return t
     for a, b in _PHON_REPLACE:
         t = t.replace(a, b)
@@ -76,9 +77,12 @@ def tokens_and_surface(text: str) -> tuple[list[str], list[str]]:
     surface: list[str] = []
     for tok in _TOKEN_RE.findall(roman):
         if tok in ".,!?;:\n":
-            if keys and keys[-1] != BOUNDARY:
-                keys.append(BOUNDARY)
+            mark = COMMA if tok == "," else BOUNDARY
+            if keys and keys[-1] not in (BOUNDARY, COMMA):
+                keys.append(mark)
                 surface.append(tok.strip() or ".")
+            elif keys and mark == BOUNDARY:
+                keys[-1], surface[-1] = BOUNDARY, tok.strip() or "."
             continue
         keys.append(phon(tok))
         surface.append(tok)

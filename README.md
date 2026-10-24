@@ -90,6 +90,24 @@ look-alikes). They are for testing only, not training, and their care/urgency
 labels are the team's own, not doctors'. The test suite fails if any emergency
 in that file is missed.
 
+Blind sets: `redteam_blind_v1.jsonl` (95) and `redteam_blind_v2.jsonl` (85) were
+written by a second team member without seeing the lexicon. Their first runs
+caught 75% and 39% of emergencies; every miss was fixed and both are now part
+of the safety tests, so they are regression sets rather than blind ones.
+
+External check on public data: [CARE-Bench](https://huggingface.co/datasets/ningkko/CARE-Bench)
+(Wu et al. 2026, arXiv 2608.03731; English, 925 labelled patient-message prefixes; no licence
+stated, so it is used for evaluation only and not included in this repo):
+
+```bash
+.venv\Scripts\python -m scripts.external_carebench data\external\care_bench\evaluation_prefixes_public.jsonl
+```
+
+On 24 Oct 2026: 87.8% of CARE-Bench "urgent care" cases were sent to same-day or
+immediate care, and 13.7% of non-urgent cases were over-triaged to emergency.
+CARE-Bench labels (info needed, self-care, non-urgent, urgent) differ from ours,
+so this is a safety check, not a routing score.
+
 Predictions file for the hidden test set:
 
 ```bash

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 from .lexicon import Hit, Lexicon, Pattern, get_lexicon
-from .normalize import BOUNDARY, Text, analyse, tokenize
+from .normalize import BOUNDARY, COMMA, Text, analyse, tokenize
 
 # Natural spellings; turned into canonical tokens once (see _tables).
 _NUMBER_WORDS = {
@@ -154,6 +154,35 @@ def _ages_and_durations(tokens: list[str], lex: Lexicon) -> tuple[float | None, 
     return age, duration, preg_months
 
 
+_NOT = {"not", "no", "na", "nahi", "never"}
+_MAYBE = {"could", "maybe", "might", "may", "shayad", "kya", "if", "agar", "whether", "possibly"}
+
+
+def _pregnant_now(tokens: list[str]) -> bool:
+    """A plain "pregnant" mention, not "I am not pregnant" or "could she be pregnant?"."""
+    for i, tok in enumerate(tokens):
+        if tok != "pregnant" and not (tok == "garbh" or tuple(tokens[i:i + 3]) in {("pet", "se", "hai"), ("pet", "se", "hain")}):
+            continue
+        before = set(tokens[max(0, i - 3):i])
+        after = tokens[i + 1:i + 3]
+        if before & _NOT or "nahi" in after:
+            continue
+        if before & _MAYBE or tuple(after) in {("ho", "sakti"), ("ho", "sakta")}:
+            continue
+        return True
+    return False
+
+
+def _clause_ids(tokens: list[str]) -> list[int]:
+    """Clause number for each token; commas and sentence ends start a new clause."""
+    out, n = [], 0
+    for t in tokens:
+        if t in (BOUNDARY, COMMA):
+            n += 1
+        out.append(n)
+    return out
+
+
 def age_group_for(age_years: float | None) -> str | None:
     if age_years is None:
         return None
@@ -199,7 +228,7 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
     if ex.age_years is not None:
         ex.age_group = age_group_for(ex.age_years)
 
-    ex.pregnant = True if preg_months or any(_contains(tokens, p) for p in _tables()["pregnant"]) else None
+    ex.pregnant = True if preg_months or _pregnant_now(tokens) else None
 
     # modifiers, kept with positions so "severe" applies only near a symptom
     mod_hits = lex.find(tokens, t.surface, "modifier")
@@ -246,6 +275,10 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
                     break
             if ex.red_flags:
                 break
+    clause = _clause_ids(tokens)
+    past = [m for m in mod_hits if m.id == "past"]
+    current = [m for m in mod_hits if m.id == "current"]
+    mild = [m for m in mod_hits if m.id == "mild"]
     for h in lex.find(tokens, t.surface, "red_flag"):
         if h.negated:
             ex.negated_flags.add(h.id)
@@ -258,10 +291,19 @@ def extract(text: str, language_hint: str = "auto", lex: Lexicon | None = None,
                     ok = ok or lex.near([m for m in mod_hits if m.id == r], tokens, h.start, h.end)
                 else:
                     ok = ok or r in context
-            if not ok:
+            # "mild lower abdominal pain" in pregnancy is not an emergency by itself
+            if not ok or lex.near(mild, tokens, h.start, h.end):
                 continue
+        # "seizure disorder years ago", "pichle saal heart attack hua tha"
+        same = clause[h.start]
+        if any(clause[m.start] == same for m in past) and not any(clause[m.start] == same for m in current):
+            continue
         if h.id not in [f.id for f in ex.red_flags]:
             ex.red_flags.append(h)
+    long_standing = ex.duration_days is not None and ex.duration_days >= 14
+    worse_now = "severe" in ex.severity or "current" in ex.severity  # "this episode is different, now..."
+    if long_standing and "episodic" in ex.severity and not worse_now:  # "sometimes breathless, for 3 months"
+        ex.red_flags = [h for h in ex.red_flags if h.id not in ("breathing_difficulty", "chest_pain")]
     if "resolved" in ex.severity:  # "biscuit kha liya, ab theek": drop only the soft flags
         ex.red_flags = [h for h in ex.red_flags if not h.entry.meta.get("soft")]
     ex.negated_flags -= {f.id for f in ex.red_flags}

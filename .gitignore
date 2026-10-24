@@ -12,6 +12,8 @@ web/.env.local
 # Organiser data and local outputs
 data/provided/*
 !data/provided/.gitkeep
+# public datasets used only for evaluation (licences not stated, so not redistributed)
+data/external/
 eval/out/
 models/*.joblib
 

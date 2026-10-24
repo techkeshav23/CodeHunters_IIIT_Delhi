@@ -16,7 +16,7 @@ import yaml
 from rapidfuzz import fuzz, process
 
 from ..config import DATA_DIR
-from .normalize import BOUNDARY, phon, tokenize
+from .normalize import BOUNDARY, COMMA, phon, tokenize
 
 MAX_GAP = 2        # content words allowed between two pattern words
 MAX_SPAN_GAP = 6   # total words allowed between two pattern words
@@ -27,7 +27,9 @@ FILLERS = {phon(w) for w in (
     "in my of a an is his her on at uske unke mere meri mera neeche upar daayein baayein dayi bayi "
     "daahine taraf side right left hisse wale wali"
 ).split()}
-NEG_WINDOW = 3
+NEG_WINDOW = 3     # words between "no" / "nahi" and the symptom
+LIST_WINDOW = 30   # how far back a negated list can start ("No A, B, C, D or E")
+LIST_ITEM = 6      # longest item inside such a list
 MOD_WINDOW = 3
 FUZZY_MIN_LEN = 5
 FUZZY_CUTOFF = 86
@@ -102,8 +104,9 @@ class Lexicon:
             self.entries["modifier"].append(self._entry({"id": mod_id, "patterns": words}, "modifier"))
         for rel_id, words in (data.get("relations") or {}).items():
             self.entries["relation"].append(self._entry({"id": rel_id, "patterns": words}, "relation"))
-        self.entries["modifier"].append(self._entry({"id": "resolved", "patterns": data.get("resolved") or []},
-                                                    "modifier"))
+        for mod_id in ("resolved", "past", "current", "episodic"):
+            self.entries["modifier"].append(self._entry({"id": mod_id, "patterns": data.get(mod_id) or []},
+                                                        "modifier"))
 
         self.by_id = {e.id: e for kind in self.entries.values() for e in kind}
         self.vocab = {t for kind in self.entries.values() for e in kind for p in e.patterns for t in p.tokens}
@@ -121,7 +124,7 @@ class Lexicon:
         return self.alias.get(tok, tok)
 
     def _pattern(self, text: str, requires: tuple[str, ...] = ()) -> Pattern | None:
-        toks = tuple(self._canon_plain(t) for t in tokenize(text) if t != BOUNDARY)
+        toks = tuple(self._canon_plain(t) for t in tokenize(text) if t not in (BOUNDARY, COMMA))
         if not toks:
             return None
         has_neg = any(t in {"nahi", "not", "no", "na", "without", "t"} for t in toks)
@@ -144,7 +147,7 @@ class Lexicon:
     # ---- canonicalising input --------------------------------------------
     @lru_cache(maxsize=20000)
     def canon(self, tok: str) -> str:
-        if tok == BOUNDARY or tok.isdigit():
+        if tok in (BOUNDARY, COMMA) or tok.isdigit():
             return tok
         c = self.alias.get(tok, tok)
         if c in self.vocab or c in self.negation_words or len(c) < FUZZY_MIN_LEN:
@@ -171,7 +174,7 @@ class Lexicon:
     def _seg_words(self) -> set[str]:
         if not hasattr(self, "_seg_cache"):
             words = set(self.vocab) | set(self.alias) | FILLERS | {phon(w) for w in self._COMMON}
-            self._seg_cache = {w for w in words if w and not w.isdigit() and w != BOUNDARY}
+            self._seg_cache = {w for w in words if w and not w.isdigit() and w not in (BOUNDARY, COMMA)}
         return self._seg_cache
 
     def _segment(self, word: str) -> list[str] | None:
@@ -240,8 +243,7 @@ class Lexicon:
                                 evidence=" ".join(surface[i:end])))
         return hits
 
-    @staticmethod
-    def _match_from(tokens: list[str], i: int, pat: tuple[str, ...]) -> int | None:
+    def _match_from(self, tokens: list[str], i: int, pat: tuple[str, ...]) -> int | None:
         pos = i
         for k, want in enumerate(pat):
             if k == 0:
@@ -249,18 +251,21 @@ class Lexicon:
                     return None
                 pos += 1
                 continue
+            # next to a negation word only small words may sit in between:
+            # "not feeding" must not match "not blue and is feeding"
+            max_gap = 0 if (want in self.negation_words or pat[k - 1] in self.negation_words) else MAX_GAP
             found = None
             content = 0
             for j in range(pos, min(len(tokens), pos + MAX_SPAN_GAP + 1)):
                 t = tokens[j]
-                if t == BOUNDARY:
+                if t in (BOUNDARY, COMMA):
                     break
                 if t == want:
                     found = j
                     break
                 if t not in FILLERS:
                     content += 1
-                    if content > MAX_GAP:
+                    if content > max_gap:
                         break
             if found is None:
                 return None
@@ -275,20 +280,30 @@ class Lexicon:
         # after: "dikkat nahi", "dard to nahi hai" (but not "dard kam nahi ho raha")
         for k in range(end, min(len(tokens), end + NEG_WINDOW)):
             t = tokens[k]
-            if t == BOUNDARY or t in self.breakers:
+            if t in (BOUNDARY, COMMA) or t in self.breakers:
                 break
             if t in self.neg_after:
                 prev = tokens[k - 1] if k - 1 >= 0 else ""
                 if prev in self.not_after:
                     return False
                 return True
-        # before: "no chest pain", "bina bukhar ke"
-        for k in range(start - 1, max(-1, start - 1 - NEG_WINDOW), -1):
+        # before: "no chest pain", "bina bukhar ke", and lists such as
+        # "No weakness, numbness, slurred speech, chest pain or trouble breathing"
+        in_list = False
+        item_len = 0
+        for k in range(start - 1, max(-1, start - 1 - LIST_WINDOW), -1):
             t = tokens[k]
             if t == BOUNDARY or t in self.breakers:
-                break
+                return False
+            if t == COMMA:
+                in_list, item_len = True, 0
+                continue
             if t in self.neg_before:
-                return True
+                # "No, he has chest pain" is an answer, not a negated list
+                return not (in_list and k + 1 < len(tokens) and tokens[k + 1] == COMMA)
+            item_len += 1
+            if item_len >= (LIST_ITEM if in_list else NEG_WINDOW):
+                return False
         return False
 
     def near(self, hits: list[Hit], tokens: list[str], start: int, end: int) -> bool:

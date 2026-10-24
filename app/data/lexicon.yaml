@@ -77,6 +77,18 @@ negation:
   # "bardasht nahi", "bukhar utar nahi raha", "khoon ruk nahi raha".
   not_after: [bardasht, ruk, rukta, kam, theek, thik, ja, jaa, utar, utarta, band, sudhar, aaram, rahat, chain, so, sakte]
 
+# Phrases placing a symptom in the past ("seizure disorder years ago", "pichle saal heart
+# attack hua tha"). A red flag in the same phrase is not counted unless the phrase also
+# says it is happening now (ab, abhi, now, again, phir se).
+past: [years ago, year ago, months ago, last year, pichle saal, saal pehle, saal purana, history of,
+       in the past, used to, had a history]
+current: [ab, abhi, now, again, phir se, dobara, today, aaj, this episode, is different, alag tarah]
+
+# Long-standing, on-and-off breathlessness or chest discomfort ("sometimes, for 3 months")
+# is a same-day problem, not an emergency.
+episodic: [sometimes, kabhi kabhi, kabhi kabhar, occasionally, on and off, with activity, do activity,
+           when i exercise, exercise ke time, seedhi chadhne, climbing stairs, when i lie down]
+
 # Phrases saying the problem has settled. They only cancel flags marked `soft`;
 # chest pain, fainting and the like stay emergencies even if "ab theek hain".
 resolved: [ab theek, ab thik, ab sahi, aaram aa gaya, aaram mil gaya, theek ho gaya, theek ho gayi,
@@ -292,7 +304,6 @@ red_flags:
       - uth nahi pa
       - haddi toot
       - haddi bahar
-      - fracture
       - gehra ghaav
       - deep cut
       - chaku
@@ -308,6 +319,8 @@ red_flags:
       # any fall in an older adult goes to emergency (hip fracture, head injury risk)
       - patterns: [gir gaye, gir gayi, gir gaya, gir pade, gir padi, fell, fall]
         requires: [older_adult]
+      - patterns: [fracture]   # in English "fracture" is mostly history; acute only with these
+        requires: [severe, sudden, older_adult]
   - id: severe_allergy
     label: Swelling of face, lips or tongue
     label_hinglish: Chehre, honth ya jeebh par sujan
@@ -733,9 +746,18 @@ symptoms:
     label: Dizziness
     label_hinglish: Chakkar
     label_hi: चक्कर
-    patterns: [chakkar, चक्कर]
+    patterns: [chakkar, lightheaded, light headed, sar halka, चक्कर]
     acute: [paramedic, same_day]
     chronic: [gp, routine]
+  - id: jaundice
+    label: Yellow eyes or skin
+    label_hinglish: Aankhen ya skin peeli (piliya)
+    label_hi: आँखें या त्वचा पीली (पीलिया)
+    patterns: [yellow eyes, yellow skin, aankh peeli, peeli aankh, piliya, peeliya, jaundice, dark urine,
+               peshab peela gehra, पीलिया]
+    acute: [paramedic, same_day]
+    chronic: [specialist, routine]
+    specialty: gastroenterology
   - id: urinary
     label: Burning or frequent urine
     label_hinglish: Peshab mein jalan
@@ -803,7 +825,8 @@ symptoms:
     label: Fast heartbeat
     label_hinglish: Dhadkan tez
     label_hi: धड़कन तेज़
-    patterns: [dhadkan tez, dhadkan, palpitation, palpitations, ghabrahat, धड़कन]
+    patterns: [dhadkan tez, dhadkan, palpitation, palpitations, ghabrahat, heart pounding, heart racing,
+               heart is racing, dil tez dhadak, dil zor se, धड़कन]
     acute: [paramedic, same_day]
     chronic: [specialist, routine]
     specialty: cardiology

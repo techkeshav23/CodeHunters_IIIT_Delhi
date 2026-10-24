@@ -22,7 +22,22 @@ def test_phonetic_keys_merge_spellings():
 
 
 def test_tokenize_marks_sentence_boundaries():
-    assert "<b>" in tokenize("seene mein dard nahi hai, saans phool rahi hai")
+    assert "<c>" in tokenize("seene mein dard nahi hai, saans phool rahi hai")
+    assert "<b>" in tokenize("seene mein dard nahi hai. saans phool rahi hai")
+
+
+def test_negated_list_and_interjection():
+    assert flags("I do not have face drooping, speech trouble, leg weakness, chest pain, or trouble walking") == set()
+    assert "chest_pain" in flags("No, he has chest pain")
+
+
+def test_past_history_is_not_current():
+    assert flags("Pichle saal heart attack hua tha, ab follow-up karna hai") == set()
+    assert "chest_pain" in flags("Pichle saal heart attack hua tha aur ab phir se seene mein dard hai")
+
+
+def test_not_pregnant_is_not_pregnancy():
+    assert flags("I am not pregnant and have lower abdominal pain") == set()
 
 
 @pytest.mark.parametrize("text, lang", [
