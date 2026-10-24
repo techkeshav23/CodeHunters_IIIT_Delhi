@@ -12,6 +12,8 @@ import type {
 import emergencyMock from "./mocks/triage_emergency.json";
 import finalMock from "./mocks/triage_final.json";
 import followupMock from "./mocks/triage_followup.json";
+import nurseMock from "./mocks/triage_nurse.json";
+import specialistMock from "./mocks/triage_specialist.json";
 import bookingMock from "./mocks/booking.json";
 
 export const API_BASE: string =
@@ -73,6 +75,20 @@ const SYMPTOM_WORDS = [
   "चोट",
 ];
 
+// Route a couple of care types in mock mode so the demo can show nurse and
+// specialist (new care_type values: `nurse`, `specialist`) without the backend.
+const NURSE_WORDS = ["injection", "insulin", "inject", "इंजेक्शन", "tanke", "dressing", "drip"];
+const SPECIALIST_WORDS = [
+  "ghutne",
+  "ghutno",
+  "knee",
+  "joint",
+  "ortho",
+  "specialist",
+  "घुटने",
+  "jodo",
+];
+
 function hasAny(text: string, words: string[]): boolean {
   const low = text.toLowerCase();
   return words.some((w) => low.includes(w));
@@ -91,6 +107,14 @@ function pickMockTriage(req: TriageRequest): TriageResponse {
   // Emergency always wins, even mid-conversation.
   if (hasAny(req.user_input, EMERGENCY_WORDS)) {
     return emergencyMock.response as TriageResponse;
+  }
+
+  // Direct-care requests (no follow-up): nurse for injections, specialist for joints.
+  if (hasAny(req.user_input, NURSE_WORDS)) {
+    return nurseMock.response as TriageResponse;
+  }
+  if (hasAny(req.user_input, SPECIALIST_WORDS)) {
+    return specialistMock.response as TriageResponse;
   }
 
   // The follow-up path is chosen by the FIRST message being vague (no known
@@ -133,10 +157,11 @@ export async function triage(req: TriageRequest): Promise<TriageResponse> {
 function mockBooking(req: BookingRequest): BookingResponse {
   // Try to name the caregiver from the final-mock roster; fall back to the
   // booking sample. Booking id is random so repeated demos look distinct.
-  const roster = (finalMock.response.trace.caregivers ?? []) as Array<{
-    caregiver_id: string;
-    name: string;
-  }>;
+  const roster = [
+    ...finalMock.response.trace.caregivers,
+    ...nurseMock.response.trace.caregivers,
+    ...specialistMock.response.trace.caregivers,
+  ] as Array<{ caregiver_id: string; name: string }>;
   const match = roster.find((c) => c.caregiver_id === req.caregiver_id);
   const id = "BK_" + Math.random().toString(36).slice(2, 8).toUpperCase();
   return {

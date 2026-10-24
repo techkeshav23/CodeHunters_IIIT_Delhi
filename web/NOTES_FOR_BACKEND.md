@@ -94,3 +94,18 @@ no contract mismatches, no oddities.** Notes:
   event (no more timeout guess).
 - Types added: `MatchFeatures` and `decision.specialty` in `src/types.ts`.
   Both optional, so no break if a field is missing.
+
+### Update 3 — care_type rename (done, 2026-10-24)
+- New `care_type` values `nurse` and `specialist` (were `nurse_home_visit` /
+  `specialist_consult`): **no frontend label-map change needed** — the UI shows
+  `trace.decision.care_label_local` for the headline and passes `care_type`
+  straight through to `/v1/bookings`, so it is value-agnostic.
+- Mocks: added `triage_nurse.json` and `triage_specialist.json` (captured from
+  the live API, so they carry the new values + `features` + `specialty`). Mock
+  selection now routes injection/insulin → nurse and ghutne/knee/joint →
+  specialist, so all five care types are demoable with `VITE_USE_MOCKS=1`.
+- New red-flag ids (`low_sugar_signs`, `heat_stroke`, `eye_injury`, `severe_bp`,
+  `possible_emergency`) need no UI change: the emergency screen renders
+  `trace.red_flags[].label_local` + `evidence` generically. `possible_emergency`
+  may have empty `evidence` — the UI already guards for that.
+- `npm run build` clean.
