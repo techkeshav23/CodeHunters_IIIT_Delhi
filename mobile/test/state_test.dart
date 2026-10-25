@@ -6,10 +6,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:carecompass/api.dart';
+import 'package:carecompass/models.dart';
 import 'package:carecompass/state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 String fx(String name) => File('test/fixtures/$name').readAsStringSync();
 
@@ -149,6 +151,51 @@ void main() {
     expect(again, isA<QuestionMsg>());
     expect(state.messages.whereType<ErrorMsg>(), isEmpty);
     expect(state.messages.whereType<UserMsg>(), hasLength(1), reason: 'retry does not repeat the bubble');
+  });
+
+  test('the UI follows the script the person writes in', () async {
+    SharedPreferences.setMockInitialValues({});
+    final sent = <Map<String, dynamic>>[];
+    // real replies: Devanagari is read as "hi", "chai le lo chai" as "en"
+    final client = MockClient((req) async {
+      if (req.url.path == '/health') return jsonRes(fx('health.json'));
+      final body = jsonDecode(req.body) as Map<String, dynamic>;
+      sent.add(body);
+      return jsonRes(fx(switch (body['user_input']) {
+        'चाय ले लो चाय' => 'v3_triage_unclear_hi.json',
+        'chai le lo chai' => 'v3_triage_unclear_en.json',
+        _ => 'v3_triage_danger.json', // "hinglish"
+      }));
+    });
+    final state = AppState(api: ApiClient(base: 'https://api.test', client: client));
+    await state.load();
+    addTearDown(() async {
+      await pumpEventQueue(); // let the first health check finish
+      state.dispose();
+    });
+    final prefs = await SharedPreferences.getInstance();
+    expect(state.lang, Lang.hinglish);
+
+    // Devanagari: Hindi, saved like the language button
+    await state.send('चाय ले लो चाय');
+    expect(state.lang, Lang.hi);
+    expect(prefs.getString('cc_lang'), 'hi');
+
+    // Roman on a Hindi UI: Hinglish, even when the reply reads it as English
+    await state.send('chai le lo chai');
+    expect(state.lang, Lang.hinglish);
+    expect(prefs.getString('cc_lang'), 'hinglish');
+
+    // never Hinglish <-> English on its own
+    await state.send('chai le lo chai');
+    expect(state.lang, Lang.hinglish);
+    state.setLang(Lang.en);
+    await state.send('Papa ko bukhar hai');
+    expect(state.lang, Lang.en, reason: 'the button choice stays while the script is the same');
+    await state.send('चाय ले लो चाय');
+    expect(state.lang, Lang.hi);
+
+    expect(sent.map((b) => b['language']).toSet(), {'auto'}, reason: 'the request is unchanged');
   });
 
   test('a failed booking throws so the sheet can show the error', () async {

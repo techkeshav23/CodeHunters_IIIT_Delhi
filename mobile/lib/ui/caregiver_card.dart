@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -26,8 +24,8 @@ String featureLabel(String key, Lang lang) {
 }
 
 /// One matched caregiver (web CaregiverCard.tsx): who, rating, free slot,
-/// distance, languages, why, match % ring, a "how we matched" breakdown,
-/// and a full-width Book button.
+/// distance, why, a "how we matched (83%)" breakdown, and a full-width Book
+/// button.
 class CaregiverCard extends StatefulWidget {
   const CaregiverCard({
     super.key,
@@ -121,8 +119,6 @@ class _CaregiverCardState extends State<CaregiverCard> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              MatchRing(value: cg.score, label: t(lang, K.match), semantics: '$pct% ${t(lang, K.match)}'),
             ],
           ),
           const SizedBox(height: 12),
@@ -154,30 +150,6 @@ class _CaregiverCardState extends State<CaregiverCard> {
                 fact(LucideIcons.mapPin, t(lang, K.kmAway, {'d': cg.distanceKm!.toStringAsFixed(1)})),
             ],
           ),
-          if (cg.languages.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Icon(LucideIcons.languages, size: 15, color: cc.ink3, semanticLabel: t(lang, K.fLanguage)),
-                for (final l in cg.languages)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cc.surface,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: cc.line),
-                    ),
-                    child: Text(
-                      l,
-                      style: body(13, weight: FontWeight.w600, color: cc.ink2, height: 1.2),
-                    ),
-                  ),
-              ],
-            ),
-          ],
           const SizedBox(height: 10),
           Text(cg.reasonLocal, style: body(15, color: cc.ink)),
           if (feats.isNotEmpty) ...[
@@ -199,6 +171,8 @@ class _CaregiverCardState extends State<CaregiverCard> {
                           style: body(14.5, weight: FontWeight.w700, color: cc.brand2),
                         ),
                       ),
+                      const SizedBox(width: 5),
+                      Text('($pct%)', style: body(14.5, weight: FontWeight.w700, color: cc.brand2)),
                       const SizedBox(width: 4),
                       AnimatedRotation(
                         turns: _open ? 0.5 : 0,
@@ -273,91 +247,6 @@ class _Avatar extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Circular match-% ring that fills once when the card appears.
-class MatchRing extends StatelessWidget {
-  const MatchRing({super.key, required this.value, required this.label, required this.semantics, this.size = 58});
-  final double value;
-  final String label;
-  final String semantics;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final cc = CC.of(context);
-    final v = value.clamp(0.0, 1.0);
-    return Semantics(
-      label: semantics,
-      excludeSemantics: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: v),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutCubic,
-            builder: (context, x, _) => SizedBox.square(
-              dimension: size,
-              child: CustomPaint(
-                painter: _RingPainter(value: x, track: cc.surface3, fill: cc.brand),
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Padding(
-                      padding: const EdgeInsets.all(7),
-                      child: Text('${(x * 100).round()}%', style: display(17, color: cc.brand2, height: 1)),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: body(11.5, weight: FontWeight.w600, color: cc.ink3, height: 1.1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  _RingPainter({required this.value, required this.track, required this.fill});
-  final double value;
-  final Color track, fill;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 5.0;
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    canvas.drawArc(
-      rect,
-      0,
-      math.pi * 2,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = track,
-    );
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      math.pi * 2 * value,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round
-        ..color = fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) => old.value != value || old.fill != fill || old.track != track;
 }
 
 /// Labelled 0-100% bar for one match sub-score, or, with [stars], the star

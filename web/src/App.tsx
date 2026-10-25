@@ -10,6 +10,7 @@ import {
   encodeMsg,
   historyAfter,
   isEmergency,
+  isUnclear,
   MAX_CHATS,
   newChatId,
   readChats,
@@ -25,12 +26,11 @@ import {
 } from "./lib";
 import { Sidebar, TopBar, BottomNav, type Backend } from "./ui/Nav";
 import Composer from "./ui/Composer";
-import Thread from "./ui/Thread";
+import Thread, { SourceLine } from "./ui/Thread";
 import CaseDetails from "./ui/CaseDetails";
 import BookingSheet from "./ui/BookingSheet";
 import EmergencyTakeover from "./ui/EmergencyTakeover";
-import { ChatBar, IncognitoBanner } from "./ui/ChatBar";
-import HistorySheet from "./ui/HistorySheet";
+import { ChatDrawer, ChatsPanel, IncognitoBanner } from "./ui/Chats";
 import { useHeightVar } from "./useHeightVar";
 import { Start, BookingsView, SosView, HowView, SettingsView, type Theme } from "./views/Views";
 
@@ -50,6 +50,9 @@ export default function App() {
     setLangState(l);
     writeJSON("cc_lang", l);
   };
+  // the UI language now, for a reply that arrives after an await
+  const langRef = useRef(lang);
+  langRef.current = lang;
   useEffect(() => {
     writeJSON("cc_large", large);
     document.documentElement.classList.toggle("text-large", large);
@@ -145,8 +148,9 @@ export default function App() {
   // bumped whenever the thread is swapped (new chat, opened chat, deleted), so a
   // reply still loading for the old thread is dropped
   const threadRef = useRef(0);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const historyBtnRef = useRef<HTMLButtonElement>(null);
+  // the chats drawer (phones, tablets) and the button that opened it, for focus on close
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const openerRef = useRef<HTMLElement | null>(null);
   const chatHeadRef = useHeightVar("--chathead-h");
 
   const commitChats = (next: SavedChat[]) => {
@@ -215,6 +219,12 @@ export default function App() {
         // the user moved to another chat meanwhile: this reply is not for the open thread
         if (thread !== threadRef.current) return;
         setLast({ req, res });
+        // the UI follows the script the person writes in: Devanagari turns it Hindi, Roman
+        // letters turn a Hindi UI to Hinglish. Never Hinglish <-> English on its own (short
+        // Roman words like "ok" often read as English), so a chosen English stays.
+        const wrote = res.trace?.language;
+        if (wrote === "hi" && langRef.current !== "hi") setLang("hi");
+        else if ((wrote === "hinglish" || wrote === "en") && langRef.current === "hi") setLang("hinglish");
         const voiceLang = res.trace?.language ?? lang;
         if (isEmergency(res)) {
           const msg = { id: nid(), kind: "emergency" as const, req, res, userText: clean };
@@ -291,16 +301,23 @@ export default function App() {
     if (id && dropChat(id)) showToast(t(lang, "incognitoRemoved"));
   };
 
-  const closeHistory = useCallback(() => {
-    setHistoryOpen(false);
-    window.setTimeout(() => historyBtnRef.current?.focus({ preventScroll: true }), 0);
+  const openDrawer = (opener: HTMLElement) => {
+    openerRef.current = opener;
+    setDrawerOpen(true);
+  };
+  // also called by the panel's actions; nothing happens when the drawer is not open
+  const closeDrawer = useCallback(() => {
+    const opener = openerRef.current;
+    openerRef.current = null;
+    setDrawerOpen(false);
+    if (opener) window.setTimeout(() => opener.focus({ preventScroll: true }), 0);
   }, []);
 
   // Opens a chat from History in the thread. If it ends on a question, history is
   // rebuilt exactly as send() left it, so the next message answers it; otherwise
   // the next message starts a new case.
   const openChat = (c: SavedChat) => {
-    closeHistory();
+    closeDrawer();
     setView("check");
     if (!incognitoRef.current && c.id === chatIdRef.current) return;
     clearThread();
@@ -372,44 +389,59 @@ export default function App() {
   const latestCase = [...messages].reverse().find((m) => m.kind === "decision" || m.kind === "question") as
     | Extract<Msg, { kind: "decision" | "question" }>
     | undefined;
-  const hasPanel = view === "check" && !!latestCase;
+  // nothing to explain on the plain "not understood" card
+  const hasPanel = view === "check" && !!latestCase && !isUnclear(latestCase.res);
   const answering = messages[messages.length - 1]?.kind === "question";
+
+  // the same panel in the sidebar (desktop) and the drawer; its actions close the drawer
+  const chatsPanel = (
+    <ChatsPanel
+      lang={lang}
+      chats={chats}
+      openId={incognito ? null : chatId}
+      incognito={incognito}
+      onNewChat={() => {
+        closeDrawer();
+        newChat();
+      }}
+      onIncognito={() => {
+        closeDrawer();
+        // on: the same as the banner's cross
+        if (incognito) newChat();
+        else goIncognito();
+      }}
+      onOpen={openChat}
+      onDelete={deleteChat}
+      onDeleteAll={deleteAllChats}
+    />
+  );
 
   return (
     <>
       <div className={hasPanel ? "shell has-panel" : "shell"}>
-        <Sidebar view={view} lang={lang} onView={setView} onLang={setLang} backend={backend} bookingsCount={bookings.length} />
+        <Sidebar
+          view={view}
+          lang={lang}
+          onView={setView}
+          onLang={setLang}
+          backend={backend}
+          bookingsCount={bookings.length}
+          chats={chatsPanel}
+          onChats={openDrawer}
+        />
         <div className="workspace">
-          <TopBar lang={lang} onLang={setLang} onView={setView} />
+          <TopBar lang={lang} onLang={setLang} onView={setView} chatsOpen={drawerOpen} onChats={openDrawer} />
           {view === "check" && (
             <>
               <main className="view view--check" id="main">
-                <div className="chathead" ref={chatHeadRef}>
-                  <ChatBar
-                    lang={lang}
-                    count={chats.length}
-                    threadOpen={messages.length > 0}
-                    incognito={incognito}
-                    onHistory={() => setHistoryOpen(true)}
-                    onIncognito={goIncognito}
-                    onNewChat={newChat}
-                    historyRef={historyBtnRef}
-                  />
-                  {incognito && <IncognitoBanner lang={lang} onClose={newChat} />}
-                </div>
+                {incognito && (
+                  <div className="chathead" ref={chatHeadRef}>
+                    <IncognitoBanner lang={lang} onClose={newChat} />
+                  </div>
+                )}
                 {messages.length === 0 ? (
                   <Start
                     lang={lang}
-                    onSeed={(s) => {
-                      setDraft(s);
-                      window.setTimeout(() => {
-                        const el = inputRef.current;
-                        if (el) {
-                          el.focus();
-                          el.setSelectionRange(s.length, s.length);
-                        }
-                      }, 30);
-                    }}
                     onExample={(s) => void send(s, false)}
                     onMic={() => window.dispatchEvent(new Event("cc:mic"))}
                     micSupported={micSupported}
@@ -467,6 +499,7 @@ export default function App() {
         {hasPanel && latestCase && (
           <aside className="case-panel" aria-label={t(lang, "whyThis")}>
             <h2 className="case-panel__title">{t(lang, "whyThis")}</h2>
+            {latestCase.kind === "decision" && <SourceLine res={latestCase.res} lang={lang} />}
             <CaseDetails res={latestCase.res} lang={lang} />
           </aside>
         )}
@@ -486,16 +519,10 @@ export default function App() {
           }}
         />
       )}
-      {historyOpen && (
-        <HistorySheet
-          lang={lang}
-          chats={chats}
-          openId={incognito ? null : chatId}
-          onOpen={openChat}
-          onDelete={deleteChat}
-          onDeleteAll={deleteAllChats}
-          onClose={closeHistory}
-        />
+      {drawerOpen && (
+        <ChatDrawer lang={lang} onClose={closeDrawer}>
+          {chatsPanel}
+        </ChatDrawer>
       )}
       {sos && (
         <EmergencyTakeover res={sos.res} userText={sos.userText} lang={lang} onBack={() => setSos(null)} onNewCheck={newChat} />

@@ -8,7 +8,7 @@ import '../theme.dart';
 import '../util.dart';
 import 'common.dart';
 
-/// "What we understood / what we checked / safety checks / why" (web
+/// "What we understood / what we checked / safety checks" (web
 /// CaseDetails.tsx).
 class CaseDetails extends StatelessWidget {
   const CaseDetails({super.key, required this.res, required this.lang});
@@ -58,6 +58,7 @@ class CaseDetails extends StatelessWidget {
     final tr = res.trace;
     final (chips, firstIsWho) = _chips();
     final guards = tr.guardrailsFiredFirst;
+    final passed = [...guards.where((g) => !g.fired)];
 
     Widget heading(String text) => Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -90,15 +91,80 @@ class CaseDetails extends StatelessWidget {
         if (guards.isNotEmpty) ...[
           const SizedBox(height: 18),
           heading(tm(lang, M.safetyChecks)),
-          for (final g in guards) _GuardrailRow(guard: g, lang: lang),
+          for (final g in guards.where((g) => g.fired)) _GuardrailRow(guard: g, lang: lang),
+          if (passed.isNotEmpty) _PassedChecks(guards: passed, lang: lang),
         ],
-        const SizedBox(height: 18),
-        heading(t(lang, K.reasonTitle)),
-        Text(tr.reasoningLocal, style: body(15.5, color: cc.ink)),
-        const SizedBox(height: 6),
-        Text(
-          '${tr.decision.rule} | ${(tr.decision.confidence * 100).round()}% | ${tr.timingMs} ms',
-          style: body(12.5, color: cc.ink3),
+      ],
+    );
+  }
+}
+
+/// The safety checks that passed, folded into one row ("11 suraksha jaanch ·
+/// Theek") that opens to the full list. Fired checks stay visible above it.
+class _PassedChecks extends StatefulWidget {
+  const _PassedChecks({required this.guards, required this.lang});
+  final List<Guardrail> guards;
+  final Lang lang;
+
+  @override
+  State<_PassedChecks> createState() => _PassedChecksState();
+}
+
+class _PassedChecksState extends State<_PassedChecks> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    final lang = widget.lang;
+    final label = tm(lang, M.safetyChecksPassed, {'n': '${widget.guards.length}'});
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _open = !_open),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: cc.ok.withValues(alpha: 0.18), shape: BoxShape.circle),
+                    child: Icon(LucideIcons.check, size: 14, color: cc.ok),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(label, style: body(15, weight: FontWeight.w600, color: cc.ink)),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(LucideIcons.chevronDown, size: 18, color: cc.ink2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: [for (final g in widget.guards) _GuardrailRow(guard: g, lang: lang)],
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
         ),
       ],
     );

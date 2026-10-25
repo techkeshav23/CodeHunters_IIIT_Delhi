@@ -8,13 +8,12 @@ import '../theme.dart';
 import '../ui/common.dart';
 import '../ui/composer.dart';
 import '../ui/emergency.dart';
-import '../ui/history_sheet.dart';
 import '../ui/thread.dart';
 
 /// Jaanch. Empty: one line of greeting, one big mic, the text box, quick
 /// chips. Once a message is sent: the consult thread with the composer
-/// docked at the bottom. Above both, a slim bar for History, Incognito and
-/// New chat, and the incognito banner while it is on.
+/// docked at the bottom. Above both, the incognito banner while it is on
+/// (New chat, Incognito and History are in the ☰ sidebar).
 class CheckScreen extends StatefulWidget {
   const CheckScreen({super.key});
 
@@ -55,32 +54,11 @@ class _CheckScreenState extends State<CheckScreen> {
     if (added is EmergencyMsg) await openEmergency(context, added);
   }
 
-  /// "Aur jaankari jodein": the next message goes out with this decision's
+  /// "Kuch aur batana hai?": the next message goes out with this decision's
   /// conversation, and the text box is ready for it.
   void _addMore(DecisionMsg m) {
     AppScope.read(context).addMoreDetails(m);
     _focus.requestFocus();
-  }
-
-  void _seed(String s) {
-    _input.value = TextEditingValue(
-      text: s,
-      selection: TextSelection.collapsed(offset: s.length),
-    );
-    _focus.requestFocus();
-  }
-
-  Future<void> _openHistory() {
-    _focus.unfocus();
-    return showHistorySheet(context);
-  }
-
-  /// Incognito from the bar: says so when an open saved chat left History.
-  void _incognito() {
-    final state = AppScope.read(context);
-    if (state.goIncognito()) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tm(state.lang, M.incognitoRemoved))));
-    }
   }
 
   /// A sent message scrolls to the end; a new answer scrolls to its own top
@@ -155,7 +133,6 @@ class _CheckScreenState extends State<CheckScreen> {
 
     return Column(
       children: [
-        _ChatBar(threadOpen: msgs.isNotEmpty, onHistory: _openHistory, onIncognito: _incognito),
         if (state.incognito) const _IncognitoBanner(),
         Expanded(
           child: msgs.isEmpty
@@ -163,8 +140,7 @@ class _CheckScreenState extends State<CheckScreen> {
                   controller: _input,
                   focusNode: _focus,
                   onSend: (text, usedVoice) => _send(text, usedVoice: usedVoice),
-                  onSeed: _seed,
-                  onExample: (s) => _send(s),
+                  onPick: (s) => _send(s),
                 )
               : _thread(state, msgs),
         ),
@@ -177,6 +153,14 @@ class _CheckScreenState extends State<CheckScreen> {
     final lastDecisionId = msgs.last is DecisionMsg ? msgs.last.id : null;
     // no booking from a decision that a later emergency in this chat overtook
     final lastEmergency = msgs.lastIndexWhere((m) => m is EmergencyMsg);
+    // a question's helper line is not repeated when the question card before
+    // it said the same ("abhi saaf nahi hai ..." on every retry)
+    final repeatedHelper = <int>{};
+    String? helper;
+    for (final m in msgs.whereType<QuestionMsg>()) {
+      if (m.res.trace.reasoningLocal == helper) repeatedHelper.add(m.id);
+      helper = m.res.trace.reasoningLocal;
+    }
     return Column(
       children: [
         Expanded(
@@ -198,6 +182,7 @@ class _CheckScreenState extends State<CheckScreen> {
                 QuestionMsg() => QuestionCard(
                   msg: m,
                   live: m.id == lastQuestionId && !state.busy,
+                  showHelper: !repeatedHelper.contains(m.id),
                   onAnswer: (s) => _send(s),
                 ),
                 DecisionMsg() => DecisionCard(
@@ -233,8 +218,6 @@ const _picks = <(IconData, K, K)>[
   (LucideIcons.bandage, K.pickInjury, K.seedInjury),
   (LucideIcons.briefcaseMedical, K.pickInjection, K.seedInjection), // now asks for dressing (as on the web)
   (LucideIcons.stethoscope, K.pickDoctor, K.seedDoctor),
-  (LucideIcons.handHeart, K.pickElder, K.seedElder),
-  (LucideIcons.activity, K.pickBp, K.seedBp),
 ];
 
 class _StartView extends StatelessWidget {
@@ -242,14 +225,14 @@ class _StartView extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.onSend,
-    required this.onSeed,
-    required this.onExample,
+    required this.onPick,
   });
   final TextEditingController controller;
   final FocusNode focusNode;
   final void Function(String text, bool usedVoice) onSend;
-  final ValueChanged<String> onSeed;
-  final ValueChanged<String> onExample;
+
+  /// A quick pick or an example: sent straight away, one tap.
+  final ValueChanged<String> onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +278,7 @@ class _StartView extends StatelessWidget {
                 child: _PickTile(
                   icon: _picks[i].$1,
                   label: t(lang, _picks[i].$2),
-                  onTap: () => onSeed(t(lang, _picks[i].$3)),
+                  onTap: () => onPick(t(lang, _picks[i].$3)),
                 ),
               ),
           ],
@@ -307,7 +290,7 @@ class _StartView extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final k in const [K.ex1, K.ex2, K.ex3]) _Example(text: t(lang, k), onTap: () => onExample(t(lang, k))),
+            for (final k in const [K.ex1, K.ex2, K.ex3]) _Example(text: t(lang, k), onTap: () => onPick(t(lang, k))),
           ],
         ),
         const SizedBox(height: 28),
@@ -317,7 +300,7 @@ class _StartView extends StatelessWidget {
   }
 }
 
-/// Quick pick tile (icon + label); seeds the text box.
+/// Quick pick tile (icon + label); sends its sentence (the check starts).
 class _PickTile extends StatelessWidget {
   const _PickTile({required this.icon, required this.label, required this.onTap});
   final IconData icon;
@@ -411,171 +394,6 @@ class _DashedPill extends CustomPainter {
   bool shouldRepaint(_DashedPill old) => old.color != color;
 }
 
-/// One action of the chat bar. [keep] orders which labels go first when the
-/// row is too narrow (lowest first); the icon (History: with its count) and
-/// the tooltip always stay.
-class _BarItem {
-  const _BarItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.badge,
-    this.primary = false,
-    this.keep = 0,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final String? badge;
-  final bool primary;
-  final int keep;
-}
-
-/// History on the left; Incognito and New chat on the right. Labels fold
-/// into icons (with tooltips) when the phone is narrow or the text is large.
-class _ChatBar extends StatelessWidget {
-  const _ChatBar({required this.threadOpen, required this.onHistory, required this.onIncognito});
-  final bool threadOpen;
-  final VoidCallback onHistory;
-  final VoidCallback onIncognito;
-
-  static const double _pad = 12, _icon = 16, _gap = 6, _spacing = 8;
-
-  static TextStyle _labelStyle(Color color) => body(14, weight: FontWeight.w700, color: color, height: 1.2);
-  static TextStyle _badgeStyle(Color color) => body(12, weight: FontWeight.w700, color: color, height: 1.2);
-
-  @override
-  Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final lang = state.lang;
-    final count = state.chats.length;
-
-    final left = _BarItem(
-      icon: LucideIcons.history,
-      label: tm(lang, M.history),
-      badge: count > 0 ? '$count' : null,
-      onTap: onHistory,
-    );
-    final right = [
-      if (!state.incognito)
-        _BarItem(
-          icon: LucideIcons.eyeOff,
-          label: tm(lang, threadOpen ? M.incognitoShort : M.incognito),
-          onTap: onIncognito,
-          keep: 1,
-        ),
-      if (threadOpen)
-        _BarItem(icon: LucideIcons.plus, label: tm(lang, M.newChat), onTap: state.newChat, primary: true, keep: 2),
-    ];
-    final items = [left, ...right];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          final base = DefaultTextStyle.of(context).style;
-          final scaler = MediaQuery.textScalerOf(context);
-          double textWidth(String s, TextStyle style) {
-            final p = TextPainter(
-              text: TextSpan(text: s, style: base.merge(style)),
-              textDirection: TextDirection.ltr,
-              textScaler: scaler,
-              maxLines: 1,
-            )..layout();
-            final w = p.width;
-            p.dispose();
-            return w;
-          }
-
-          double width(_BarItem it, bool label) =>
-              2 * _pad +
-              _icon +
-              (label ? _gap + textWidth(it.label, _labelStyle(Colors.black)) : 0) +
-              (it.badge != null ? _gap + 12 + textWidth(it.badge!, _badgeStyle(Colors.black)) : 0) +
-              4; // rounding margin
-
-          // Drop labels, least important first, until the row fits.
-          final show = List.filled(items.length, true);
-          double total() {
-            var sum = _spacing * items.length; // gaps, plus room between the two sides
-            for (var i = 0; i < items.length; i++) {
-              sum += width(items[i], show[i]);
-            }
-            return sum;
-          }
-
-          final order = List.generate(items.length, (i) => i)..sort((a, b) => items[a].keep.compareTo(items[b].keep));
-          for (final i in order) {
-            if (total() <= c.maxWidth) break;
-            show[i] = false;
-          }
-
-          return Row(
-            children: [
-              _BarButton(item: left, showLabel: show[0]),
-              const Spacer(),
-              for (var i = 0; i < right.length; i++) ...[
-                if (i > 0) const SizedBox(width: _spacing),
-                _BarButton(item: right[i], showLabel: show[i + 1]),
-              ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _BarButton extends StatelessWidget {
-  const _BarButton({required this.item, required this.showLabel});
-  final _BarItem item;
-  final bool showLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final cc = CC.of(context);
-    final fg = item.primary ? cc.brand2 : cc.ink;
-    final label = item.badge != null ? '${item.label} (${item.badge})' : item.label;
-    final button = Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: Pressable(
-        onTap: item.onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 40, minWidth: 44),
-          padding: const EdgeInsets.symmetric(horizontal: _ChatBar._pad, vertical: 7),
-          decoration: BoxDecoration(
-            color: item.primary ? cc.brandSoft : cc.surface,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: item.primary ? cc.brandSoft : cc.line),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item.icon, size: _ChatBar._icon, color: item.primary ? cc.brand2 : cc.ink2),
-              if (showLabel) ...[
-                const SizedBox(width: _ChatBar._gap),
-                Text(item.label, maxLines: 1, style: _ChatBar._labelStyle(fg)),
-              ],
-              if (item.badge != null) ...[
-                const SizedBox(width: _ChatBar._gap),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(color: cc.brandSoft, borderRadius: BorderRadius.circular(999)),
-                  child: Text(item.badge!, style: _ChatBar._badgeStyle(cc.brand2)),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-    return showLabel ? button : Tooltip(message: item.label, child: button);
-  }
-}
-
 /// Shown the whole time incognito is on; the cross leaves it (and drops the
 /// incognito chat), like "Nayi chat".
 class _IncognitoBanner extends StatelessWidget {
@@ -589,7 +407,7 @@ class _IncognitoBanner extends StatelessWidget {
     // Inverted colours, so it reads as a different mode in both themes.
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       padding: const EdgeInsets.fromLTRB(14, 4, 4, 4),
       decoration: BoxDecoration(color: cc.ink, borderRadius: BorderRadius.circular(rMd)),
       child: Row(

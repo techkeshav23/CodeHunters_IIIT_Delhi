@@ -119,7 +119,15 @@ const S = {
     hi: "सुरक्षा जाँच ने ज़्यादा जल्दी वाली देखभाल चुनी",
     en: "A safety check chose the more urgent care",
   },
-  addMore: { hinglish: "Aur jaankari jodein", hi: "और जानकारी जोड़ें", en: "Add more details" },
+  addMore: { hinglish: "Kuch aur batana hai?", hi: "कुछ और बताना है?", en: "Anything else to add?" },
+  // a decision after three answers that were not understood (rule fallback_unclear)
+  unclearTitle: { hinglish: "Maaf kijiye, hum samajh nahi paaye", hi: "माफ़ कीजिए, हम समझ नहीं पाए", en: "Sorry, we could not understand" },
+  unclearText: {
+    hinglish: "Koi taklif ho to doctor se phone par baat kar sakte hain, ya nayi chat shuru karein.",
+    hi: "कोई तकलीफ़ हो तो डॉक्टर से फ़ोन पर बात कर सकते हैं, या नई चैट शुरू करें।",
+    en: "If something is wrong, you can talk to a doctor on the phone, or start a new chat.",
+  },
+  unclearDoctor: { hinglish: "Doctor se baat karein", hi: "डॉक्टर से बात करें", en: "Talk to a doctor" },
   // "Samjha: Bukhar · 3 din se · Buzurg"
   understoodShort: { hinglish: "Samjha", hi: "समझा", en: "Understood" },
   whoSelf: { hinglish: "Khud ke liye", hi: "ख़ुद के लिए", en: "For yourself" },
@@ -142,6 +150,8 @@ const S = {
   daysFor: { hinglish: "{x} se", hi: "{x} से", en: "for {x}" },
   carersTitle: { hinglish: "Aapke liye sabse sahi", hi: "आपके लिए सबसे सही", en: "Best matches for you" },
   bestMatch: { hinglish: "Sabse sahi", hi: "सबसे सही", en: "Best match" },
+  // under the best match: shows the other caregivers
+  carersMore: { hinglish: "Aur {n} dekhein", hi: "और {n} देखें", en: "See {n} more" },
   match: { hinglish: "match", hi: "मैच", en: "match" },
   matchHow: { hinglish: "Match kaise hua", hi: "मैच कैसे हुआ", en: "How we matched" },
   fSkill: { hinglish: "Zaroori skill", hi: "ज़रूरी स्किल", en: "Required skill" },
@@ -165,7 +175,7 @@ const S = {
   },
   roleParamedic: { hinglish: "Paramedic", hi: "पैरामेडिक", en: "Paramedic" },
   roleNurse: { hinglish: "Nurse", hi: "नर्स", en: "Nurse" },
-  roleMedic: { hinglish: "Medic", hi: "मेडिक", en: "Medic" },
+  roleMedic: { hinglish: "Paramedic", hi: "पैरामेडिक", en: "Paramedic" },
   roleLab: { hinglish: "Sample collector", hi: "सैंपल लेने वाले", en: "Sample collector" },
   roleGp: { hinglish: "Doctor (GP)", hi: "डॉक्टर (GP)", en: "Doctor (GP)" },
   roleSpecialist: { hinglish: "Specialist doctor", hi: "विशेषज्ञ डॉक्टर", en: "Specialist doctor" },
@@ -285,18 +295,20 @@ const S = {
     hi: "अभी कोई चैट सेव नहीं है। हर जाँच यहाँ अपने-आप सेव होगी।",
     en: "No saved chats yet. Every check is saved here on its own.",
   },
-  incognito: { hinglish: "Incognito chat", hi: "इनकॉग्निटो चैट", en: "Incognito chat" },
+  incognito: { hinglish: "Bina save kiye chat", hi: "सेव किए बिना चैट", en: "Don't save this chat" },
   incognitoShort: { hinglish: "Incognito", hi: "इनकॉग्निटो", en: "Incognito" },
-  incognitoBanner: {
-    hinglish: "Incognito: yeh baatcheet save nahi hogi",
-    hi: "इनकॉग्निटो: यह बातचीत सेव नहीं होगी",
-    en: "Incognito: this chat won't be saved",
-  },
-  incognitoOff: { hinglish: "Incognito band karein", hi: "इनकॉग्निटो बंद करें", en: "Turn off incognito" },
+  incognitoBanner: { hinglish: "Yeh baatcheet save nahi hogi", hi: "यह बातचीत सेव नहीं होगी", en: "This chat won't be saved" },
+  incognitoOff: { hinglish: "Save karna chalu karein", hi: "सेव करना चालू करें", en: "Save chats again" },
   incognitoRemoved: { hinglish: "Yeh chat history se hata di gayi", hi: "यह चैट हिस्ट्री से हटा दी गई", en: "This chat was removed from history" },
   chatPending: { hinglish: "Sawaal baaki hai", hi: "सवाल बाकी है", en: "Question pending" },
   chatNoReply: { hinglish: "Jawab nahi aaya", hi: "जवाब नहीं आया", en: "No reply yet" },
-  chatDelete: { hinglish: "Chat hatayein", hi: "चैट हटाएँ", en: "Delete chat" },
+  chatUnclear: { hinglish: "Samajh nahi aaya", hi: "समझ नहीं आया", en: "Not understood" },
+  // the chat list's groups, by the day a chat was last used
+  chatsToday: { hinglish: "Aaj", hi: "आज", en: "Today" },
+  chatsYesterday: { hinglish: "Kal", hi: "कल", en: "Yesterday" },
+  chatsEarlier: { hinglish: "Pehle", hi: "पहले", en: "Earlier" },
+  chatMenu: { hinglish: "Chat ke options", hi: "चैट के विकल्प", en: "Chat options" },
+  chatDelete: { hinglish: "Mitayein", hi: "मिटाएँ", en: "Delete" },
   deleteAll: { hinglish: "Saari history mitayein", hi: "सारी हिस्ट्री मिटाएँ", en: "Delete all history" },
   deleteAllTitle: { hinglish: "Saari history mitayein?", hi: "सारी हिस्ट्री मिटाएँ?", en: "Delete all history?" },
   deleteAllText: {
@@ -365,4 +377,3 @@ export function specialtyLabel(lang: Lang, id: string): string {
 }
 
 export const LANG_LABEL: Record<Lang, string> = { hi: "हिंदी", hinglish: "Hinglish", en: "English" };
-export const LANG_SHORT: Record<Lang, string> = { hi: "हि", hinglish: "Hi", en: "En" };

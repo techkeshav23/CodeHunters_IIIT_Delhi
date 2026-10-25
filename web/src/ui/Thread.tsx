@@ -1,18 +1,14 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
-  FlaskConical,
+  ChevronRight,
   Gauge,
-  HeartPulse,
   Info,
-  MessageSquarePlus,
+  Phone,
+  Plus,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
-  Siren,
-  Stethoscope,
-  Syringe,
-  Video,
   Volume2,
   Square,
 } from "lucide-react";
@@ -21,18 +17,16 @@ import { specialtyLabel, t, type Key } from "../i18n";
 import {
   bandKey,
   careKey,
-  careKind,
   decisionModelClass,
   decisionSource,
   isRemoteCarer,
+  isUnclear,
   modelShortName,
   safetyChoseUrgent,
   structuredChips,
   topModelClass,
-  type CareKind,
   type Msg,
   urgencyLevel,
-  fmtDays,
 } from "../lib";
 import { BrandMark } from "./Brand";
 import Dial from "./Dial";
@@ -59,9 +53,17 @@ export default function Thread(p: Props) {
   const lastId = p.messages[p.messages.length - 1]?.id;
   // no booking from a decision that a later emergency in this chat has overtaken
   const lastEmergency = p.messages.map((m) => m.kind).lastIndexOf("emergency");
+  // a question's helper line is shown once, not again on the next question with the same line
+  let prevWhy: string | null = null;
   return (
     <div className="thread" aria-live="polite">
       {p.messages.map((m, i) => {
+        let showWhy = true;
+        if (m.kind === "question") {
+          const why = m.res.trace.reasoning_local?.trim() || null;
+          showWhy = why !== prevWhy;
+          prevWhy = why;
+        }
         if (m.kind === "user") {
           return (
             <div key={m.id} className="msg msg--user">
@@ -76,9 +78,18 @@ export default function Thread(p: Props) {
             </span>
             <div className="msg__body">
               {m.kind === "question" && (
-                <Question res={m.res} lang={p.lang} live={m.id === lastQuestion?.id && m.id === lastId && !p.busy} onAnswer={p.onAnswer} />
+                <Question
+                  res={m.res}
+                  lang={p.lang}
+                  live={m.id === lastQuestion?.id && m.id === lastId && !p.busy}
+                  showWhy={showWhy}
+                  onAnswer={p.onAnswer}
+                />
               )}
-              {m.kind === "decision" && (
+              {m.kind === "decision" && isUnclear(m.res) && (
+                <Unclear res={m.res} lang={p.lang} onBook={p.onBook} locked={i < lastEmergency} onNewCheck={p.onNewCheck} />
+              )}
+              {m.kind === "decision" && !isUnclear(m.res) && (
                 <Decision
                   res={m.res}
                   lang={p.lang}
@@ -89,13 +100,17 @@ export default function Thread(p: Props) {
                   adding={p.adding}
                 />
               )}
+              {/* the red button calls 112 straight away; the title reopens the full emergency screen */}
               {m.kind === "emergency" && (
-                <div className="error" style={{ background: "var(--sindoor-soft)" }}>
-                  <strong>{m.res.trace.emergency?.title_local ?? t(p.lang, "sosPageTitle")}</strong>
-                  <button type="button" className="btn btn--danger" onClick={() => p.onOpenEmergency(m)}>
-                    <Siren size={18} aria-hidden="true" />
-                    {t(p.lang, "sosNow")}
+                <div className="error">
+                  <button type="button" className="sos-reopen" onClick={() => p.onOpenEmergency(m)}>
+                    <strong>{m.res.trace.emergency?.title_local ?? t(p.lang, "sosPageTitle")}</strong>
+                    <ChevronRight size={18} aria-hidden="true" />
                   </button>
+                  <a className="btn btn--danger" href="tel:112">
+                    <Phone size={18} aria-hidden="true" />
+                    {t(p.lang, "sosNow")}
+                  </a>
                 </div>
               )}
               {m.kind === "error" && (
@@ -186,7 +201,19 @@ function optionsOf(res: TriageResponse): FollowUpOption[] {
   return [];
 }
 
-function Question({ res, lang, live, onAnswer }: { res: TriageResponse; lang: Lang; live: boolean; onAnswer: (t: string) => void }) {
+function Question({
+  res,
+  lang,
+  live,
+  showWhy,
+  onAnswer,
+}: {
+  res: TriageResponse;
+  lang: Lang;
+  live: boolean;
+  showWhy: boolean;
+  onAnswer: (t: string) => void;
+}) {
   const fu = res.trace.follow_up;
   const text = res.follow_up_question ?? fu?.text ?? "";
   const n = fu?.asked_so_far ?? 1;
@@ -216,7 +243,7 @@ function Question({ res, lang, live, onAnswer }: { res: TriageResponse; lang: La
       <p className="question__text" lang={voiceLang === "hi" ? "hi" : undefined}>
         {text}
       </p>
-      {res.trace.reasoning_local && <p className="question__why">{res.trace.reasoning_local}</p>}
+      {showWhy && res.trace.reasoning_local && <p className="question__why">{res.trace.reasoning_local}</p>}
       {live && options.length > 0 && (
         <div className={pair ? "options options--pair" : "options"} role="group" aria-label={text}>
           {options.map((o) => (
@@ -237,13 +264,6 @@ function Question({ res, lang, live, onAnswer }: { res: TriageResponse; lang: La
   );
 }
 
-const CARE_ICON: Record<CareKind, typeof Stethoscope> = {
-  paramedic: HeartPulse,
-  nurse: Syringe,
-  lab: FlaskConical,
-  doctor: Video,
-  emergency: Siren,
-};
 const URGENCY_KEY: Key[] = ["urgRoutine", "urgSameDay", "urgNow"];
 
 // trace.caregivers carries the full cards; if it ever comes back empty while the
@@ -270,9 +290,10 @@ function carersOf(res: TriageResponse): TraceCaregiver[] {
 }
 
 // Who made this call, in plain words: the model and how sure it was (no percentages
-// here; "Why" has the numbers), a safety check that chose more urgent care, or the
-// second check (Claude) when the model was unsure. Older answers show nothing.
-function SourceLine({ res, lang }: { res: TriageResponse; lang: Lang }) {
+// here), a safety check that chose more urgent care, or the second check (Claude) when
+// the model was unsure. Older answers show nothing. Shown at the top of "Yeh faisla
+// kyon?" (inline under the card, and in the desktop side panel), not on the card.
+export function SourceLine({ res, lang }: { res: TriageResponse; lang: Lang }) {
   const src = decisionSource(res);
   const band = bandKey(res.trace.model?.band);
   // a safety check switched the model's pick (e.g. fever_home_visit: doctor -> paramedic): the
@@ -306,7 +327,7 @@ function SourceLine({ res, lang }: { res: TriageResponse; lang: Lang }) {
       </p>,
     );
   }
-  return lines.length ? <>{lines}</> : null;
+  return lines.length ? <div className="decision__sources">{lines}</div> : null;
 }
 
 function Decision({
@@ -329,45 +350,31 @@ function Decision({
   const [why, setWhy] = useState(false);
   const d = res.trace.decision;
   const level = urgencyLevel(res.urgency);
-  const carers = carersOf(res);
   const voiceLang = res.trace.language;
-  // a duration in the "Samjha" row (trace.structured) is not repeated as a chip
-  const inRow = structuredChips(res.trace, lang)?.some((c) => c.kind === "duration") ?? false;
-  const dur = inRow ? null : fmtDays(res.trace.understood?.duration_days ?? null, lang);
-  const kind = careKind(res.care_type ?? d.care_type);
-  const CareIcon = kind ? CARE_ICON[kind] : null;
   const fallbackCare = careKey(res.care_type ?? d.care_type);
   const careLabel = d.care_label_local || d.care_label || (fallbackCare ? t(lang, fallbackCare) : "");
+  // the dial shows how soon; the urgency is still read aloud
   const urgencyLabel = d.urgency_label_local || d.urgency_label || (res.urgency ? t(lang, URGENCY_KEY[level]) : "");
   const safetyNet = res.trace.safety_net_local?.trim() || null;
   const summary = [careLabel, urgencyLabel, res.trace.reasoning_local, safetyNet].filter(Boolean).join(". ");
 
+  // dial, care, reason, safety net; who decided is at the top of "Yeh faisla kyon?"
   return (
     <section className="decision" aria-label={t(lang, "ourAdvice")}>
       <div className="decision__top">
         <Dial level={level} lang={lang} />
         <div className="decision__head">
-          <span className="decision__kicker">
-            {CareIcon && (
-              <span className={kind === "emergency" ? "care-ico care-ico--danger" : "care-ico"} data-care={kind} aria-hidden="true">
-                <CareIcon size={16} />
-              </span>
-            )}
-            {t(lang, "ourAdvice")}
-          </span>
-          <h2 className="decision__care" lang={voiceLang === "hi" ? "hi" : undefined}>
-            {careLabel}
-          </h2>
-          <div className="decision__chips">
-            {urgencyLabel && (
-              <span className={level === 1 ? "chip chip--haldi" : level === 2 ? "chip chip--danger" : "chip chip--brand"}>
-                {urgencyLabel}
-              </span>
-            )}
-            {d.specialty && <span className="chip">{t(lang, "specialist", { x: specialtyLabel(lang, d.specialty) })}</span>}
-            {dur && <span className="chip">{dur}</span>}
+          <div className="decision__title">
+            <h2 className="decision__care" lang={voiceLang === "hi" ? "hi" : undefined}>
+              {careLabel}
+            </h2>
+            <ReadAloud text={summary} lang={voiceLang} speech={res.trace.speech} />
           </div>
-          <UnderstoodRow res={res} lang={lang} />
+          {d.specialty && (
+            <div className="decision__chips">
+              <span className="chip">{t(lang, "specialist", { x: specialtyLabel(lang, d.specialty) })}</span>
+            </div>
+          )}
           <p className="decision__reason">{res.trace.reasoning_local}</p>
           {safetyNet && (
             <p className="safety-net" lang={voiceLang === "hi" ? "hi" : undefined}>
@@ -375,46 +382,117 @@ function Decision({
               <span>{safetyNet}</span>
             </p>
           )}
-          <SourceLine res={res} lang={lang} />
         </div>
       </div>
       <div className="decision__actions">
-        <ReadAloud text={summary} lang={voiceLang} speech={res.trace.speech} />
         <button type="button" className="btn btn--quiet why-toggle" aria-expanded={why} onClick={() => setWhy((w) => !w)}>
           {t(lang, "whyThis")}
           <ChevronDown size={18} aria-hidden="true" style={{ transform: why ? "rotate(180deg)" : undefined }} />
         </button>
         {onAddMore && (
           <button type="button" className="btn btn--quiet" aria-pressed={adding} onClick={onAddMore}>
-            <MessageSquarePlus size={17} aria-hidden="true" />
             {t(lang, "addMore")}
           </button>
         )}
         <button type="button" className="btn btn--quiet" onClick={onNewCheck}>
-          <RotateCcw size={16} aria-hidden="true" />
-          {t(lang, "newCheck")}
+          <Plus size={17} aria-hidden="true" />
+          {t(lang, "newChat")}
         </button>
       </div>
       {why && (
         <div className="why">
+          <SourceLine res={res} lang={lang} />
           <CaseDetails res={res} lang={lang} />
         </div>
       )}
-      <div className="carers">
-        <h3 className="carers__title">{t(lang, "carersTitle")}</h3>
-        {carers.length === 0 && <p className="case-panel__empty">{t(lang, "noCarers")}</p>}
-        {locked && carers.length > 0 && <p className="case-panel__empty">{t(lang, "bookLocked")}</p>}
-        {carers.map((cg, i) => (
-          <CaregiverCard
-            key={cg.caregiver_id}
-            cg={cg}
-            best={i === 0}
-            tele={isRemoteCarer(res.care_type, cg.role)}
-            lang={lang}
-            onBook={locked ? undefined : () => onBook(cg, res)}
-          />
+      <Carers res={res} lang={lang} onBook={onBook} locked={locked} />
+    </section>
+  );
+}
+
+function Carers({
+  res,
+  lang,
+  onBook,
+  locked,
+}: {
+  res: TriageResponse;
+  lang: Lang;
+  onBook: (cg: TraceCaregiver, res: TriageResponse) => void;
+  locked: boolean;
+}) {
+  const [first, ...rest] = carersOf(res);
+  // the best match only; "Aur 2 dekhein" shows the rest and takes focus to them
+  const [all, setAll] = useState(false);
+  const restRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (all) restRef.current?.focus({ preventScroll: true });
+  }, [all]);
+  const card = (cg: TraceCaregiver, best: boolean) => (
+    <CaregiverCard
+      key={cg.caregiver_id}
+      cg={cg}
+      best={best}
+      tele={isRemoteCarer(res.care_type, cg.role)}
+      lang={lang}
+      onBook={locked ? undefined : () => onBook(cg, res)}
+    />
+  );
+  return (
+    <div className="carers">
+      <h3 className="carers__title">{t(lang, "carersTitle")}</h3>
+      {!first && <p className="case-panel__empty">{t(lang, "noCarers")}</p>}
+      {locked && first && <p className="case-panel__empty">{t(lang, "bookLocked")}</p>}
+      {first && card(first, true)}
+      {rest.length > 0 &&
+        (all ? (
+          <div className="carers__rest" ref={restRef} tabIndex={-1}>
+            {rest.map((cg) => card(cg, false))}
+          </div>
+        ) : (
+          <button type="button" className="btn btn--quiet carers__more" onClick={() => setAll(true)}>
+            {t(lang, "carersMore", { n: rest.length })}
+            <ChevronDown size={18} aria-hidden="true" />
+          </button>
         ))}
+    </div>
+  );
+}
+
+// Nothing was understood after three answers (rule fallback_unclear): the doctor call
+// that comes back is a safe default, not a finding, so no dial, urgency or reasons.
+// "Doctor se baat karein" shows this response's caregivers, booked as usual.
+function Unclear({
+  res,
+  lang,
+  onBook,
+  locked,
+  onNewCheck,
+}: {
+  res: TriageResponse;
+  lang: Lang;
+  onBook: (cg: TraceCaregiver, res: TriageResponse) => void;
+  locked: boolean;
+  onNewCheck: () => void;
+}) {
+  const [carersOpen, setCarersOpen] = useState(false);
+  return (
+    <section className="decision" aria-label={t(lang, "unclearTitle")}>
+      <div className="unclear">
+        <h2 className="unclear__title">{t(lang, "unclearTitle")}</h2>
+        <p className="unclear__text">{t(lang, "unclearText")}</p>
+        <div className="unclear__actions">
+          <button type="button" className="btn btn--primary" aria-expanded={carersOpen} onClick={() => setCarersOpen((o) => !o)}>
+            <Phone size={18} aria-hidden="true" />
+            {t(lang, "unclearDoctor")}
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={onNewCheck}>
+            <Plus size={18} aria-hidden="true" />
+            {t(lang, "newChat")}
+          </button>
+        </div>
       </div>
+      {carersOpen && <Carers res={res} lang={lang} onBook={onBook} locked={locked} />}
     </section>
   );
 }

@@ -1,16 +1,18 @@
 // Chat history on the phone: saved after every message and back after a
 // restart, never saved in incognito, deleted one by one or all at once, and a
 // restored chat that ends on a question carries on with the same
-// conversation_history (question_id included).
+// conversation_history (question_id included). The ☰ sidebar drives it all.
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:carecompass/api.dart';
+import 'package:carecompass/i18n.dart';
 import 'package:carecompass/main.dart';
 import 'package:carecompass/models.dart';
 import 'package:carecompass/state.dart';
 import 'package:carecompass/strings_mobile.dart';
+import 'package:carecompass/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -48,11 +50,6 @@ Future<List<dynamic>?> storedChats() async {
   final raw = (await SharedPreferences.getInstance()).getString('cc_chats');
   return raw == null ? null : jsonDecode(raw) as List<dynamic>;
 }
-
-/// A chat-bar button by its accessible name (its label may be folded into
-/// an icon on a narrow screen).
-Finder bar(String label) =>
-    find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').startsWith(label));
 
 Future<void> settle(WidgetTester tester, [int frames = 12]) async {
   for (var i = 0; i < frames; i++) {
@@ -270,7 +267,7 @@ void main() {
     expect(await storedChats(), hasLength(AppState.maxChats));
   });
 
-  testWidgets('History sheet opens a saved chat in the thread; New chat and Incognito from the bar', (tester) async {
+  testWidgets('the ☰ sidebar: New chat, Incognito, opening and deleting chats, from any tab', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.625;
     addTearDown(tester.view.reset);
@@ -280,45 +277,63 @@ void main() {
     await settle(tester);
     const lang = Lang.hinglish;
 
-    // start view: History (no count yet) and Incognito chat
-    expect(bar(tm(lang, M.history)), findsOneWidget);
-    expect(find.text(tm(lang, M.incognito)), findsOneWidget);
-    expect(bar(tm(lang, M.newChat)), findsNothing);
+    Future<void> openSidebar() async {
+      await tester.tap(find.byTooltip(tm(lang, M.chats)));
+      await settle(tester);
+      expect(find.byType(Drawer), findsOneWidget);
+    }
 
-    await tester.enterText(find.byType(TextField), 'Papa ko do din se bukhar hai aur khansi bhi');
-    await tester.pump();
-    await tester.tap(find.byTooltip('Bhejein'));
+    Future<void> say(String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.pump();
+      await tester.tap(find.byTooltip('Bhejein'));
+      await settle(tester);
+    }
+
+    // no bar above the thread any more; the sidebar starts empty
+    expect(find.text(tm(lang, M.incognito)), findsNothing);
+    await openSidebar();
+    expect(find.text(tm(lang, M.newChat)), findsOneWidget);
+    expect(find.text(tm(lang, M.incognito)), findsOneWidget);
+    expect(find.text(tm(lang, M.historyEmpty)), findsOneWidget);
+    expect(find.text(tm(lang, M.historySub)), findsOneWidget);
+    expect(find.text(tm(lang, M.deleteAll)), findsNothing);
+    await tester.tap(find.text(tm(lang, M.newChat)));
     await settle(tester);
+    expect(find.byType(Drawer), findsNothing);
+
+    await say('Papa ko do din se bukhar hai aur khansi bhi');
     expect(find.text('Sawaal 1 / 4'), findsOneWidget);
 
-    // thread bar: New chat keeps the chat in History
-    expect(bar(tm(lang, M.incognitoShort)), findsOneWidget);
-    await tester.tap(bar(tm(lang, M.newChat)));
+    // New chat keeps the chat: listed under "Aaj" with what it came to
+    await openSidebar();
+    expect(find.text(tm(lang, M.groupToday)), findsOneWidget);
+    expect(find.text(tm(lang, M.chatPending)), findsOneWidget);
+    await tester.tap(find.text(tm(lang, M.newChat)));
     await settle(tester);
+    expect(find.byType(Drawer), findsNothing);
     expect(state.messages, isEmpty);
     expect(state.chats, hasLength(1));
-    expect(bar('${tm(lang, M.history)} (1)'), findsOneWidget, reason: 'count next to History');
 
-    // incognito from the start view: banner, nothing saved
-    await tester.tap(bar(tm(lang, M.incognito)));
+    // Incognito: banner, nothing saved
+    await openSidebar();
+    await tester.tap(find.text(tm(lang, M.incognito)));
     await settle(tester);
-    expect(bar(tm(lang, M.incognito)), findsNothing);
+    expect(find.byType(Drawer), findsNothing);
     expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'Mummy ko sir dard hai');
-    await tester.pump();
-    await tester.tap(find.byTooltip('Bhejein'));
-    await settle(tester);
+    await say('Mummy ko sir dard hai');
     expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
     expect(state.chats, hasLength(1));
 
-    // History: the saved chat with its outcome; opening it leaves incognito
-    await tester.tap(bar(tm(lang, M.history)));
+    // from another tab: tapping a chat opens it in Jaanch and leaves incognito
+    await tester.tap(find.text(t(lang, K.navBookings)).last);
     await settle(tester);
-    expect(find.text(tm(lang, M.historyTitle)), findsOneWidget);
-    expect(find.text(tm(lang, M.chatPending)), findsOneWidget);
+    expect(state.tab, 1);
+    await openSidebar();
     await tester.tap(find.text('Papa ko do din se bukhar hai aur khansi bhi').last);
     await settle(tester);
-    expect(find.text(tm(lang, M.historyTitle)), findsNothing);
+    expect(find.byType(Drawer), findsNothing);
+    expect(state.tab, 0);
     expect(state.incognito, isFalse);
     expect(find.text(tm(lang, M.incognitoBanner)), findsNothing);
     expect(find.text('Sawaal 1 / 4'), findsOneWidget);
@@ -327,11 +342,12 @@ void main() {
     // answer it: the restored conversation goes on
     await tester.tap(find.text('Nahi'));
     await settle(tester, 20);
-    expect(find.text('Humara sujhav'), findsOneWidget);
+    expect(find.text(t(lang, K.whyThis)), findsOneWidget);
     expect(state.chats.single.outcome, 'decision');
 
     // switching this saved chat to incognito takes it out of History
-    await tester.tap(bar(tm(lang, M.incognitoShort)));
+    await openSidebar();
+    await tester.tap(find.text(tm(lang, M.incognito)));
     await settle(tester);
     expect(find.text(tm(lang, M.incognitoRemoved)), findsOneWidget);
     expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
@@ -343,5 +359,80 @@ void main() {
     expect(state.incognito, isFalse);
     expect(state.messages, isEmpty);
     expect(find.text('Batayein, kya taklif hai?'), findsOneWidget);
+
+    // ⋮ -> Mitayein deletes a chat (here the open one, so the thread clears)
+    await say('Bukhar hai');
+    expect(state.chats, hasLength(1));
+    await openSidebar();
+    await tester.tap(find.byTooltip(tm(lang, M.chatMenu)));
+    await settle(tester);
+    await tester.tap(find.text(tm(lang, M.chatDelete)));
+    await settle(tester);
+    expect(state.chats, isEmpty);
+    expect(state.messages, isEmpty);
+    expect(find.text(tm(lang, M.historyEmpty)), findsOneWidget, reason: 'the sidebar stays open');
+  });
+
+  testWidgets('the sidebar groups chats into Aaj / Kal / Pehle and marks the open one', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime.now();
+    SavedChat chat(String id, String title, int daysBack, String outcome, [String? label]) => SavedChat(
+      id: id,
+      startedAt: now.subtract(Duration(days: daysBack)),
+      updatedAt: now.subtract(Duration(days: daysBack)),
+      title: title,
+      outcome: outcome,
+      outcomeLabel: label,
+      level: outcome == 'emergency' ? 2 : 0,
+      messages: [
+        {'type': 'user', 'text': title},
+      ],
+    );
+    final state = AppState(api: ApiClient(base: 'https://api.test', client: server([])));
+    state.chats = [
+      chat('b', 'Seene mein dard', 1, 'emergency', 'Yeh emergency ho sakti hai'),
+      chat('c', 'Chai le lo chai', 5, 'unclear'),
+    ];
+    await tester.pumpWidget(CareCompassApp(state: state));
+    await settle(tester);
+    const lang = Lang.hinglish;
+
+    // a new chat today, still open
+    await tester.enterText(find.byType(TextField), 'Bukhar hai');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Bhejein'));
+    await settle(tester);
+    await tester.tap(find.byTooltip(tm(lang, M.chats)));
+    await settle(tester);
+
+    Finder inSidebar(String text) => find.descendant(of: find.byType(Drawer), matching: find.text(text));
+    double y(String text) => tester.getTopLeft(inSidebar(text)).dy;
+    final order = [
+      tm(lang, M.groupToday),
+      'Bukhar hai',
+      tm(lang, M.groupYesterday),
+      'Seene mein dard',
+      tm(lang, M.groupEarlier),
+      'Chai le lo chai',
+    ];
+    for (var i = 1; i < order.length; i++) {
+      expect(y(order[i - 1]), lessThan(y(order[i])), reason: '${order[i - 1]} above ${order[i]}');
+    }
+
+    // what each came to: an emergency in the danger colour, "Samajh nahi aaya"
+    expect(tester.widget<Text>(inSidebar('Yeh emergency ho sakti hai')).style!.color, CC.light.sindoor);
+    expect(inSidebar(tm(lang, M.chatUnclear)), findsOneWidget);
+    expect(inSidebar(tm(lang, M.chatPending)), findsOneWidget);
+
+    // the open chat is the selected row
+    final selected = find.descendant(
+      of: find.byType(Drawer),
+      matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.selected == true),
+    );
+    expect(selected, findsOneWidget);
+    expect(tester.widget<Semantics>(selected).properties.label, startsWith('Bukhar hai'));
   });
 }

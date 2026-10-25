@@ -1,0 +1,211 @@
+{
+ "follow_up_question": "माफ़ कीजिए, अभी भी समझ नहीं आया। कृपया तकलीफ़ सीधे शब्दों में लिखें, जैसे \"पापा को बुखार है\" या \"घर पर इंजेक्शन लगवाना है\"।",
+ "care_type": null,
+ "urgency": null,
+ "red_flags": [],
+ "reasoning": "The main problem is not clear yet, so one question is needed before routing.",
+ "matched_caregivers": [],
+ "trace": {
+  "version": "0.1.0",
+  "language": "hi",
+  "mode": "interactive",
+  "understood": {
+   "patient": {
+    "relation": null,
+    "relation_label": null,
+    "age_years": null,
+    "age_group": null,
+    "pregnant": null
+   },
+   "symptoms": [],
+   "duration_days": null,
+   "duration_label": null,
+   "services": [],
+   "severity": []
+  },
+  "model": {
+   "name": "MuRIL (fine-tuned)",
+   "probabilities": {
+    "emergency": 0.024,
+    "followup": 0.891,
+    "gp": 0.016,
+    "lab": 0.009,
+    "nurse": 0.018,
+    "out_of_scope": 0.022,
+    "paramedic": 0.02
+   },
+   "urgency_probabilities": {
+    "immediate": 0.256,
+    "routine": 0.116,
+    "same_day": 0.628
+   },
+   "confidence": 0.8913,
+   "band": "high",
+   "flags": [],
+   "version": "2026-10-24T21:37:31",
+   "latency_ms": 83.0
+  },
+  "structured": {
+   "symptoms": [],
+   "who": "unknown",
+   "who_label": "Not known yet",
+   "who_label_local": "अभी पता नहीं",
+   "duration_days": null,
+   "age_years": null
+  },
+  "safety_net_local": null,
+  "llm": {
+   "model": "claude-opus-5-5",
+   "care_type": null,
+   "urgency": null,
+   "red_flags": [],
+   "reasoning": "The messages are nonsense words with no health need described, so the intent is unclear.",
+   "latency_ms": 2481.3
+  },
+  "checks": [],
+  "red_flags": [],
+  "decision": {
+   "care_type": null,
+   "urgency": null,
+   "care_label": null,
+   "care_label_local": null,
+   "urgency_label": null,
+   "urgency_label_local": null,
+   "confidence": 0.89,
+   "source": "llm",
+   "rule": "llm",
+   "specialty": null
+  },
+  "reasoning_local": "अभी साफ़ नहीं है कि तकलीफ़ क्या है, इसलिए एक सवाल।",
+  "follow_up": {
+   "id": "q_main_symptom",
+   "text": "माफ़ कीजिए, अभी भी समझ नहीं आया। कृपया तकलीफ़ सीधे शब्दों में लिखें, जैसे \"पापा को बुखार है\" या \"घर पर इंजेक्शन लगवाना है\"।",
+   "kind": "free_text",
+   "options": [
+    {
+     "value": "fever",
+     "label": "बुखार"
+    },
+    {
+     "value": "pain",
+     "label": "दर्द"
+    },
+    {
+     "value": "breathing",
+     "label": "सांस की दिक्कत"
+    },
+    {
+     "value": "nursing",
+     "label": "इंजेक्शन / ड्रेसिंग"
+    },
+    {
+     "value": "lab",
+     "label": "घर पर लैब टेस्ट"
+    },
+    {
+     "value": "doctor",
+     "label": "डॉक्टर से बात"
+    }
+   ],
+   "asked_so_far": 2,
+   "max": 3
+  },
+  "emergency": null,
+  "caregivers": [],
+  "speech": {
+   "locale": "hi-IN",
+   "text": "माफ़ कीजिए, अभी भी समझ नहीं आया। कृपया तकलीफ़ सीधे शब्दों में लिखें, जैसे \"पापा को बुखार है\" या \"घर पर इंजेक्शन लगवाना है\"।"
+  },
+  "guardrails": [
+   {
+    "id": "safety_net",
+    "label": "Danger-sign rules",
+    "label_local": "ख़तरे के लक्षणों के नियम",
+    "status": "pass",
+    "note": "No danger sign found in the words used.",
+    "note_local": "लिखी बात में कोई ख़तरे का लक्षण नहीं मिला।"
+   },
+   {
+    "id": "model_emergency",
+    "label": "Model emergency check",
+    "label_local": "मॉडल की इमरजेंसी जाँच",
+    "status": "pass",
+    "note": "The model found no sign of an emergency.",
+    "note_local": "मॉडल को इमरजेंसी नहीं लगी।"
+   },
+   {
+    "id": "vulnerable_floor",
+    "label": "Baby, older adult or pregnancy",
+    "label_local": "शिशु, बुज़ुर्ग या गर्भावस्था",
+    "status": "pass",
+    "note": "Nothing here needs a sooner visit because of age or pregnancy.",
+    "note_local": "उम्र या गर्भावस्था की वजह से जल्दी की ज़रूरत नहीं।"
+   },
+   {
+    "id": "urgency_floor",
+    "label": "Urgency never lowered",
+    "label_local": "जल्दी कभी कम नहीं",
+    "status": "pass",
+    "note": "The safety rules did not ask for a sooner time.",
+    "note_local": "सुरक्षा नियमों ने पहले का समय नहीं माँगा।"
+   },
+   {
+    "id": "low_confidence",
+    "label": "Model confidence",
+    "label_local": "मॉडल का भरोसा",
+    "status": "pass",
+    "note": "The model is sure enough to decide.",
+    "note_local": "मॉडल फ़ैसले के लिए काफ़ी पक्का है।"
+   },
+   {
+    "id": "not_understood",
+    "label": "Words understood",
+    "label_local": "बात समझी गई",
+    "status": "fired",
+    "note": "Nothing medical was recognised in the words, so the model's guess was not trusted.",
+    "note_local": "शब्दों में कुछ मेडिकल समझ नहीं आया, इसलिए मॉडल के अंदाज़े पर भरोसा नहीं किया।"
+   },
+   {
+    "id": "out_of_scope",
+    "label": "Home health care only",
+    "label_local": "सिर्फ़ घर पर स्वास्थ्य देखभाल",
+    "status": "pass",
+    "note": "This is a health care request.",
+    "note_local": "यह स्वास्थ्य देखभाल की बात है।"
+   },
+   {
+    "id": "llm_fallback",
+    "label": "Second opinion (Claude)",
+    "label_local": "दूसरी राय (Claude)",
+    "status": "fired",
+    "note": "The model was unsure, so Claude gave a second opinion.",
+    "note_local": "मॉडल पक्का नहीं था, इसलिए Claude से दूसरी राय ली।"
+   },
+   {
+    "id": "clinical_scope",
+    "label": "No diagnosis, no medicines",
+    "label_local": "न बीमारी का नाम, न दवा",
+    "status": "pass",
+    "note": "The reply names no disease and no medicine.",
+    "note_local": "जवाब में न बीमारी का नाम है, न दवा का।"
+   },
+   {
+    "id": "invariants",
+    "label": "Final safety checks",
+    "label_local": "आख़िरी सुरक्षा जाँच",
+    "status": "pass",
+    "note": "An emergency never gets a booking; nothing else is marked as an emergency.",
+    "note_local": "इमरजेंसी में बुकिंग नहीं; बाकी कुछ इमरजेंसी नहीं बताया।"
+   },
+   {
+    "id": "fever_home_visit",
+    "label": "Fever gets a home check",
+    "label_local": "बुखार में घर पर जाँच",
+    "status": "pass",
+    "note": "No fever was sent to a phone call only.",
+    "note_local": "बुखार को सिर्फ़ फ़ोन कॉल पर नहीं भेजा।"
+   }
+  ],
+  "timing_ms": 2565.7
+ }
+}

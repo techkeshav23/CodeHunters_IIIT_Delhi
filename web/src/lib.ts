@@ -38,6 +38,12 @@ export function isEmergency(res: TriageResponse): boolean {
   );
 }
 
+// The backend gave up: three answers it could not understand, then a doctor call
+// as the safe default (trace.decision.rule "fallback_unclear").
+export function isUnclear(res: TriageResponse | null | undefined): boolean {
+  return res?.trace?.decision?.rule === "fallback_unclear";
+}
+
 export function initials(name: string): string {
   const parts = name.replace(/^dr\.?\s+/i, "").trim().split(/\s+/);
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();

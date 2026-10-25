@@ -1,0 +1,282 @@
+{
+ "follow_up_question": null,
+ "care_type": "teleconsultation",
+ "urgency": "same_day",
+ "red_flags": [],
+ "reasoning": "The problem was not clear; a doctor teleconsult today is the safe default.",
+ "matched_caregivers": [
+  {
+   "caregiver_id": "CG_021",
+   "score": 0.99,
+   "reason": "Hindi-speaking, free from 1 pm, ★4.9"
+  },
+  {
+   "caregiver_id": "CG_030",
+   "score": 0.99,
+   "reason": "Hindi-speaking, free from 10 am, ★5.0"
+  },
+  {
+   "caregiver_id": "CG_012",
+   "score": 0.97,
+   "reason": "English-speaking, free from 2 pm, ★4.8"
+  }
+ ],
+ "trace": {
+  "version": "0.1.0",
+  "language": "en",
+  "mode": "interactive",
+  "understood": {
+   "patient": {
+    "relation": null,
+    "relation_label": null,
+    "age_years": null,
+    "age_group": null,
+    "pregnant": null
+   },
+   "symptoms": [],
+   "duration_days": null,
+   "duration_label": null,
+   "services": [],
+   "severity": []
+  },
+  "model": {
+   "name": "MuRIL (fine-tuned)",
+   "probabilities": {
+    "emergency": 0.015,
+    "followup": 0.881,
+    "gp": 0.03,
+    "lab": 0.009,
+    "nurse": 0.018,
+    "out_of_scope": 0.021,
+    "paramedic": 0.026
+   },
+   "urgency_probabilities": {
+    "immediate": 0.153,
+    "routine": 0.1,
+    "same_day": 0.747
+   },
+   "confidence": 0.881,
+   "band": "high",
+   "flags": [],
+   "version": "2026-10-24T21:37:31",
+   "latency_ms": 154.45
+  },
+  "structured": {
+   "symptoms": [],
+   "who": "unknown",
+   "who_label": "Not known yet",
+   "who_label_local": "Not known yet",
+   "duration_days": null,
+   "age_years": null
+  },
+  "safety_net_local": "If there is trouble breathing, chest pain or fainting, or things get worse, call 112 right away or tell us.",
+  "llm": {
+   "model": "claude-opus-5-5",
+   "care_type": null,
+   "urgency": null,
+   "red_flags": [],
+   "reasoning": "The messages do not describe any health problem or care need, so the intent is unclear.",
+   "latency_ms": 1581.3
+  },
+  "checks": [],
+  "red_flags": [],
+  "decision": {
+   "care_type": "teleconsultation",
+   "urgency": "same_day",
+   "care_label": "Talk to a doctor (teleconsultation)",
+   "care_label_local": "Talk to a doctor (teleconsultation)",
+   "urgency_label": "Today",
+   "urgency_label_local": "Today",
+   "confidence": 0.2,
+   "source": "rules",
+   "rule": "fallback_unclear",
+   "specialty": null
+  },
+  "reasoning_local": "The problem was not clear; a doctor teleconsult today is the safe default.",
+  "follow_up": null,
+  "emergency": null,
+  "speech": {
+   "locale": "en-IN",
+   "text": "The problem was not clear; a doctor teleconsult today is the safe default."
+  },
+  "guardrails": [
+   {
+    "id": "safety_net",
+    "label": "Danger-sign rules",
+    "label_local": "Danger-sign rules",
+    "status": "pass",
+    "note": "No danger sign found in the words used.",
+    "note_local": "No danger sign found in the words used."
+   },
+   {
+    "id": "model_emergency",
+    "label": "Model emergency check",
+    "label_local": "Model emergency check",
+    "status": "pass",
+    "note": "The model found no sign of an emergency.",
+    "note_local": "The model found no sign of an emergency."
+   },
+   {
+    "id": "vulnerable_floor",
+    "label": "Baby, older adult or pregnancy",
+    "label_local": "Baby, older adult or pregnancy",
+    "status": "pass",
+    "note": "Nothing here needs a sooner visit because of age or pregnancy.",
+    "note_local": "Nothing here needs a sooner visit because of age or pregnancy."
+   },
+   {
+    "id": "urgency_floor",
+    "label": "Urgency never lowered",
+    "label_local": "Urgency never lowered",
+    "status": "pass",
+    "note": "The safety rules did not ask for a sooner time.",
+    "note_local": "The safety rules did not ask for a sooner time."
+   },
+   {
+    "id": "low_confidence",
+    "label": "Model confidence",
+    "label_local": "Model confidence",
+    "status": "pass",
+    "note": "The model is sure enough to decide.",
+    "note_local": "The model is sure enough to decide."
+   },
+   {
+    "id": "not_understood",
+    "label": "Words understood",
+    "label_local": "Words understood",
+    "status": "fired",
+    "note": "Nothing medical was recognised in the words, so the model's guess was not trusted.",
+    "note_local": "Nothing medical was recognised in the words, so the model's guess was not trusted."
+   },
+   {
+    "id": "out_of_scope",
+    "label": "Home health care only",
+    "label_local": "Home health care only",
+    "status": "pass",
+    "note": "This is a health care request.",
+    "note_local": "This is a health care request."
+   },
+   {
+    "id": "llm_fallback",
+    "label": "Second opinion (Claude)",
+    "label_local": "Second opinion (Claude)",
+    "status": "fired",
+    "note": "The model was unsure, so Claude gave a second opinion.",
+    "note_local": "The model was unsure, so Claude gave a second opinion."
+   },
+   {
+    "id": "clinical_scope",
+    "label": "No diagnosis, no medicines",
+    "label_local": "No diagnosis, no medicines",
+    "status": "pass",
+    "note": "The reply names no disease and no medicine.",
+    "note_local": "The reply names no disease and no medicine."
+   },
+   {
+    "id": "invariants",
+    "label": "Final safety checks",
+    "label_local": "Final safety checks",
+    "status": "pass",
+    "note": "An emergency never gets a booking; nothing else is marked as an emergency.",
+    "note_local": "An emergency never gets a booking; nothing else is marked as an emergency."
+   },
+   {
+    "id": "fever_home_visit",
+    "label": "Fever gets a home check",
+    "label_local": "Fever gets a home check",
+    "status": "pass",
+    "note": "No fever was sent to a phone call only.",
+    "note_local": "No fever was sent to a phone call only."
+   }
+  ],
+  "caregivers": [
+   {
+    "caregiver_id": "CG_021",
+    "name": "Rekha Gupta",
+    "role": "doctor",
+    "languages": [
+     "Hindi",
+     "Tamil",
+     "Haryanvi"
+    ],
+    "skills": [
+     "teleconsultation",
+     "prescription",
+     "report_review"
+    ],
+    "distance_km": 7.6,
+    "next_slot": "2026-10-25T13:00:00+05:30",
+    "next_slot_label": "1 pm",
+    "next_slot_label_local": "1 pm",
+    "rating": 4.9,
+    "score": 0.99,
+    "reason": "Hindi-speaking, free from 1 pm, ★4.9",
+    "reason_local": "Hindi-speaking, free from 1 pm, ★4.9",
+    "features": {
+     "language": 1.0,
+     "distance": 1.0,
+     "skill": 1.0,
+     "rating": 0.92
+    }
+   },
+   {
+    "caregiver_id": "CG_030",
+    "name": "Pawan Singh",
+    "role": "doctor",
+    "languages": [
+     "Hindi",
+     "Tamil",
+     "Bhojpuri"
+    ],
+    "skills": [
+     "teleconsultation",
+     "prescription",
+     "report_review"
+    ],
+    "distance_km": 12.6,
+    "next_slot": "2026-10-25T10:00:00+05:30",
+    "next_slot_label": "10 am",
+    "next_slot_label_local": "10 am",
+    "rating": 5.0,
+    "score": 0.99,
+    "reason": "Hindi-speaking, free from 10 am, ★5.0",
+    "reason_local": "Hindi-speaking, free from 10 am, ★5.0",
+    "features": {
+     "language": 1.0,
+     "distance": 1.0,
+     "skill": 1.0,
+     "rating": 1.0
+    }
+   },
+   {
+    "caregiver_id": "CG_012",
+    "name": "Kavita Das",
+    "role": "doctor",
+    "languages": [
+     "Hindi",
+     "English"
+    ],
+    "skills": [
+     "teleconsultation",
+     "prescription",
+     "report_review"
+    ],
+    "distance_km": 22.8,
+    "next_slot": "2026-10-25T14:00:00+05:30",
+    "next_slot_label": "2 pm",
+    "next_slot_label_local": "2 pm",
+    "rating": 4.8,
+    "score": 0.97,
+    "reason": "English-speaking, free from 2 pm, ★4.8",
+    "reason_local": "English-speaking, free from 2 pm, ★4.8",
+    "features": {
+     "language": 1.0,
+     "distance": 1.0,
+     "skill": 1.0,
+     "rating": 0.83
+    }
+   }
+  ],
+  "timing_ms": 1738.4
+ }
+}

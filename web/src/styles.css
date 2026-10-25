@@ -193,9 +193,11 @@ p {
   position: sticky;
   top: 0;
   height: 100vh;
+  /* on a short screen the whole sidebar scrolls, so the chat list keeps its minimum */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
   padding: 22px 16px 18px;
   background: var(--surface);
   border-right: 1px solid var(--line);
@@ -681,7 +683,7 @@ p {
 .option {
   min-height: 50px;
   padding: 10px 16px;
-  border-radius: var(--r-md);
+  border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--surface);
   font-weight: 600;
@@ -739,28 +741,16 @@ p {
   gap: 8px;
   min-width: 0;
 }
-.decision__kicker {
-  display: inline-flex;
+/* the care, with "Sunaiye" beside it (on the next line when the care is long) */
+.decision__title {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--ink-3);
+  gap: 2px 10px;
 }
-/* one icon per kind of care (paramedic, nursing, lab test, doctor) */
-.care-ico {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--brand-soft);
-  color: var(--brand-2);
-}
-.care-ico--danger {
-  background: var(--sindoor-soft);
-  color: var(--sindoor);
+/* the button's own padding is the gap; under the care, its icon lines up with the text */
+.decision__title .btn--quiet {
+  margin-left: -10px;
 }
 .decision__care {
   font-size: clamp(1.35rem, 2.2vw, 1.6rem);
@@ -791,7 +781,12 @@ p {
   margin-top: 3px;
   color: var(--haldi);
 }
-/* who decided and how sure, in plain words */
+/* who decided and how sure, in plain words: at the top of "Yeh faisla kyon?" */
+.decision__sources {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .decision__source {
   display: flex;
   align-items: flex-start;
@@ -815,22 +810,38 @@ p {
   border-bottom: 1px solid var(--line);
 }
 .why {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   border-top: 1px solid var(--line);
   padding: 16px 22px 20px;
   background: var(--surface-2);
 }
-.dial {
-  width: 100%;
-  max-width: 180px;
+/* "not understood": a plain card in place of the decision, no dial or reasons */
+.unclear {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 24px;
+}
+.unclear__title {
+  font-size: clamp(1.25rem, 2vw, 1.45rem);
+}
+.unclear__text {
+  color: var(--ink-2);
+}
+.unclear__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.unclear + .carers {
+  border-top: 1px solid var(--line);
 }
 .dial__needle {
   transform-origin: 110px 112px;
   transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.2, 1.15);
-}
-.dial text {
-  font-family: var(--body);
-  font-weight: 700;
-  fill: var(--ink-2);
 }
 
 /* case details (panel + inline) */
@@ -917,9 +928,6 @@ p {
   background: var(--haldi);
   color: var(--haldi-ink);
 }
-.why-text {
-  font-size: 0.98rem;
-}
 .meta-line {
   font-size: 0.8rem;
   color: var(--ink-3);
@@ -957,6 +965,16 @@ p {
   font-size: 1rem;
   font-weight: 700;
   padding: 0 2px;
+}
+/* "Aur 2 dekhein": the other caregivers, under the best match */
+.carers__more {
+  align-self: flex-start;
+}
+.carers__rest {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--r-lg);
 }
 .carer {
   display: grid;
@@ -1028,21 +1046,6 @@ p {
 /* Book is off: a later emergency in the same chat */
 .carer__side .btn[disabled] {
   cursor: not-allowed;
-}
-.score {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.2rem;
-  line-height: 1;
-  color: var(--brand-2);
-}
-.score small {
-  display: block;
-  font-family: var(--body);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--ink-3);
-  text-align: right;
 }
 .best-tag {
   font-size: 0.74rem;
@@ -1345,30 +1348,9 @@ p {
   justify-content: space-between;
   gap: 12px;
 }
-.sos__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 6px 12px;
-  border-radius: 999px;
-}
 .sos h1 {
   font-size: clamp(2.2rem, 7vw, 3.4rem);
   font-weight: 800;
-}
-.sos__why {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: -10px;
-  font-weight: 600;
-  opacity: 0.92;
-}
-.sos__why svg {
-  flex: none;
 }
 .call-big {
   display: flex;
@@ -1399,9 +1381,6 @@ p {
   font-size: 1.05rem;
   font-weight: 700;
   margin-top: 4px;
-}
-.sos__badge {
-  white-space: nowrap;
 }
 @keyframes beacon {
   0% {
@@ -1758,6 +1737,19 @@ p {
   background: var(--sindoor-soft);
   color: var(--ink);
 }
+/* an emergency left in the chat: the title reopens the full screen, the button calls 112 */
+.sos-reopen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 1.05rem;
+  text-align: left;
+}
 .toast {
   position: fixed;
   left: 50%;
@@ -1775,10 +1767,11 @@ p {
   box-shadow: var(--shadow-lift);
 }
 
-/* ---------- chat bar: History | Incognito, + Nayi chat ---------- */
+/* ---------- chats: in the sidebar (desktop), in a drawer (phone, tablet) ---------- */
 .view--check {
   padding-top: 14px;
 }
+/* holds the incognito banner, stuck just under the phone top bar */
 .chathead {
   position: sticky;
   top: var(--topbar-h, 0px);
@@ -1799,84 +1792,6 @@ p {
   height: 14px;
   background: linear-gradient(var(--bg), color-mix(in srgb, var(--bg) 0%, transparent));
   pointer-events: none;
-}
-.chatbar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.chatbar__right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chatbar__btn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 40px;
-  min-width: 44px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
-  /* no colour transition: the first frame can be in the other theme until App sets
-     data-theme, and a fade would drag that out */
-}
-.chatbar__btn svg {
-  flex: none;
-  color: var(--ink-2);
-}
-.chatbar__btn:hover {
-  background: var(--surface-2);
-}
-.chatbar__btn--primary {
-  background: var(--brand-soft);
-  border-color: var(--brand-soft);
-  color: var(--brand-2);
-}
-.chatbar__btn--primary svg {
-  color: var(--brand-2);
-}
-.chatbar__btn--primary:hover {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-}
-.chatbar__badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--brand-soft);
-  color: var(--brand-2);
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-/* unseen copies of the buttons, with and without labels, to measure what fits */
-.chatbar__measure {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  visibility: hidden;
-  pointer-events: none;
-}
-.chatbar__measure > div,
-.chatbar__measure-pair {
-  display: flex;
-  gap: 8px;
-  width: max-content;
 }
 
 /* incognito: inverted colours, so it reads as a different mode in both themes */
@@ -1920,45 +1835,98 @@ p {
   border-radius: 50%;
 }
 
-/* ---------- history (saved chats) ---------- */
-.sheet--history {
-  width: min(560px, 100%);
-  max-height: min(760px, calc(100vh - 40px));
-  padding: 0;
-  gap: 0;
-  overflow: hidden;
+/* the sidebar's part: takes the room between the navigation and the footer */
+.sidebar__chats {
+  flex: 1;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
 }
-/* the dialog itself takes focus on open; Tab then moves through its buttons */
-.sheet--history:focus {
+/* only on the tablet icon rail, which has no room for the list */
+.sidebar__chats-btn {
+  display: none;
+}
+.chats-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chats-panel:focus {
   outline: none;
 }
-.history__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 22px 20px 14px 24px;
-}
-.history__titles {
+.chats-panel__actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
 }
-.history__titles h2 {
-  font-size: 1.6rem;
-  font-weight: 800;
+.chats-panel__new {
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 0 14px;
 }
-.history__titles p {
+.chats-panel__incog {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
   color: var(--ink-2);
-  font-size: 0.92rem;
+  font-weight: 600;
+  font-size: 0.93rem;
+  text-align: left;
 }
-.history__list {
+.chats-panel__incog:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+/* on: inverted, like the banner */
+.chats-panel__incog[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+/* scrolls on its own; the side padding keeps focus rings inside the scroll box */
+.chats-panel__list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: -6px -6px 0;
+  padding: 6px 6px 4px;
+}
+.chats-panel__empty,
+.chats-panel__note {
+  padding: 0 10px;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.chats-panel__note {
+  margin-top: auto;
+  font-size: 0.8rem;
+}
+.chat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-group__title {
+  padding: 0 10px 4px;
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ink-3);
 }
 .chats {
   list-style: none;
@@ -1966,80 +1934,46 @@ p {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
 .chat-row {
   display: flex;
-  align-items: flex-start;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--bg);
-  transition: background 0.15s;
+  align-items: center;
+  border-radius: var(--r-md);
 }
 .chat-row:hover {
   background: var(--surface-2);
 }
-.chat-row--open {
-  border-color: var(--brand);
-  box-shadow: inset 0 0 0 0.5px var(--brand);
+.chat-row--open,
+.chat-row--open:hover {
+  background: var(--brand-soft);
 }
 .chat-row__open {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 4px 12px 14px;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 4px 7px 10px;
   border: 0;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: transparent;
   text-align: left;
 }
-.chat-row__ico {
-  flex: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-}
-.chat-row__ico--decision {
-  background: var(--brand-soft);
-  color: var(--brand-2);
-}
-.chat-row__ico--emergency {
-  background: var(--sindoor-soft);
-  color: var(--sindoor);
-}
-.chat-row__ico--question {
-  background: var(--haldi-soft);
-  color: var(--ink);
-}
-.chat-row__ico--none {
-  background: var(--surface-2);
-  color: var(--ink-3);
-}
-.chat-row__text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
 .chat-row__title,
 .chat-row__outcome {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
 }
 .chat-row__title {
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--ink);
 }
 .chat-row__outcome {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 .chat-row__outcome--brand {
@@ -2054,15 +1988,15 @@ p {
 .chat-row__outcome--muted {
   color: var(--ink-3);
 }
-.chat-row__when {
-  font-size: 0.82rem;
-  color: var(--ink-3);
-}
-.chat-row__del {
+/* ⋮ and its menu, which opens under it */
+.chat-row__menu {
   flex: none;
-  width: 40px;
-  height: 40px;
-  margin: 8px 6px 8px 0;
+  position: relative;
+}
+.chat-row__more {
+  width: 34px;
+  height: 34px;
+  margin-right: 4px;
   border-radius: 50%;
   border: 0;
   background: transparent;
@@ -2070,39 +2004,55 @@ p {
   display: grid;
   place-items: center;
 }
-.chat-row__del:hover {
-  background: var(--sindoor-soft);
-  color: var(--sindoor);
+.chat-row__more:hover,
+.chat-row__more[aria-expanded="true"] {
+  background: var(--surface-3);
+  color: var(--ink);
 }
-.chat-row__del:focus-visible {
+.chat-row__more:focus-visible {
   border-radius: 50%;
 }
-.history__empty {
+.chat-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+}
+.chat-menu__item {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 22px;
-  border-radius: var(--r-lg);
-  border: 1.5px dashed var(--line);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--sindoor);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-align: left;
 }
-.history__empty-ico {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  background: var(--brand-soft);
-  color: var(--brand-2);
-}
-.history__empty p {
-  color: var(--ink-2);
+.chat-menu__item:hover {
+  background: var(--sindoor-soft);
 }
 .history__foot {
+  padding-top: 8px;
   border-top: 1px solid var(--line);
-  padding: 10px 14px 12px;
 }
 .history__clear {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 8px;
+  text-align: left;
+  font-size: 0.9rem;
   color: var(--sindoor);
 }
 .history__clear:hover {
@@ -2113,14 +2063,94 @@ p {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 6px 4px 2px;
+  padding: 4px 4px 2px;
 }
 .history__confirm strong {
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 .history__confirm p {
   color: var(--ink-2);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+}
+/* two buttons in a narrow column: they wrap rather than overflow */
+.history__confirm .sheet__actions {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.history__confirm .btn {
+  padding: 0 12px;
+}
+
+/* the drawer: slides in from the left over a backdrop */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6, 26, 23, 0.5);
+  animation: fade-in 0.2s ease-out;
+}
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(320px, 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px calc(14px + env(safe-area-inset-bottom, 0px))
+    max(14px, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+  animation: drawer-in 0.22s ease-out;
+}
+.drawer:focus {
+  outline: none;
+}
+.drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+/* the icon rail hides the name; the drawer has room for it */
+.drawer .brand__name {
+  display: inline;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+/* ☰ at the left of the phone top bar */
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.topbar__menu {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+.topbar__menu:hover {
+  background: var(--surface-2);
+}
+.topbar__menu:focus-visible {
+  border-radius: 50%;
 }
 
 /* ---------- responsive ---------- */
@@ -2157,6 +2187,12 @@ p {
   .nav__item {
     justify-content: center;
     padding: 12px;
+  }
+  .sidebar__chats {
+    display: none;
+  }
+  .sidebar__chats-btn {
+    display: flex;
   }
   .sos-card {
     display: grid;
@@ -2217,7 +2253,7 @@ p {
     font-size: 1.2rem;
   }
   .lang-pill {
-    min-height: 38px;
+    min-height: 44px;
     padding: 0 12px;
     border-radius: 999px;
     border: 1px solid var(--line);
@@ -2229,7 +2265,7 @@ p {
     gap: 6px;
   }
   .call-pill {
-    min-height: 38px;
+    min-height: 44px;
     padding: 0 14px;
     border-radius: 999px;
     background: var(--sos);
@@ -2356,10 +2392,6 @@ p {
     gap: 6px;
     padding: 16px;
   }
-  .dial {
-    max-width: 200px;
-    margin: 0 auto;
-  }
   .decision__care {
     font-size: 1.55rem;
   }
@@ -2379,8 +2411,18 @@ p {
   .carer__side .btn {
     flex: 1;
   }
+  /* the links under a decision line up with the card's text and take two rows, not three */
+  .decision__actions {
+    padding: 0 8px 12px;
+  }
+  .decision__actions .btn--quiet {
+    padding: 0 8px;
+  }
   .why {
     padding: 14px 16px 16px;
+  }
+  .unclear {
+    padding: 18px 16px;
   }
   .scrim {
     place-items: end center;
@@ -2401,20 +2443,25 @@ p {
     bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px));
   }
 }
-/* chat bar + history on phones (after the generic .sheet rules above) */
+/* chats on phones: a bigger ⋮ for fingers */
 @media (max-width: 720px) {
   .view--check {
     padding-top: 6px;
   }
-  .sheet--history {
-    padding: 0 0 env(safe-area-inset-bottom, 0px);
-    gap: 0;
+  .chat-row__more {
+    width: 40px;
+    height: 40px;
+    margin-right: 2px;
   }
-  .history__head {
-    padding: 18px 12px 12px 18px;
+  /* ☰, logo, language and 112 fit a 360px phone with large text: the right side never
+     shrinks, the wordmark gives way first (below) */
+  .topbar__right {
+    flex: none;
   }
-  .history__list {
-    padding: 4px 12px 14px;
+}
+@media (max-width: 389px) {
+  html.text-large .topbar .brand__name {
+    display: none;
   }
 }
 
@@ -2425,4 +2472,71 @@ p {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- urgency dial: a small face, labels as real text ---------- */
+.dial {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "mid mid"
+    "face face"
+    "lo hi";
+  justify-content: space-between;
+  gap: 2px 8px;
+  width: 100%;
+  max-width: 160px;
+  margin: 0 auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-3);
+}
+.dial__face {
+  grid-area: face;
+  justify-self: center;
+  display: block;
+  width: 124px;
+}
+.dial__lo {
+  grid-area: lo;
+}
+.dial__mid {
+  grid-area: mid;
+  text-align: center;
+}
+.dial__hi {
+  grid-area: hi;
+  text-align: right;
+}
+.dial .is-on {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* emergency: Back alone at the top right */
+.sos__top {
+  justify-content: flex-end;
+}
+
+/* caregiver card: the match score on the "how we matched" toggle */
+.carer__pct {
+  margin-left: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  font-variant-numeric: tabular-nums;
+}
+.carer__match {
+  color: var(--ink-2);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* why panel: the safety checks that passed fold into one row */
+.checks__more {
+  gap: 10px;
+}
+.checks__more .ico svg {
+  transform: none;
 }

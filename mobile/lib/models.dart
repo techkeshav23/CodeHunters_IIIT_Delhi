@@ -273,6 +273,10 @@ class Decision {
   bool get byModel => source == 'model' || source == 'model+safety_net';
   bool get bySafetyNet => source == 'safety_net' || source == 'model+safety_net';
   bool get byLlm => source == 'llm';
+
+  /// Nothing was understood: after three answers it could not read, the
+  /// backend falls back to a doctor call (rule "fallback_unclear").
+  bool get unclear => rule == 'fallback_unclear';
 }
 
 enum ConfidenceBand { high, medium, low }

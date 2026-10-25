@@ -1,6 +1,7 @@
-import { CalendarCheck, Info, Phone, Settings, Siren, Stethoscope } from "lucide-react";
+import type { ReactNode } from "react";
+import { CalendarCheck, History, Info, Menu, Phone, Settings, Siren, Stethoscope } from "lucide-react";
 import type { Lang } from "../types";
-import { LANG_LABEL, LANG_SHORT, t, type Key } from "../i18n";
+import { LANG_LABEL, t, type Key } from "../i18n";
 import type { View } from "../lib";
 import { Brand, BrandMark } from "./Brand";
 import { useHeightVar } from "../useHeightVar";
@@ -23,9 +24,12 @@ interface NavProps {
   onLang: (l: Lang) => void;
   backend: Backend;
   bookingsCount: number;
+  // the chats panel, under the navigation on desktop; in a drawer on narrower screens
+  chats: ReactNode;
+  onChats: (opener: HTMLElement) => void;
 }
 
-export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount }: NavProps) {
+export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount, chats, onChats }: NavProps) {
   const statusKey: Key = backend === "ok" ? "serviceOk" : backend === "bad" ? "serviceBad" : backend === "mock" ? "serviceMock" : "serviceWait";
   return (
     <aside className="sidebar" aria-label="Raahat">
@@ -48,6 +52,18 @@ export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount }: 
           </button>
         ))}
       </nav>
+      <div className="sidebar__chats">{chats}</div>
+      {/* the icon rail (tablet) has no room for the chats: this opens them in the drawer */}
+      <button
+        type="button"
+        className="nav__item sidebar__chats-btn"
+        aria-haspopup="dialog"
+        aria-label={t(lang, "historyTitle")}
+        title={t(lang, "historyTitle")}
+        onClick={(e) => onChats(e.currentTarget)}
+      >
+        <History size={21} aria-hidden="true" />
+      </button>
       <div className="sidebar__foot">
         <a className="sos-card" href="tel:112" aria-label={t(lang, "sosNow")}>
           <span className="sos-card__icon" aria-hidden="true">
@@ -72,26 +88,52 @@ export function Sidebar({ view, lang, onView, onLang, backend, bookingsCount }: 
   );
 }
 
-export function TopBar({ lang, onLang, onView }: Pick<NavProps, "lang" | "onLang" | "onView">) {
+export function TopBar({
+  lang,
+  onLang,
+  onView,
+  chatsOpen,
+  onChats,
+}: Pick<NavProps, "lang" | "onLang" | "onView" | "onChats"> & { chatsOpen: boolean }) {
   const next = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
-  // the chat bar sticks just under this bar on phones (0 when hidden on desktop)
+  // the incognito banner sticks just under this bar on phones (0 when hidden on desktop)
   const heightRef = useHeightVar("--topbar-h");
   return (
     <header className="topbar" ref={heightRef}>
-      <button type="button" className="brand" onClick={() => onView("check")} style={{ border: 0, background: "none", padding: 0 }}>
-        <BrandMark size={32} />
-        <span className="brand__name">
-          <span>Raahat</span>
-        </span>
-      </button>
+      <div className="topbar__left">
+        <button
+          type="button"
+          className="topbar__menu"
+          aria-haspopup="dialog"
+          aria-expanded={chatsOpen}
+          aria-label={t(lang, "historyTitle")}
+          title={t(lang, "historyTitle")}
+          onClick={(e) => onChats(e.currentTarget)}
+        >
+          <Menu size={22} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="brand"
+          aria-label="Raahat"
+          onClick={() => onView("check")}
+          style={{ border: 0, background: "none", padding: 0 }}
+        >
+          <BrandMark size={32} />
+          <span className="brand__name">
+            <span>Raahat</span>
+          </span>
+        </button>
+      </div>
       <div className="topbar__right">
         <button
           type="button"
           className="lang-pill"
           onClick={() => onLang(next)}
           aria-label={`${t(lang, "setLang")}: ${LANG_LABEL[lang]}`}
+          lang={lang === "hi" ? "hi" : undefined}
         >
-          {LANG_SHORT[lang]}
+          {LANG_LABEL[lang]}
         </button>
         <a className="call-pill" href="tel:112" aria-label={t(lang, "sosNow")}>
           <Phone size={16} aria-hidden="true" />

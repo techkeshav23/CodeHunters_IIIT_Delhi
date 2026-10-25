@@ -160,7 +160,7 @@ void main() {
       expect(r.trace.modelTopProbability, closeTo(0.506, 1e-9));
       expect(r.careKind, CareKind.paramedic);
       expect(r.trace.caregivers, isNotEmpty);
-      expect(roleLabel(r.trace.caregivers.first.role, Lang.hinglish), 'Medic');
+      expect(roleLabel(r.trace.caregivers.first.role, Lang.hinglish), 'Paramedic');
       expect(roleLabel('phlebotomist', Lang.en), 'Sample collector');
       expect(roleLabel('doctor', Lang.hi), 'डॉक्टर');
       // the older sample roster keeps the web app's labels
@@ -470,8 +470,9 @@ void main() {
         expect(tm(l, k), isNotEmpty, reason: '$k/$l');
       }
     }
-    expect(tm(Lang.hinglish, M.addMore), 'Aur jaankari jodein');
-    expect(tm(Lang.hi, M.addMore), 'और जानकारी जोड़ें');
-    expect(tm(Lang.en, M.addMore), 'Add more details');
+    expect(tm(Lang.hinglish, M.addMore), 'Kuch aur batana hai?');
+    expect(tm(Lang.hi, M.addMore), 'कुछ और बताना है?');
+    expect(tm(Lang.en, M.addMore), 'Anything else to add?');
+    expect(tm(Lang.hi, M.seeMore, {'n': 2}), 'और 2 देखें');
   });
 }

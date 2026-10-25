@@ -130,10 +130,14 @@ const _assistantRadius = BorderRadius.only(
 
 /// A follow-up question with tappable options ("Sawaal 1 / 3").
 class QuestionCard extends StatelessWidget {
-  const QuestionCard({super.key, required this.msg, required this.live, required this.onAnswer});
+  const QuestionCard({super.key, required this.msg, required this.live, required this.onAnswer, this.showHelper = true});
   final QuestionMsg msg;
   final bool live;
   final ValueChanged<String> onAnswer;
+
+  /// False hides the small helper line (trace.reasoning_local) when the
+  /// question card before it in the thread had the same one.
+  final bool showHelper;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +197,7 @@ class QuestionCard extends StatelessWidget {
             text,
             style: dv(display(23, weight: FontWeight.w700, color: cc.ink, height: 1.2), text),
           ),
-          if (res.trace.reasoningLocal.isNotEmpty) ...[
+          if (showHelper && res.trace.reasoningLocal.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(res.trace.reasoningLocal, style: body(14.5, color: cc.ink2)),
           ],
@@ -269,7 +273,7 @@ class _OptionButton extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: cc.bg,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: yes ? Color.lerp(cc.line, cc.sindoor, 0.45)! : Color.lerp(cc.line, cc.brand, 0.35)!,
               width: 1.8,
@@ -286,8 +290,9 @@ class _OptionButton extends StatelessWidget {
   }
 }
 
-/// The final decision: dial, care label, who decided, reasoning, safety-net
-/// advice, why, caregivers.
+/// The final decision: dial, care label (with "Sunaiye"), reasoning and
+/// safety-net advice; then the links (why, anything else, new chat), the why
+/// panel (who decided, case details) and the caregivers.
 class DecisionCard extends StatefulWidget {
   const DecisionCard({super.key, required this.msg, this.onAddMore, this.canBook = true});
   final DecisionMsg msg;
@@ -296,7 +301,7 @@ class DecisionCard extends StatefulWidget {
   /// its Book buttons are disabled.
   final bool canBook;
 
-  /// "Aur jaankari jodein"; null hides the button (older decisions).
+  /// "Kuch aur batana hai?"; null hides the button (older decisions).
   final VoidCallback? onAddMore;
 
   @override
@@ -305,6 +310,8 @@ class DecisionCard extends StatefulWidget {
 
 class _DecisionCardState extends State<DecisionCard> {
   bool _why = false;
+  bool _doctor = false; // caregivers shown on the "nothing understood" card
+  bool _allCarers = false; // the caregivers after the first one
 
   Future<void> _book(TraceCaregiver cg) async {
     final state = AppScope.read(context);
@@ -319,33 +326,61 @@ class _DecisionCardState extends State<DecisionCard> {
     final lang = state.lang;
     final res = widget.msg.res;
     final d = res.trace.decision;
+    final frame = BoxDecoration(
+      color: cc.surface,
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(6),
+        topRight: Radius.circular(rXl),
+        bottomLeft: Radius.circular(rXl),
+        bottomRight: Radius.circular(rXl),
+      ),
+      border: Border.all(color: cc.line),
+      boxShadow: cc.shadow,
+    );
+
+    // Nothing understood: no advice, dial or "why", only a plain card that
+    // offers a doctor (this reply's caregivers) or a new chat.
+    if (d.unclear) {
+      return Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: frame,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _UnclearNotice(
+              lang: lang,
+              onDoctor: () => setState(() => _doctor = !_doctor),
+              onNewChat: state.newChat,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: _doctor ? _carers(cc, lang) : const SizedBox(width: double.infinity),
+            ),
+          ],
+        ),
+      );
+    }
+
     final level = urgencyLevel(res.urgency ?? d.urgency);
-    final tele = isTele(res.careType);
-    final carers = res.trace.caregivers;
-    final dur = fmtDays(res.trace.structured?.durationDays ?? res.trace.understood.durationDays, lang);
     final care = careLabel(res, lang);
-    final urg = urgencyLabel(res, lang);
     final decidedBy = decidedByText(res.trace, lang);
     final safetyNet = res.trace.safetyNetLocal;
-    final urgTone = switch (level) {
-      2 => ChipTone.danger,
-      1 => ChipTone.haldi,
-      _ => ChipTone.brand,
-    };
+    final specialty = d.specialty ?? '';
+    final title = Text(care, style: dv(display(22, color: cc.ink, height: 1.2), care));
+    final readAloud = ReadAloudButton(
+      id: 'd${widget.msg.id}',
+      text: decisionSummary(res),
+      voiceLang: res.trace.language,
+      speech: res.trace.speech,
+    );
+    // "Sunaiye" sits beside the care label; with very large text it goes under it
+    final roomy = MediaQuery.textScalerOf(context).scale(10) <= 12;
 
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: cc.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(6),
-          topRight: Radius.circular(rXl),
-          bottomLeft: Radius.circular(rXl),
-          bottomRight: Radius.circular(rXl),
-        ),
-        border: Border.all(color: cc.line),
-        boxShadow: cc.shadow,
-      ),
+      decoration: frame,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -357,35 +392,26 @@ class _DecisionCardState extends State<DecisionCard> {
                 Center(
                   child: Dial(level: level, lang: lang),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  t(lang, K.ourAdvice),
-                  style: body(14, weight: FontWeight.w600, color: cc.ink3),
-                ),
-                const SizedBox(height: 4),
-                Text(care, style: dv(display(22, color: cc.ink, height: 1.2), care)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    CCChip(urg, tone: urgTone, icon: LucideIcons.clock),
-                    if (d.specialty != null && d.specialty!.isNotEmpty)
-                      CCChip(t(lang, K.specialist, {'x': specialtyLabel(lang, d.specialty!)})),
-                    if (dur != null) CCChip(dur),
-                  ],
-                ),
-                if (decidedBy != null) ...[
+                const SizedBox(height: 12),
+                if (roomy)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: title),
+                      const SizedBox(width: 4),
+                      Transform.translate(offset: const Offset(8, -6), child: readAloud),
+                    ],
+                  )
+                else ...[
+                  title,
+                  Transform.translate(offset: const Offset(-10, 0), child: readAloud),
+                ],
+                if (specialty.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  _DecidedBy(text: decidedBy, source: d.source),
+                  CCChip(t(lang, K.specialist, {'x': specialtyLabel(lang, specialty)})),
                 ],
                 const SizedBox(height: 12),
-                Text(
-                  res.trace.reasoningLocal,
-                  maxLines: _why ? null : 3,
-                  overflow: _why ? null : TextOverflow.ellipsis,
-                  style: body(16, color: cc.ink2),
-                ),
+                Text(res.trace.reasoningLocal, style: body(16, color: cc.ink2)),
                 if (safetyNet != null) ...[
                   const SizedBox(height: 12),
                   _SafetyNetNotice(text: safetyNet),
@@ -393,26 +419,12 @@ class _DecisionCardState extends State<DecisionCard> {
               ],
             ),
           ),
+          // one calm row of links (it wraps on a narrow phone)
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
             child: Wrap(
               spacing: 2,
               children: [
-                if (widget.onAddMore != null)
-                  TextButton.icon(
-                    onPressed: widget.onAddMore,
-                    style: TextButton.styleFrom(
-                      foregroundColor: state.addingTo == widget.msg.id ? cc.brand2 : cc.ink2,
-                    ),
-                    icon: const Icon(LucideIcons.messageSquarePlus, size: 18),
-                    label: Text(tm(lang, M.addMore)),
-                  ),
-                ReadAloudButton(
-                  id: 'd${widget.msg.id}',
-                  text: decisionSummary(res),
-                  voiceLang: res.trace.language,
-                  speech: res.trace.speech,
-                ),
                 TextButton.icon(
                   onPressed: () => setState(() => _why = !_why),
                   iconAlignment: IconAlignment.end,
@@ -423,10 +435,18 @@ class _DecisionCardState extends State<DecisionCard> {
                   ),
                   label: Text(t(lang, K.whyThis)),
                 ),
+                if (widget.onAddMore != null)
+                  TextButton(
+                    onPressed: widget.onAddMore,
+                    style: TextButton.styleFrom(
+                      foregroundColor: state.addingTo == widget.msg.id ? cc.brand2 : cc.ink2,
+                    ),
+                    child: Text(tm(lang, M.addMore)),
+                  ),
                 TextButton.icon(
                   onPressed: state.newChat,
-                  icon: const Icon(LucideIcons.rotateCcw, size: 16),
-                  label: Text(t(lang, K.newCheck)),
+                  icon: const Icon(LucideIcons.plus, size: 18),
+                  label: Text(tm(lang, M.newChat)),
                 ),
               ],
             ),
@@ -449,66 +469,132 @@ class _DecisionCardState extends State<DecisionCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CaseDetails(res: res, lang: lang),
-                        if (res.trace.modelTopProbability != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(LucideIcons.chartNoAxesColumn, size: 14, color: cc.ink3),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  tm(lang, M.modelConfidence,
-                                      {'p': ((res.trace.modelSupportFor(res.careType) ?? 0) * 100).round()}),
-                                  style: body(13, weight: FontWeight.w600, color: cc.ink3),
-                                ),
-                              ),
-                            ],
-                          ),
+                        if (decidedBy != null) ...[
+                          _DecidedBy(text: decidedBy, source: d.source),
+                          const SizedBox(height: 16),
                         ],
+                        CaseDetails(res: res, lang: lang),
                       ],
                     ),
                   )
                 : const SizedBox(width: double.infinity),
           ),
+          _carers(cc, lang),
+        ],
+      ),
+    );
+  }
+
+  /// "Aapke liye sabse sahi": this reply's caregivers, each with Book. Only
+  /// the best one at first; "Aur 2 dekhein" shows the rest.
+  Widget _carers(CC cc, Lang lang) {
+    final res = widget.msg.res;
+    final tele = isTele(res.careType);
+    final carers = res.trace.caregivers;
+    final shown = _allCarers || carers.length < 2 ? carers.length : 1;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-                  child: Text(
-                    t(lang, K.carersTitle),
-                    style: display(19, weight: FontWeight.w700, color: cc.ink),
-                  ),
-                ),
-                if (carers.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
-                    child: Text(t(lang, K.noCarers), style: body(15, color: cc.ink3)),
-                  ),
-                if (!widget.canBook && carers.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-                    child: Text(t(lang, K.bookLocked), style: body(15, color: cc.ink3)),
-                  ),
-                for (var i = 0; i < carers.length; i++)
-                  EntryAnimation(
-                    delay: Duration(milliseconds: 500 + 120 * i),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: CaregiverCard(
-                        cg: carers[i],
-                        best: i == 0,
-                        tele: tele,
-                        lang: lang,
-                        onBook: widget.canBook ? () => _book(carers[i]) : null,
-                      ),
-                    ),
-                  ),
-              ],
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+            child: Text(
+              t(lang, K.carersTitle),
+              style: display(19, weight: FontWeight.w700, color: cc.ink),
             ),
+          ),
+          if (carers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+              child: Text(t(lang, K.noCarers), style: body(15, color: cc.ink3)),
+            ),
+          if (!widget.canBook && carers.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+              child: Text(t(lang, K.bookLocked), style: body(15, color: cc.ink3)),
+            ),
+          for (var i = 0; i < shown; i++)
+            EntryAnimation(
+              delay: Duration(milliseconds: i == 0 ? 500 : 80 * (i - 1)),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: CaregiverCard(
+                  cg: carers[i],
+                  best: i == 0,
+                  tele: tele,
+                  lang: lang,
+                  onBook: widget.canBook ? () => _book(carers[i]) : null,
+                ),
+              ),
+            ),
+          if (shown < carers.length)
+            TextButton.icon(
+              onPressed: () => setState(() => _allCarers = true),
+              iconAlignment: IconAlignment.end,
+              icon: const Icon(LucideIcons.chevronDown, size: 18),
+              label: Text(tm(lang, M.seeMore, {'n': carers.length - shown})),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Top of the decision card when nothing was understood (the backend gave
+/// up after three tries and fell back to a doctor call): says so plainly,
+/// then "Doctor se baat karein" (shows the caregivers) and "Nayi chat".
+class _UnclearNotice extends StatelessWidget {
+  const _UnclearNotice({required this.lang, required this.onDoctor, required this.onNewChat});
+  final Lang lang;
+  final VoidCallback onDoctor;
+  final VoidCallback onNewChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = CC.of(context);
+    final title = tm(lang, M.unclearTitle);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: cc.haldiSoft, borderRadius: BorderRadius.circular(12)),
+                child: Icon(LucideIcons.messageCircleQuestion, size: 20, color: cc.ink),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(title, style: dv(display(21, color: cc.ink, height: 1.25), title)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(tm(lang, M.unclearText), style: body(16, color: cc.ink2)),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.icon(
+                onPressed: onDoctor,
+                icon: const Icon(LucideIcons.stethoscope, size: 18),
+                label: Text(tm(lang, M.unclearDoctor)),
+              ),
+              OutlinedButton.icon(
+                onPressed: onNewChat,
+                icon: const Icon(LucideIcons.plus, size: 18),
+                label: Text(tm(lang, M.newChat)),
+              ),
+            ],
           ),
         ],
       ),
@@ -516,8 +602,8 @@ class _DecisionCardState extends State<DecisionCard> {
   }
 }
 
-/// One quiet line under the care label: which part of the system decided
-/// ("MuRIL model ne tay kiya · Pakka bharosa").
+/// One quiet line at the top of "Yeh faisla kyon?": which part of the system
+/// decided ("MuRIL model ne tay kiya · Pakka bharosa").
 class _DecidedBy extends StatelessWidget {
   const _DecidedBy({required this.text, required this.source});
   final String text;
@@ -582,7 +668,8 @@ class _SafetyNetNotice extends StatelessWidget {
   }
 }
 
-/// Emergency result inside the thread: re-opens the full-screen takeover.
+/// Emergency result inside the thread: the red button dials 112; the title
+/// re-opens the full-screen takeover.
 class EmergencyInline extends StatelessWidget {
   const EmergencyInline({super.key, required this.msg});
   final EmergencyMsg msg;
@@ -604,17 +691,30 @@ class EmergencyInline extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(LucideIcons.triangleAlert, size: 20, color: cc.sindoor),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: dv(display(19, weight: FontWeight.w700, color: cc.ink), title),
+          Semantics(
+            button: true,
+            label: title,
+            excludeSemantics: true,
+            child: Pressable(
+              onTap: () => openEmergency(context, msg),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.triangleAlert, size: 20, color: cc.sindoor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: dv(display(19, weight: FontWeight.w700, color: cc.ink), title),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(LucideIcons.chevronRight, size: 22, color: cc.ink2),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
           if (msg.res.trace.reasoningLocal.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -644,8 +744,8 @@ class EmergencyInline extends StatelessWidget {
             width: double.infinity,
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: CC.sosFixed, foregroundColor: Colors.white),
-              onPressed: () => openEmergency(context, msg),
-              icon: const Icon(LucideIcons.siren, size: 20),
+              onPressed: () => callNumber(context, '112', lang),
+              icon: const Icon(LucideIcons.phone, size: 20),
               label: Text(t(lang, K.sosNow)),
             ),
           ),
@@ -698,7 +798,7 @@ class ErrorCard extends StatelessWidget {
               onTap: onRetry,
               child: Container(
                 constraints: const BoxConstraints(minHeight: 48),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                 decoration: BoxDecoration(
                   color: cc.surface,
                   borderRadius: BorderRadius.circular(999),
@@ -709,9 +809,12 @@ class ErrorCard extends StatelessWidget {
                   children: [
                     Icon(LucideIcons.rotateCcw, size: 17, color: cc.sindoor),
                     const SizedBox(width: 8),
-                    Text(
-                      t(lang, K.retry),
-                      style: body(15.5, weight: FontWeight.w700, color: cc.ink),
+                    // wraps with large text on a narrow phone instead of overflowing
+                    Flexible(
+                      child: Text(
+                        t(lang, K.retry),
+                        style: body(15.5, weight: FontWeight.w700, color: cc.ink),
+                      ),
                     ),
                   ],
                 ),

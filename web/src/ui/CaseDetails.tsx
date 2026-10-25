@@ -1,11 +1,14 @@
-import { Check, CircleHelp, ShieldAlert, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, CircleHelp, ShieldAlert, TriangleAlert } from "lucide-react";
 import type { Lang, TriageResponse } from "../types";
 import { t } from "../i18n";
-import { decisionModelClass, fmtDays, modelClassKey, structuredChips, titleCase } from "../lib";
+import { fmtDays, structuredChips, titleCase } from "../lib";
 
-// "What we understood / what we checked / safety checks / why": shown in the desktop
-// side panel and inline under a decision on smaller screens.
+// "What we understood / what we checked / safety checks": shown in the desktop side
+// panel and inline under a decision on smaller screens. The decision and its reason
+// are on the card above, so they are not repeated here.
 export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: Lang }) {
+  const [showPassed, setShowPassed] = useState(false);
   const tr = res.trace;
   const u = tr.understood;
   // the model's structured symptoms when the API sends them, else what the rules understood
@@ -24,23 +27,11 @@ export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: 
     if (dur) chips.push({ text: dur, warm: false });
   }
   const checks = tr.checks ?? [];
-  // safety checks: the ones that changed or guarded the answer first
-  const guards = (tr.guardrails ?? [])
-    .filter((g) => g && (g.label_local || g.label))
-    .sort((a, b) => Number(b.status === "fired") - Number(a.status === "fired"));
-  // the learned model's support for the decision shown, only when the model is loaded
-  const top = decisionModelClass(res);
-  const topKey = top ? modelClassKey(top.cls) : null;
-  const modelName = tr.model?.name ? tr.model.name : t(lang, "modelWord");
-  const modelTitle = [tr.model?.version ? `model ${tr.model.version}` : null, tr.model?.latency_ms != null ? `${tr.model.latency_ms} ms` : null]
-    .filter(Boolean)
-    .join(" · ");
-  const meta = [
-    tr.decision.rule,
-    tr.decision.source,
-    `${Math.round((tr.decision.confidence ?? 0) * 100)}%`,
-    `${tr.timing_ms} ms`,
-  ].filter(Boolean);
+  // safety checks: the ones that changed or guarded the answer are shown; the ones
+  // that passed fold into one row that opens on tap
+  const guards = (tr.guardrails ?? []).filter((g) => g && (g.label_local || g.label));
+  const fired = guards.filter((g) => g.status === "fired");
+  const passed = guards.filter((g) => g.status !== "fired");
 
   return (
     <div className="details">
@@ -87,41 +78,49 @@ export default function CaseDetails({ res, lang }: { res: TriageResponse; lang: 
         <div className="details__group">
           <h3>{t(lang, "safetyChecks")}</h3>
           <ul className="checks">
-            {guards.map((g) => {
-              const fired = g.status === "fired";
-              return (
-                <li key={g.id} className={fired ? "is-fired" : "is-pass"}>
-                  <span className={fired ? "ico ico--fired" : "ico ico--absent"} aria-hidden="true">
-                    {fired ? <ShieldAlert size={14} /> : <Check size={13} />}
+            {fired.map((g) => (
+              <li key={g.id} className="is-fired">
+                <span className="ico ico--fired" aria-hidden="true">
+                  <ShieldAlert size={14} />
+                </span>
+                <span>
+                  <strong>{g.label_local || g.label}</strong>
+                  <small>{g.note_local || t(lang, "guardFired")}</small>
+                </span>
+              </li>
+            ))}
+            {passed.length > 0 && (
+              <li className="is-pass">
+                <button
+                  type="button"
+                  className="linkish checks__more"
+                  aria-expanded={showPassed}
+                  onClick={() => setShowPassed((o) => !o)}
+                >
+                  <span className="ico ico--absent" aria-hidden="true">
+                    <Check size={13} />
                   </span>
-                  {fired ? (
-                    <span>
-                      <strong>{g.label_local || g.label}</strong>
-                      <small>{g.note_local || t(lang, "guardFired")}</small>
-                    </span>
-                  ) : (
-                    <span>
-                      {g.label_local || g.label}
-                      <span className="sr-only">: {t(lang, "guardPassed")}</span>
-                    </span>
-                  )}
+                  {/* TODO(i18n): add guardsPassed = "{n} jaanch theek rahin" / "{n} जाँच ठीक रहीं" / "{n} checks passed" */}
+                  {passed.length} {t(lang, "guardPassed")}
+                  <ChevronDown size={16} aria-hidden="true" />
+                </button>
+              </li>
+            )}
+            {showPassed &&
+              passed.map((g) => (
+                <li key={g.id} className="is-pass">
+                  <span className="ico ico--absent" aria-hidden="true">
+                    <Check size={13} />
+                  </span>
+                  <span>
+                    {g.label_local || g.label}
+                    <span className="sr-only">: {t(lang, "guardPassed")}</span>
+                  </span>
                 </li>
-              );
-            })}
+              ))}
           </ul>
         </div>
       )}
-
-      <div className="details__group">
-        <h3>{t(lang, "reasonTitle")}</h3>
-        <p className="why-text">{tr.reasoning_local}</p>
-        <p className="meta-line">{meta.join(" | ")}</p>
-        {top && (
-          <p className="meta-line" title={modelTitle || undefined}>
-            {t(lang, "modelLine", { m: modelName, x: topKey ? t(lang, topKey) : top.cls.replace(/_/g, " "), pct: top.pct })}
-          </p>
-        )}
-      </div>
     </div>
   );
 }

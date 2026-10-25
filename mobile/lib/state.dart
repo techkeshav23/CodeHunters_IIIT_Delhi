@@ -113,11 +113,13 @@ String chatTitle(List<Msg> msgs) {
 }
 
 /// What a chat came to, for the History list: [SavedChat.outcome] is
-/// "decision", "emergency", "question" (still waiting for an answer) or
-/// "none" (no reply yet).
+/// "decision", "unclear" (nothing understood), "emergency", "question"
+/// (still waiting for an answer) or "none" (no reply yet).
 ({String kind, String? label, int level}) chatOutcome(List<Msg> msgs, Lang lang) {
   for (final m in msgs.reversed) {
     switch (m) {
+      case DecisionMsg(:final res) when res.trace.decision.unclear:
+        return (kind: 'unclear', label: null, level: 0);
       case DecisionMsg(:final res):
         final label = [careLabel(res, lang), urgencyLabel(res, lang)].where((s) => s.trim().isNotEmpty).join(' · ');
         return (kind: 'decision', label: label, level: urgencyLevel(res.urgency ?? res.trace.decision.urgency));
@@ -139,7 +141,7 @@ class SavedChat {
   final DateTime startedAt;
   final DateTime updatedAt;
   final String title;
-  final String outcome; // decision | emergency | question | none
+  final String outcome; // decision | unclear | emergency | question | none
   final String? outcomeLabel; // care + urgency, or the emergency title
   final int level; // 0-2, colours the outcome
   final List<Map<String, Object?>> messages;
@@ -308,6 +310,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The UI follows the script the person writes in ([send] passes each
+  /// reply's trace.language): Devanagari ("hi") switches it to Hindi, Roman
+  /// ("hinglish" or "en") switches a Hindi UI to Hinglish. Hinglish and
+  /// English are never swapped here (short Roman words like "ok" often read
+  /// as English), so a choice on the language button stays until the other
+  /// script is used.
+  void followWriting(Lang wrote) {
+    if (wrote == Lang.hi && lang != Lang.hi) setLang(Lang.hi);
+    if (wrote != Lang.hi && lang == Lang.hi) setLang(Lang.hinglish);
+  }
+
   void setAutoRead(bool v) {
     autoRead = v;
     _prefs?.setBool('cc_autoread', v);
@@ -359,6 +372,7 @@ class AppState extends ChangeNotifier {
       final res = await api.triage(req);
       if (thread != _thread) return null; // the user moved to another chat meanwhile
       last = (req: req, res: res);
+      followWriting(res.trace.language);
       final voiceLang = res.trace.language;
       if (res.isEmergency) {
         added = EmergencyMsg(_nextId++, req, res, clean);

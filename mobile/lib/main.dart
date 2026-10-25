@@ -10,9 +10,11 @@ import 'screens/how_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/sos_screen.dart';
 import 'state.dart';
+import 'strings_mobile.dart';
 import 'theme.dart';
 import 'ui/brand.dart';
 import 'ui/emergency.dart';
+import 'ui/history_sheet.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +60,8 @@ class CareCompassApp extends StatelessWidget {
 }
 
 /// Phone layout from the web app: top bar, the current view, and a bottom
-/// tab bar with a raised SOS button in the middle.
+/// tab bar with a raised SOS button in the middle. The ☰ in the top bar
+/// opens the chat sidebar on every tab.
 class Shell extends StatelessWidget {
   const Shell({super.key});
 
@@ -83,6 +86,7 @@ class Shell extends StatelessWidget {
         },
         child: Scaffold(
           backgroundColor: cc.bg,
+          drawer: const ChatDrawer(),
           body: Column(
             children: [
               const _TopBar(),
@@ -160,82 +164,110 @@ class _TopBar extends StatelessWidget {
     const order = [Lang.hi, Lang.hinglish, Lang.en];
     final next = order[(order.indexOf(lang) + 1) % order.length];
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 10, 12, 10),
-      decoration: BoxDecoration(
-        color: cc.bg,
-        border: Border(bottom: BorderSide(color: cc.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => state.setTab(0),
-              child: const Align(
-                alignment: Alignment.centerLeft,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(children: [BrandMark(size: 32), SizedBox(width: 10), BrandWordmark(size: 21)]),
-                ),
-              ),
+    // Labels here grow with large text only up to x1.2, so the name, the
+    // language and 112 stay on one line on a 360 dp phone.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.2,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(6, MediaQuery.paddingOf(context).top + 8, 12, 8),
+        decoration: BoxDecoration(
+          color: cc.bg,
+          border: Border(bottom: BorderSide(color: cc.line)),
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: tm(lang, M.chats),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              constraints: const BoxConstraints.tightFor(width: 42, height: 42),
+              padding: EdgeInsets.zero,
+              icon: Icon(LucideIcons.menu, size: 22, color: cc.ink),
             ),
-          ),
-          const SizedBox(width: 8),
-          Semantics(
-            button: true,
-            label: '${t(lang, K.setLang)}: ${langLabel[lang]}',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => state.setLang(next),
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 13),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: cc.surface,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: cc.line),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.languages, size: 15, color: cc.ink2),
-                    const SizedBox(width: 6),
-                    Text(
-                      langShort[lang]!,
-                      style: body(14, weight: FontWeight.w700, color: cc.ink, height: 1.2),
+            const SizedBox(width: 4),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => state.setTab(0),
+                // when the bar is tight the logo tile steps aside; the name stays
+                child: LayoutBuilder(
+                  builder: (context, c) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        children: [
+                          if (c.maxWidth >= 100) ...[const BrandMark(size: 32), const SizedBox(width: 10)],
+                          const BrandWordmark(size: 21),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Semantics(
-            button: true,
-            label: t(lang, K.sosNow),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => callNumber(context, '112', lang),
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(color: CC.sosFixed, borderRadius: BorderRadius.circular(999)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.phone, size: 15, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      '112',
-                      style: body(15, weight: FontWeight.w700, color: Colors.white, height: 1.2),
-                    ),
-                  ],
+            const SizedBox(width: 8),
+            Semantics(
+              button: true,
+              label: '${t(lang, K.setLang)}: ${langLabel[lang]}',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => state.setLang(next),
+                child: Container(
+                  height: 44,
+                  // the full language name; it shrinks rather than overflow
+                  // if a phone's font runs wide
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  padding: const EdgeInsets.symmetric(horizontal: 13),
+                  decoration: BoxDecoration(
+                    color: cc.surface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: cc.line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.languages, size: 15, color: cc.ink2),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            langShort[lang]!,
+                            style: dv(body(14, weight: FontWeight.w700, color: cc.ink, height: 1.2), langShort[lang]!),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Semantics(
+              button: true,
+              label: t(lang, K.sosNow),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => callNumber(context, '112', lang),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(color: CC.sosFixed, borderRadius: BorderRadius.circular(999)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.phone, size: 15, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        '112',
+                        style: body(15, weight: FontWeight.w700, color: Colors.white, height: 1.2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

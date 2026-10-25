@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Clock, Languages, MapPin, Star, Video } from "lucide-react";
+import { ChevronDown, Clock, MapPin, Star, Video } from "lucide-react";
 import type { Lang, TraceCaregiver } from "../types";
 import { t, type Key } from "../i18n";
 import { avatarColor, initials, roleKey } from "../lib";
@@ -48,7 +48,6 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
   const feats = Object.entries(cg.features ?? {})
     .filter((e): e is [string, number] => typeof e[1] === "number" && Number.isFinite(e[1]))
     .filter(([k]) => !(tele && DISTANCE_KEYS.has(k.toLowerCase())));
-  const languages = Array.isArray(cg.languages) ? cg.languages : [];
   const reason = cg.reason_local || cg.reason;
 
   return (
@@ -88,19 +87,21 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
               </span>
             )
           )}
-          {languages.length > 0 && (
-            <span>
-              <Languages size={15} aria-hidden="true" />
-              {languages.join(", ")}
-            </span>
-          )}
         </div>
         {reason && <p className="carer__reason">{reason}</p>}
-        {feats.length > 0 && (
+        {/* the match score sits on the "how we matched" toggle, next to its breakdown */}
+        {feats.length > 0 ? (
           <button type="button" className="linkish" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {t(lang, "matchHow")}
+            {pct != null && <span className="carer__pct">{pct}%</span>}
             <ChevronDown size={16} aria-hidden="true" />
           </button>
+        ) : (
+          pct != null && (
+            <span className="carer__match">
+              {pct}% {t(lang, "match")}
+            </span>
+          )
         )}
         {open && (
           <div className="bars">
@@ -116,11 +117,6 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
         )}
       </div>
       <div className="carer__side">
-        {pct != null && (
-          <div className="score" aria-label={`${pct}% ${t(lang, "match")}`}>
-            {pct}%<small>{t(lang, "match")}</small>
-          </div>
-        )}
         <button type="button" className="btn btn--primary" onClick={onBook} disabled={!onBook}>
           {t(lang, "book")}
         </button>

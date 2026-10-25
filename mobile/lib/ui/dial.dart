@@ -73,7 +73,7 @@ class _DialState extends State<Dial> with SingleTickerProviderStateMixin {
     return Semantics(
       label: labels[widget.level],
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 270),
+        constraints: const BoxConstraints(maxWidth: 210),
         child: AspectRatio(
           aspectRatio: 220 / 150,
           child: AnimatedBuilder(
@@ -195,7 +195,7 @@ class _DialPainter extends CustomPainter {
           style: TextStyle(
             fontFamily: fBody,
             fontFamilyFallback: fBodyFallback,
-            fontSize: 11.5,
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
             color: active ? Color.lerp(ink2, activeColor, bandT) : ink2,
           ),

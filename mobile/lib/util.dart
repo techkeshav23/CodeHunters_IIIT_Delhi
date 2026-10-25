@@ -176,12 +176,19 @@ String chatTime(DateTime when, Lang lang, {DateTime? now}) {
   if (mins < 60) return tm(lang, M.timeMins, {'n': mins});
   final h = w.hour % 12 == 0 ? 12 : w.hour % 12;
   final clock = '$h:${w.minute.toString().padLeft(2, '0')} ${w.hour < 12 ? 'AM' : 'PM'}';
-  final days = DateTime(n.year, n.month, n.day).difference(DateTime(w.year, w.month, w.day)).inDays;
+  final days = daysAgo(when, now: n);
   if (days == 0) return tm(lang, M.timeToday, {'t': clock});
   if (days == 1) return tm(lang, M.timeYesterday, {'t': clock});
   final month = (lang == Lang.hi ? _monthsHi : _months)[w.month - 1];
   final year = w.year == n.year ? '' : ' ${w.year}';
   return '${w.day} $month$year, $clock';
+}
+
+/// Calendar days from [when] to now, in local time: 0 today, 1 yesterday.
+int daysAgo(DateTime when, {DateTime? now}) {
+  final n = now ?? DateTime.now();
+  final w = when.toLocal();
+  return DateTime(n.year, n.month, n.day).difference(DateTime(w.year, w.month, w.day)).inDays;
 }
 
 String titleCase(String s) => s.replaceAllMapped(RegExp(r'\b\w'), (m) => m.group(0)!.toUpperCase());

@@ -8,7 +8,6 @@ import '../models.dart';
 import '../state.dart';
 import '../strings_mobile.dart';
 import '../theme.dart';
-import '../util.dart';
 import 'common.dart';
 
 /// Opens the phone dialer with [number] filled in (the user presses call).
@@ -79,7 +78,8 @@ class EmergencyTakeover extends StatelessWidget {
     final others = _otherNumbers(res.trace.language);
     final flags = res.trace.redFlags;
     final steps = em?.stepsLocal ?? const <String>[];
-    final raised = emergencyRaisedText(res.trace, lang);
+    // the matched words come in Latin letters ("siine men dard"): leave them out of a Hindi screen
+    final showEvidence = lang != Lang.hi && res.trace.language != Lang.hi;
     const white = Colors.white;
 
     Widget block(String title, List<Widget> children) => Container(
@@ -123,81 +123,27 @@ class EmergencyTakeover extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(LucideIcons.triangleAlert, size: 17, color: white),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    t(lang, K.sosTag),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: body(14.5, weight: FontWeight.w700, color: white, height: 1.2),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: white,
+                        side: BorderSide(color: white.withValues(alpha: 0.6), width: 1.5),
+                        minimumSize: const Size(48, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                       ),
-                      const SizedBox(width: 10),
-                      OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: white,
-                          side: BorderSide(color: white.withValues(alpha: 0.6), width: 1.5),
-                          minimumSize: const Size(48, 44),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                        ),
-                        icon: const Icon(LucideIcons.arrowLeft, size: 18),
-                        label: Text(t(lang, K.back), semanticsLabel: t(lang, K.sosBack)),
-                      ),
-                    ],
+                      icon: const Icon(LucideIcons.arrowLeft, size: 18),
+                      label: Text(t(lang, K.back), semanticsLabel: t(lang, K.sosBack)),
+                    ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 14),
                   EntryAnimation(
                     child: Text(
                       em?.titleLocal ?? t(lang, K.sosPageTitle),
                       style: display(38, color: white, height: 1.08),
                     ),
                   ),
-                  if (raised != null) ...[
-                    // the safety net alone raised this case, or the model and the rules both did
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 2),
-                          child: Icon(LucideIcons.shieldAlert, size: 18, color: white),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            raised,
-                            style: body(
-                              15,
-                              weight: FontWeight.w600,
-                              color: white.withValues(alpha: 0.92),
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                   const SizedBox(height: 26),
                   _BigCallButton(
                     label: t(lang, K.callNow),
@@ -265,7 +211,7 @@ class EmergencyTakeover extends StatelessWidget {
                                 f.labelLocal,
                                 style: body(17, weight: FontWeight.w700, color: white, height: 1.3),
                               ),
-                              if (f.evidence.isNotEmpty)
+                              if (showEvidence && f.evidence.isNotEmpty)
                                 Text('"${f.evidence}"', style: body(14.5, color: white.withValues(alpha: 0.85))),
                             ],
                           ),

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Activity,
   Bandage,
   BriefcaseMedical,
   CalendarCheck,
   Check,
   Copy,
   ExternalLink,
-  HandHeart,
   Mic,
   Pill,
   Phone,
@@ -31,15 +29,12 @@ const PICKS: Array<{ icon: typeof Thermometer; label: Key; seed: Key }> = [
   { icon: Bandage, label: "pickInjury", seed: "seedInjury" },
   { icon: BriefcaseMedical, label: "pickInjection", seed: "seedInjection" },
   { icon: Stethoscope, label: "pickDoctor", seed: "seedDoctor" },
-  { icon: HandHeart, label: "pickElder", seed: "seedElder" },
-  { icon: Activity, label: "pickBp", seed: "seedBp" },
 ];
 
 // Voice first: the one big action is the mic (it starts dictation in the composer below);
-// quick picks and examples are small and secondary.
-export function Start({ lang, onSeed, onExample, onMic, micSupported }: {
+// quick picks and examples are small and secondary. One tap on either starts the check.
+export function Start({ lang, onExample, onMic, micSupported }: {
   lang: Lang;
-  onSeed: (text: string) => void;
   onExample: (text: string) => void;
   onMic: () => void;
   micSupported: boolean;
@@ -61,7 +56,7 @@ export function Start({ lang, onSeed, onExample, onMic, micSupported }: {
         <span className="picks__label">{t(lang, "quickPicks")}</span>
         <div className="picks__row">
           {PICKS.map((p) => (
-            <button key={p.label} type="button" className="pick" onClick={() => onSeed(t(lang, p.seed))}>
+            <button key={p.label} type="button" className="pick" onClick={() => onExample(t(lang, p.seed))}>
               <p.icon size={18} aria-hidden="true" />
               {t(lang, p.label)}
             </button>
