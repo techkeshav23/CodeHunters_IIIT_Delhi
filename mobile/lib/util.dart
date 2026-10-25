@@ -115,7 +115,12 @@ String? decidedByText(Trace tr, Lang lang) {
   if (!fresh) return null;
   final name = (m?.shortName.isNotEmpty ?? false) ? m!.shortName : 'MuRIL';
   final band = m?.band;
-  final withBand = band == null ? '' : ' · ${bandText(band, lang)}';
+  // a safety rule switched the model's pick (e.g. doctor -> paramedic): the band
+  // is the model's confidence in another class, so it is not shown
+  final support = tr.modelSupportFor(d.careType);
+  final top = tr.modelTopProbability;
+  final switched = d.bySafetyNet && support != null && top != null && support < top;
+  final withBand = band == null || switched ? '' : ' · ${bandText(band, lang)}';
   return switch (d.source) {
     'model' => tm(lang, M.srcModel, {'name': name}) + withBand,
     'model+safety_net' => tm(lang, M.srcModelSafety, {'name': name}) + withBand,
@@ -125,6 +130,14 @@ String? decidedByText(Trace tr, Lang lang) {
     _ => null,
   };
 }
+
+/// The line under an emergency's title: the safety rules alone raised it, or
+/// the model and the rules both called it. Null otherwise.
+String? emergencyRaisedText(Trace tr, Lang lang) => switch (tr.decision.source) {
+  'safety_net' => tm(lang, M.sosBySafetyNet),
+  'model+safety_net' => t(lang, K.sosBoth),
+  _ => null,
+};
 
 String? fmtDays(double? days, Lang lang) {
   if (days == null) return null;

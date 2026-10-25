@@ -41,7 +41,9 @@ class CaregiverCard extends StatefulWidget {
   final bool best;
   final bool tele;
   final Lang lang;
-  final VoidCallback onBook;
+
+  /// Null disables the Book button (a later emergency overtook this advice).
+  final VoidCallback? onBook;
 
   @override
   State<CaregiverCard> createState() => _CaregiverCardState();
@@ -218,7 +220,13 @@ class _CaregiverCardState extends State<CaregiverCard> {
                       child: Column(
                         children: [
                           for (var i = 0; i < feats.length; i++)
-                            FeatureBar(label: featureLabel(feats[i].key, lang), value: feats[i].value, delay: i * 60),
+                            FeatureBar(
+                              label: featureLabel(feats[i].key, lang),
+                              value: feats[i].value,
+                              delay: i * 60,
+                              // the rating feature is scaled over the roster (3.9 stars -> 8%): show the stars
+                              stars: feats[i].key == 'rating' ? cg.rating : null,
+                            ),
                         ],
                       ),
                     )
@@ -352,19 +360,23 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(_RingPainter old) => old.value != value || old.fill != fill || old.track != track;
 }
 
-/// Labelled 0-100% bar for one match sub-score.
+/// Labelled 0-100% bar for one match sub-score, or, with [stars], the star
+/// rating out of 5.
 class FeatureBar extends StatelessWidget {
-  const FeatureBar({super.key, required this.label, required this.value, this.delay = 0});
+  const FeatureBar({super.key, required this.label, required this.value, this.delay = 0, this.stars});
   final String label;
   final double value;
   final int delay;
+  final double? stars;
 
   @override
   Widget build(BuildContext context) {
     final cc = CC.of(context);
-    final pct = (value * 100).round().clamp(0, 100);
+    final s = stars;
+    final pct = s != null ? (s / 5 * 100).round().clamp(0, 100) : (value * 100).round().clamp(0, 100);
+    final shown = s != null ? s.toStringAsFixed(1) : '$pct%';
     return Semantics(
-      label: '$label $pct%',
+      label: s != null ? '$label $shown / 5' : '$label $pct%',
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),
@@ -377,13 +389,17 @@ class FeatureBar extends StatelessWidget {
                   child: Text(label, style: body(13.5, color: cc.ink2, height: 1.2)),
                 ),
                 Text(
-                  '$pct%',
+                  shown,
                   style: body(
                     13,
                     weight: FontWeight.w600,
                     color: cc.ink3,
                   ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                 ),
+                if (s != null) ...[
+                  const SizedBox(width: 2),
+                  Icon(Icons.star_rounded, size: 15, color: cc.haldi),
+                ],
               ],
             ),
             const SizedBox(height: 4),

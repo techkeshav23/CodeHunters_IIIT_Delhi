@@ -22,11 +22,13 @@ import {
   bandKey,
   careKey,
   careKind,
+  decisionModelClass,
   decisionSource,
   isRemoteCarer,
   modelShortName,
   safetyChoseUrgent,
   structuredChips,
+  topModelClass,
   type CareKind,
   type Msg,
   urgencyLevel,
@@ -55,9 +57,11 @@ interface Props {
 export default function Thread(p: Props) {
   const lastQuestion = [...p.messages].reverse().find((m) => m.kind === "question");
   const lastId = p.messages[p.messages.length - 1]?.id;
+  // no booking from a decision that a later emergency in this chat has overtaken
+  const lastEmergency = p.messages.map((m) => m.kind).lastIndexOf("emergency");
   return (
     <div className="thread" aria-live="polite">
-      {p.messages.map((m) => {
+      {p.messages.map((m, i) => {
         if (m.kind === "user") {
           return (
             <div key={m.id} className="msg msg--user">
@@ -79,6 +83,7 @@ export default function Thread(p: Props) {
                   res={m.res}
                   lang={p.lang}
                   onBook={p.onBook}
+                  locked={i < lastEmergency}
                   onNewCheck={p.onNewCheck}
                   onAddMore={m.id === lastId && !p.busy ? () => p.onAddMore(m) : undefined}
                   adding={p.adding}
@@ -270,6 +275,11 @@ function carersOf(res: TriageResponse): TraceCaregiver[] {
 function SourceLine({ res, lang }: { res: TriageResponse; lang: Lang }) {
   const src = decisionSource(res);
   const band = bandKey(res.trace.model?.band);
+  // a safety check switched the model's pick (e.g. fever_home_visit: doctor -> paramedic): the
+  // band is the model's confidence in another class, so the card does not say the model decided
+  const top = topModelClass(res.trace.model);
+  const decided = decisionModelClass(res);
+  const overridden = src.includes("safety_net") && !!top && !!decided && top.cls !== decided.cls;
   const lines: JSX.Element[] = [];
   if (src === "llm") {
     lines.push(
@@ -278,7 +288,7 @@ function SourceLine({ res, lang }: { res: TriageResponse; lang: Lang }) {
         <span>{t(lang, "srcLlm")}</span>
       </p>,
     );
-  } else if (src.startsWith("model") && band) {
+  } else if (src.startsWith("model") && band && !overridden) {
     lines.push(
       <p key="model" className="decision__source">
         <Gauge size={15} aria-hidden="true" />
@@ -303,6 +313,7 @@ function Decision({
   res,
   lang,
   onBook,
+  locked,
   onNewCheck,
   onAddMore,
   adding,
@@ -310,6 +321,7 @@ function Decision({
   res: TriageResponse;
   lang: Lang;
   onBook: (cg: TraceCaregiver, res: TriageResponse) => void;
+  locked: boolean;
   onNewCheck: () => void;
   onAddMore?: () => void;
   adding: boolean;
@@ -391,6 +403,7 @@ function Decision({
       <div className="carers">
         <h3 className="carers__title">{t(lang, "carersTitle")}</h3>
         {carers.length === 0 && <p className="case-panel__empty">{t(lang, "noCarers")}</p>}
+        {locked && carers.length > 0 && <p className="case-panel__empty">{t(lang, "bookLocked")}</p>}
         {carers.map((cg, i) => (
           <CaregiverCard
             key={cg.caregiver_id}
@@ -398,7 +411,7 @@ function Decision({
             best={i === 0}
             tele={isRemoteCarer(res.care_type, cg.role)}
             lang={lang}
-            onBook={() => onBook(cg, res)}
+            onBook={locked ? undefined : () => onBook(cg, res)}
           />
         ))}
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { ArrowLeft, Phone, RotateCcw, ShieldAlert, TriangleAlert } from "lucide-react";
 import type { Lang, TriageResponse } from "../types";
 import { t } from "../i18n";
-import { raisedBySafety } from "../lib";
+import { decisionSource } from "../lib";
 
 interface Props {
   res: TriageResponse;
@@ -24,6 +24,9 @@ export default function EmergencyTakeover({ res, userText, lang, onBack, onNewCh
       document.body.style.overflow = prev;
     };
   }, []);
+  // the safety rules alone raised it, or the model called it too ("model+safety_net")
+  const src = decisionSource(res);
+  const why = src === "safety_net" ? "sosRaised" : src.includes("model") && src.includes("safety_net") ? "sosBoth" : null;
   const others = (em?.numbers ?? []).filter((n) => n.number !== "112");
   // trace.red_flags carries our ids with labels; res.red_flags (the organisers'
   // ids) is never shown. A flag without a label is skipped, never shown as an id.
@@ -47,10 +50,10 @@ export default function EmergencyTakeover({ res, userText, lang, onBack, onNewCh
           </button>
         </div>
         <h1 id="sos-title">{em?.title_local ?? t(lang, "sosPageTitle")}</h1>
-        {raisedBySafety(res) && (
+        {why && (
           <p className="sos__why">
             <ShieldAlert size={18} aria-hidden="true" />
-            {t(lang, "sosRaised")}
+            {t(lang, why)}
           </p>
         )}
         <a ref={callRef} className="call-big" href="tel:112" aria-label={t(lang, "sosNow")}>

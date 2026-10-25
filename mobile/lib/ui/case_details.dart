@@ -16,29 +16,31 @@ class CaseDetails extends StatelessWidget {
   final Lang lang;
 
   /// Chips from trace.structured (the model's structured symptoms), or from
-  /// trace.understood on servers that do not send it. The first chip is
-  /// "who" (highlighted) when known.
+  /// trace.understood on servers that do not send it. The first chips are
+  /// "who" (highlighted), only from the words or an answer (relation, age
+  /// group, pregnancy), never the model's guess alone. No age in years: a
+  /// tapped range ("60 saal ya zyada") is stored as 70, which nobody said.
   (List<String>, bool) _chips() {
     final tr = res.trace;
     final u = tr.understood;
     final st = tr.structured;
     final chips = <String>[];
     if (st != null && !st.isEmpty) {
-      final who = st.whoChip;
-      if (who != null) chips.add(titleCase(who));
-      final age = st.ageYears ?? u.patient.ageYears;
-      if (age != null && age >= 1) chips.add('${age.round()}y');
+      final p = u.patient;
+      final rel = p.relation != null && p.relation != 'self' ? (p.relationLabel ?? '').trim() : '';
+      if (rel.isNotEmpty) chips.add(titleCase(rel));
+      final who = (p.ageGroup != null || p.pregnant == true || p.relation == 'self') ? st.whoChip : null;
+      if (who != null && !chips.contains(titleCase(who))) chips.add(titleCase(who));
+      final hasWho = chips.isNotEmpty;
       for (final s in st.symptoms) {
         chips.add(s.labelLocal);
       }
       final dur = fmtDays(st.durationDays ?? u.durationDays, lang);
       if (dur != null) chips.add(dur);
-      return (chips, who != null);
+      return (chips, hasWho);
     }
     final hasRelation = u.patient.relationLabel != null && u.patient.relationLabel!.isNotEmpty;
     if (hasRelation) chips.add(titleCase(u.patient.relationLabel!));
-    final age = u.patient.ageYears;
-    if (age != null && age >= 1) chips.add('${age.round()}y');
     for (final s in u.symptoms) {
       chips.add(s.labelLocal);
     }

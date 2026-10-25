@@ -289,8 +289,12 @@ class _OptionButton extends StatelessWidget {
 /// The final decision: dial, care label, who decided, reasoning, safety-net
 /// advice, why, caregivers.
 class DecisionCard extends StatefulWidget {
-  const DecisionCard({super.key, required this.msg, this.onAddMore});
+  const DecisionCard({super.key, required this.msg, this.onAddMore, this.canBook = true});
   final DecisionMsg msg;
+
+  /// False when a later emergency in the same chat overtook this decision:
+  /// its Book buttons are disabled.
+  final bool canBook;
 
   /// "Aur jaankari jodein"; null hides the button (older decisions).
   final VoidCallback? onAddMore;
@@ -484,6 +488,11 @@ class _DecisionCardState extends State<DecisionCard> {
                     padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
                     child: Text(t(lang, K.noCarers), style: body(15, color: cc.ink3)),
                   ),
+                if (!widget.canBook && carers.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+                    child: Text(t(lang, K.bookLocked), style: body(15, color: cc.ink3)),
+                  ),
                 for (var i = 0; i < carers.length; i++)
                   EntryAnimation(
                     delay: Duration(milliseconds: 500 + 120 * i),
@@ -494,7 +503,7 @@ class _DecisionCardState extends State<DecisionCard> {
                         best: i == 0,
                         tele: tele,
                         lang: lang,
-                        onBook: () => _book(carers[i]),
+                        onBook: widget.canBook ? () => _book(carers[i]) : null,
                       ),
                     ),
                   ),
@@ -583,6 +592,7 @@ class EmergencyInline extends StatelessWidget {
     final cc = CC.of(context);
     final lang = AppScope.of(context).lang;
     final title = msg.res.trace.emergency?.titleLocal ?? t(lang, K.sosPageTitle);
+    final raised = emergencyRaisedText(msg.res.trace, lang);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -610,7 +620,7 @@ class EmergencyInline extends StatelessWidget {
             const SizedBox(height: 8),
             Text(msg.res.trace.reasoningLocal, style: body(15, color: cc.ink)),
           ],
-          if (msg.res.trace.raisedBySafetyNet) ...[
+          if (raised != null) ...[
             const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,7 +632,7 @@ class EmergencyInline extends StatelessWidget {
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    tm(lang, M.sosBySafetyNet),
+                    raised,
                     style: body(13.5, weight: FontWeight.w600, color: cc.ink2, height: 1.35),
                   ),
                 ),

@@ -36,7 +36,8 @@ interface Props {
   // video only: a teleconsultation, or a doctor (the roster's doctors are virtual)
   tele: boolean;
   lang: Lang;
-  onBook: () => void;
+  // left out when booking is off (a later emergency in the same chat)
+  onBook?: () => void;
 }
 
 export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
@@ -103,9 +104,14 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
         )}
         {open && (
           <div className="bars">
-            {feats.map(([k, v]) => (
-              <FeatureRow key={k} label={featureLabel(lang, k)} value={clampPct(v)} />
-            ))}
+            {feats.map(([k, v]) =>
+              // the rating feature is scaled over the roster (3.9 stars reads as 8%): show the stars
+              k.toLowerCase() === "rating" && typeof cg.rating === "number" ? (
+                <FeatureRow key={k} label={featureLabel(lang, k)} value={clampPct(cg.rating / 5)} text={`${cg.rating.toFixed(1)}★`} />
+              ) : (
+                <FeatureRow key={k} label={featureLabel(lang, k)} value={clampPct(v)} />
+              ),
+            )}
           </div>
         )}
       </div>
@@ -115,7 +121,7 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
             {pct}%<small>{t(lang, "match")}</small>
           </div>
         )}
-        <button type="button" className="btn btn--primary" onClick={onBook}>
+        <button type="button" className="btn btn--primary" onClick={onBook} disabled={!onBook}>
           {t(lang, "book")}
         </button>
       </div>
@@ -123,14 +129,14 @@ export default function CaregiverCard({ cg, best, tele, lang, onBook }: Props) {
   );
 }
 
-function FeatureRow({ label, value }: { label: string; value: number }) {
+function FeatureRow({ label, value, text }: { label: string; value: number; text?: string }) {
   return (
     <>
       <span>{label}</span>
       <span className="bars__track" aria-hidden="true">
         <span className="bars__fill" style={{ width: `${value}%`, display: "block" }} />
       </span>
-      <span>{value}%</span>
+      <span>{text ?? `${value}%`}</span>
     </>
   );
 }

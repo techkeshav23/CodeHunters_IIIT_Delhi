@@ -6,7 +6,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:carecompass/api.dart';
+import 'package:carecompass/i18n.dart';
 import 'package:carecompass/main.dart';
+import 'package:carecompass/models.dart';
 import 'package:carecompass/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,10 +76,13 @@ void main() {
     expect(find.text('95%'), findsOneWidget);
     expect(find.text('Sabse sahi'), findsOneWidget);
 
-    // "Match kaise hua" breakdown
+    // "Match kaise hua" breakdown: the skill bar is the needed skill, the
+    // rating shows its stars (4.8), not the roster-scaled 85%
     await tester.tap(find.text('Match kaise hua').first);
     await settle(tester);
-    expect(find.text('Kaam ka anubhav'), findsOneWidget);
+    expect(find.text('Zaroori skill'), findsOneWidget);
+    expect(find.text('85%'), findsNothing);
+    expect(find.text('4.8'), findsNWidgets(2));
 
     // book the best match
     await tester.ensureVisible(find.text('Book karein').first);
@@ -139,8 +144,10 @@ void main() {
     await settle(tester, 4);
     await tester.tap(find.text('Yeh faisla kyon?'));
     await settle(tester);
-    expect(find.text('Buzurg'), findsOneWidget);
-    expect(find.text('70y'), findsOneWidget);
+    // "who" from the words only ("Papa"), not the model's guess ("Buzurg") or a stand-in age
+    expect(find.text('Papa'), findsOneWidget);
+    expect(find.text('Buzurg'), findsNothing);
+    expect(find.text('70y'), findsNothing);
     expect(find.text('Suraksha jaanch'), findsOneWidget);
     expect(find.textContaining('Laagu hua · 70 saal'), findsOneWidget);
     final firedY = tester.getTopLeft(find.text('Buzurg, bachche ya pregnancy ka niyam')).dy;
@@ -172,6 +179,19 @@ void main() {
     await settle(tester);
     expect(find.text('Abhi call karein'), findsOneWidget);
     expect(find.text('Humari suraksha jaanch ne ise emergency maana'), findsOneWidget);
+
+    // back in the chat, the earlier decisions can no longer be booked
+    await tester.tap(find.text('Wapas'));
+    await settle(tester);
+    await tester.scrollUntilVisible(find.text('Book karein').first, -200, scrollable: find.byType(Scrollable).first);
+    await settle(tester, 4);
+    expect(find.text(t(Lang.hinglish, K.bookLocked)), findsWidgets);
+    final bookButtons = find.ancestor(of: find.text('Book karein'), matching: find.byWidgetPredicate((w) => w is FilledButton));
+    expect(bookButtons, findsWidgets);
+    expect(tester.widgetList<FilledButton>(bookButtons).every((b) => !b.enabled), isTrue);
+    await tester.tap(find.text('Book karein').first, warnIfMissed: false);
+    await settle(tester);
+    expect(find.text('Booking pakki karein'), findsNothing);
   });
 
   testWidgets('an out-of-scope reply is not counted as a question', (tester) async {

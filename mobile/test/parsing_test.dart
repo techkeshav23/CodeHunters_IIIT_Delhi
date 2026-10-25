@@ -321,7 +321,7 @@ void main() {
       expect(fired.first.fired, isTrue);
       expect(fired.first.noteLocal, contains('aaj hi'));
       expect(fired.skip(1).every((g) => !g.fired), isTrue);
-      expect(r.trace.raisedBySafetyNet, isTrue);
+      expect(r.trace.raisedBySafetyNet, isFalse, reason: 'the model decided too');
 
       expect(r.trace.safetyNetLocal, contains('112'));
       expect(decisionSummary(r), endsWith(r.trace.safetyNetLocal!));
@@ -351,6 +351,18 @@ void main() {
         },
       });
       expect(decidedByText(plain.trace, Lang.en), 'Decided by MuRIL model · Medium confidence');
+      // a safety rule switched the model's pick (gp -> paramedic): no band for the class it did not choose
+      final switched = TriageResponse.fromJson({
+        'trace': {
+          'model': {
+            'name': 'MuRIL (fine-tuned)',
+            'band': 'medium',
+            'probabilities': {'gp': 0.73, 'paramedic': 0.26},
+          },
+          'decision': {'source': 'model+safety_net', 'care_type': 'paramedic_home_visit'},
+        },
+      });
+      expect(decidedByText(switched.trace, Lang.en), 'Decided by MuRIL model + safety rules');
       final rules = TriageResponse.fromJson({
         'trace': {
           'decision': {'source': 'rules'},
@@ -367,6 +379,16 @@ void main() {
       expect(r.isEmergency, isTrue);
       expect(r.trace.decision.source, 'safety_net');
       expect(r.trace.raisedBySafetyNet, isTrue);
+      expect(emergencyRaisedText(r.trace, Lang.hinglish), tm(Lang.hinglish, M.sosBySafetyNet));
+      // the model called it too: say both did, never that the safety check alone raised it
+      TriageResponse src(String s) => TriageResponse.fromJson({
+        'trace': {
+          'decision': {'source': s},
+        },
+      });
+      expect(emergencyRaisedText(src('model+safety_net').trace, Lang.en), t(Lang.en, K.sosBoth));
+      expect(src('model+safety_net').trace.raisedBySafetyNet, isFalse);
+      expect(emergencyRaisedText(src('model').trace, Lang.en), isNull);
       expect(r.trace.guardrailsFiredFirst.first.id, 'safety_net');
       expect(r.trace.safetyNetLocal, isNull);
       expect(decidedByText(r.trace, Lang.en), 'Decided by safety rules');
@@ -439,7 +461,7 @@ void main() {
       }
     }
     expect(t(Lang.hinglish, K.questionOf, {'n': 1, 'max': 3}), 'Sawaal 1 / 3');
-    expect(t(Lang.hinglish, K.urgRoutine), 'Kuch dinon mein');
+    expect(t(Lang.hinglish, K.urgRoutine), 'Time fix karke');
   });
 
   test('mobile-only strings exist in all three languages', () {

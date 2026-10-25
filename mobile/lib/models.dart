@@ -617,10 +617,10 @@ class Trace {
     ...guardrails.where((g) => !g.fired),
   ];
 
-  /// The safety net (not the model alone) raised this case: the source says
-  /// so, or the safety_net guardrail fired.
-  bool get raisedBySafetyNet =>
-      decision.bySafetyNet || guardrails.any((g) => g.fired && g.id == 'safety_net');
+  /// The safety net alone raised this case (source "safety_net"). When the
+  /// model called it too ("model+safety_net"), saying the safety check raised
+  /// it would wrongly suggest the model missed it.
+  bool get raisedBySafetyNet => decision.source == 'safety_net';
 
   /// Highest model probability (0-1), or null when no model output came back.
   double? get modelTopProbability =>

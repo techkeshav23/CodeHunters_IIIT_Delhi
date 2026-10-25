@@ -175,6 +175,8 @@ class _CheckScreenState extends State<CheckScreen> {
   Widget _thread(AppState state, List<Msg> msgs) {
     final lastQuestionId = msgs.last is QuestionMsg ? msgs.last.id : null;
     final lastDecisionId = msgs.last is DecisionMsg ? msgs.last.id : null;
+    // no booking from a decision that a later emergency in this chat overtook
+    final lastEmergency = msgs.lastIndexWhere((m) => m is EmergencyMsg);
     return Column(
       children: [
         Expanded(
@@ -200,6 +202,7 @@ class _CheckScreenState extends State<CheckScreen> {
                 ),
                 DecisionMsg() => DecisionCard(
                   msg: m,
+                  canBook: i > lastEmergency,
                   onAddMore: m.id == lastDecisionId && !state.busy ? () => _addMore(m) : null,
                 ),
                 EmergencyMsg() => EmergencyInline(msg: m),
@@ -228,7 +231,7 @@ const _picks = <(IconData, K, K)>[
   (LucideIcons.wind, K.pickCough, K.seedCough),
   (LucideIcons.pill, K.pickStomach, K.seedStomach),
   (LucideIcons.bandage, K.pickInjury, K.seedInjury),
-  (LucideIcons.syringe, K.pickInjection, K.seedInjection),
+  (LucideIcons.briefcaseMedical, K.pickInjection, K.seedInjection), // now asks for dressing (as on the web)
   (LucideIcons.stethoscope, K.pickDoctor, K.seedDoctor),
   (LucideIcons.handHeart, K.pickElder, K.seedElder),
   (LucideIcons.activity, K.pickBp, K.seedBp),

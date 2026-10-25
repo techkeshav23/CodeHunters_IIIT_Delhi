@@ -1025,6 +1025,10 @@ p {
   align-items: flex-end;
   gap: 10px;
 }
+/* Book is off: a later emergency in the same chat */
+.carer__side .btn[disabled] {
+  cursor: not-allowed;
+}
 .score {
   font-family: var(--display);
   font-weight: 700;

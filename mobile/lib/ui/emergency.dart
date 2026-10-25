@@ -8,6 +8,7 @@ import '../models.dart';
 import '../state.dart';
 import '../strings_mobile.dart';
 import '../theme.dart';
+import '../util.dart';
 import 'common.dart';
 
 /// Opens the phone dialer with [number] filled in (the user presses call).
@@ -78,6 +79,7 @@ class EmergencyTakeover extends StatelessWidget {
     final others = _otherNumbers(res.trace.language);
     final flags = res.trace.redFlags;
     final steps = em?.stepsLocal ?? const <String>[];
+    final raised = emergencyRaisedText(res.trace, lang);
     const white = Colors.white;
 
     Widget block(String title, List<Widget> children) => Container(
@@ -171,8 +173,8 @@ class EmergencyTakeover extends StatelessWidget {
                       style: display(38, color: white, height: 1.08),
                     ),
                   ),
-                  if (res.trace.raisedBySafetyNet) ...[
-                    // the safety net, not the model alone, raised this case
+                  if (raised != null) ...[
+                    // the safety net alone raised this case, or the model and the rules both did
                     const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +186,7 @@ class EmergencyTakeover extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            tm(lang, M.sosBySafetyNet),
+                            raised,
                             style: body(
                               15,
                               weight: FontWeight.w600,

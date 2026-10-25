@@ -128,8 +128,9 @@ export function raisedBySafety(res: TriageResponse): boolean {
 
 // For a non-emergency card: the source names the safety net and, when the API lists
 // its safety checks, one that raises care (danger signs, vulnerable people, urgency
-// floor) actually fired, so the card never claims a change that did not happen.
-const RAISING_CHECKS = ["safety_net", "vulnerable_floor", "urgency_floor"];
+// floor, fever checked at home) actually fired, so the card never claims a change that
+// did not happen.
+const RAISING_CHECKS = ["safety_net", "vulnerable_floor", "urgency_floor", "fever_home_visit"];
 export function safetyChoseUrgent(res: TriageResponse): boolean {
   if (!raisedBySafety(res)) return false;
   const checks = res.trace?.guardrails;
@@ -179,9 +180,14 @@ export function structuredChips(tr: Trace | null | undefined, lang: Lang): Under
   };
   for (const sym of s.symptoms ?? []) add(sym.label_local || sym.label || sym.id?.replace(/_/g, " "), "symptom");
   add(fmtDays(s.duration_days ?? null, lang), "duration");
+  // who it is for, only from the words or an answer (relation, age group, pregnancy), never
+  // the model's guess alone; no exact age, since a tapped range ("60+") is stored as 70
+  const p = tr?.understood?.patient;
   const who = (s.who ?? "").toLowerCase();
-  if (who && who !== "unknown") add(s.who_label_local || (WHO_KEY[who] ? t(lang, WHO_KEY[who]) : null), "who");
-  if (s.age_years != null && s.age_years >= 1) add(t(lang, "ageYears", { n: Math.round(s.age_years) }), "age");
+  if (p?.relation && p.relation !== "self" && p.relation_label) add(p.relation_label, "who");
+  if (p && (p.age_group || p.pregnant || p.relation === "self") && who && who !== "unknown") {
+    add(s.who_label_local || (WHO_KEY[who] ? t(lang, WHO_KEY[who]) : null), "who");
+  }
   return out.length ? out : null;
 }
 
