@@ -13,6 +13,7 @@ import 'package:carecompass/state.dart';
 import 'package:carecompass/strings_mobile.dart';
 import 'package:carecompass/util.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -76,6 +77,13 @@ void main() {
         state.setLargeText(true); // x1.18 on top of the system 1.3
         await tester.pumpWidget(CareCompassApp(state: state));
         await settle(tester);
+
+        // the bottom tab labels shrink to fit rather than being cut off ("Bookin…")
+        for (final k in [K.navCheck, K.navBookings, K.navSosShort, K.navHowShort, K.navSettings]) {
+          final label = find.text(t(lang, k)).last;
+          expect(tester.renderObject<RenderParagraph>(label).didExceedMaxLines, isFalse, reason: t(lang, k));
+          expect(tester.getRect(label).width, lessThanOrEqualTo(360 / 5), reason: t(lang, k));
+        }
 
         // start -> question -> decision (teleconsult with specialty)
         Future<void> tapIt(Finder f) async {
@@ -256,12 +264,12 @@ void main() {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
         await settle(tester, 4);
 
-        // this saved chat switched to incognito leaves History
+        // on this saved chat: a new, empty incognito chat; History keeps the saved one
         await openSidebar();
         await tapIt(find.text(tm(lang, M.incognito)));
-        expect(find.text(tm(lang, M.incognitoRemoved)), findsOneWidget);
         expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
-        expect(state.chats, hasLength(1));
+        expect(state.messages, isEmpty);
+        expect(state.chats, hasLength(2));
 
         // delete all, confirmed: the empty state
         await openSidebar();

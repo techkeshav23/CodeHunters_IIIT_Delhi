@@ -45,9 +45,10 @@ ASK_REASON = {
     "q_main_symptom": {"en": "The main problem is not clear yet, so one question is needed before routing.",
                        "hinglish": "Abhi saaf nahi hai ki taklif kya hai, isliye ek sawaal.",
                        "hi": "अभी साफ़ नहीं है कि तकलीफ़ क्या है, इसलिए एक सवाल।"},
-    "q_age": {"en": "Fever in a child: the child's age decides how urgent this is.",
-              "hinglish": "Bachche ko bukhar hai: umar se tay hoga ki kitni jaldi chahiye.",
-              "hi": "बच्चे को बुखार है: उम्र से तय होगा कि कितनी जल्दी चाहिए।"},
+    # asked for a child with any complaint, so it names none ("Bachche ko bukhar hai" for a cold misled)
+    "q_age": {"en": "The child's age decides how soon care is needed.",
+              "hinglish": "Bachche ki umar se tay hoga ki kitni jaldi care chahiye.",
+              "hi": "बच्चे की उम्र से तय होगा कि कितनी जल्दी देखभाल चाहिए।"},
     "q_duration": {"en": "How long this has lasted decides the care type.",
                    "hinglish": "Kitne din se hai, us se care tay hogi.",
                    "hi": "कितने दिन से है, उससे देखभाल तय होगी।"},
@@ -208,6 +209,13 @@ def _is_service(ex: Extraction, care: str | None) -> bool:
     return care in ("nurse", "lab") or (bool(ex.services) and not ex.symptoms)
 
 
+def _lab_request(ex: Extraction) -> bool:
+    """Only a home lab test is asked for: no symptom, no danger sign, no other service (a doctor
+    call or a report to show is a different request)."""
+    return (ex.service_ids() == ["sample_collection"] and not ex.symptoms and not ex.red_flags
+            and not ex.settled_flags)
+
+
 def _health_words(ex: Extraction) -> bool:
     """The words name something medical the lexicon knows: a symptom, a service, a pregnancy or
     a danger sign (said, denied or settled)."""
@@ -238,6 +246,17 @@ def _said_anything(ex: Extraction) -> bool:
     if not _asking:
         _asking.update(tok for w in ASKING_WORDS.split() for tok in extract(w).tokens)
     return bool(set(ex.tokens) & _asking)
+
+
+# everyday English words: a message with none of them, in Roman letters, is not taken as English
+ENGLISH_COMMON = set(("the a an is am are was were i my mine you your he she his her it its we our they their "
+                      "what how why when where who which please help can could would should will do does did "
+                      "have has had not no yes and or but of for with from about need want thanks thank sorry "
+                      "hello hey ok okay this that there here").split())
+
+
+def _english_words(text: str) -> bool:
+    return bool(ENGLISH_COMMON & set(re.findall(r"[a-z]+", (text or "").lower())))
 
 
 MODEL_SURE_EMERGENCY = 0.97  # the care head alone calls 112 only when this sure (see docs/RESULTS_MODELS.md)
@@ -310,7 +329,8 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
     app_chat = interactive and policy == "conversational"
     no_medical = care in CARE_KEYS and not _health_words(ex)
     unknown_words = care in CARE_KEYS and nothing_said
-    if so.band == "low" or no_medical or (nothing_said and interactive) or opinion is not None:
+    lab_only = _lab_request(ex)  # decided below without a second opinion
+    if not lab_only and (so.band == "low" or no_medical or (nothing_said and interactive) or opinion is not None):
         if so.band == "low":
             fired.add("low_confidence")
         if opinion is None:
@@ -336,6 +356,11 @@ def _model_first(so: StudentOutput, ex: Extraction, rule_flags: list[str], asked
         # symptom the rules can route: decide instead of asking (fewer questions, same safety)
         care, source, rule = d_rules.care, "safety_net", d_rules.rule + "+model_unsure"
         fired.add("low_confidence")
+    if lab_only and care != "lab":
+        # only a home lab test is asked for ("mummy ka thyroid test karwana hai", "take blood for cbc,
+        # doctor asked"): the organisers label this lab_test_home, scheduled, but the model has read
+        # such words as a doctor call (25 Oct live test)
+        care, source, rule = "lab", "safety_net", "lab_request"
     if care == OUT_OF_SCOPE:
         fired.add("out_of_scope")
 
@@ -549,6 +574,12 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     if facts.get("pregnant") and not ex.pregnant:  # "Garbhvati mahila" picked in answer to q_who
         ex.pregnant = True
     language = ex.language if (req.language or "auto") == "auto" else text.lang_of(ex.language)
+    if ((req.language or "auto") == "auto" and language == "en" and not _said_anything(ex)
+            and not _english_words(combined)):
+        # Roman letters, nothing understood and no everyday English ("hjkl hjkl", "banana chalao",
+        # "Aaj cricket match kaun jeetega?"): the detector's "en" is a guess, so reply in Hinglish
+        # like the rest of the chat instead of an English "Sorry..." inside a Hinglish screen
+        language = "hinglish"
     out_lang = language if config.REASONING_LANGUAGE == "user" else "en"
 
     flag_ids = [h.id for h in ex.red_flags]
@@ -560,11 +591,13 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     elif facts.get("breathing") == "absent" and breathing != "present":
         breathing = "absent"
     # "Haan" to a danger check is an emergency with that check's red flag; "Nahi" also answers
-    # the breathing check
+    # the breathing check, but only from a check that showed a breathing button (the stroke or
+    # dehydration check never asked about breathing, so the reasoning must not say it is fine)
     danger_flag = facts.get("danger_flag", "possible_emergency")
     if facts.get("danger") == "present" and danger_flag not in flag_ids:
         flag_ids.append(danger_flag)
-    elif facts.get("danger") == "absent" and breathing == "not_reported":
+    elif (facts.get("danger") == "absent" and breathing == "not_reported"
+          and facts.get("danger_qid") in followup.BREATHING_ASKED):
         breathing = "absent"
 
     lex = ex_entries(ex)
@@ -583,9 +616,15 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             # main-problem question is shown to the model in its training wording (the app's
             # longer text names nursing, injection and lab tests, which pulled answers to nursing)
             lexicon = get_lexicon()
-            seen = [(t.role, MODEL_MAIN_QUESTION[text.lang_of(language)] if t.question_id == "q_main_symptom" else t.text)
-                    for t in turns[:-1]]
-            so = student.predict(lexicon.space_devanagari(req.user_input or ""),
+            # a "none of these" said in other words ("inmein se kuch nahin") is shown to the model as the
+            # button label, so speaking the answer gives the same result as tapping it
+            said, asked_q = [], None
+            for t in turns:
+                said.append(t.text if t.role == "assistant" else followup.as_tapped(asked_q, t.text) or t.text)
+                asked_q = t.question_id if t.role == "assistant" else None
+            seen = [(t.role, MODEL_MAIN_QUESTION[text.lang_of(language)] if t.question_id == "q_main_symptom" else s)
+                    for t, s in zip(turns[:-1], said)]
+            so = student.predict(lexicon.space_devanagari(said[-1]),
                                  [(role, lexicon.space_devanagari(t)) for role, t in seen])
         except Exception:  # never take the API down because of the model
             log.exception("student prediction failed; using rules + the old model")
@@ -695,9 +734,12 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
     # the model decided from words the lexicon does not know: say it with the model's tags
     labels = None if named or so is None else {lg: [lb[lg] for _, lb in items] for lg in text.LANGS}
     understood_any = named or (so is not None and d.rule != "fallback_unclear")
+    # a home visit with nobody near who has the skill (an IM injection near Okhla): say so, offer a doctor
+    no_match = not matches and care in ("paramedic", "nurse", "lab")
 
     def why(lg: str) -> str:
-        return text.reasoning(ex, care, urgency, breathing, lg, labels=labels[lg] if labels else None)
+        return text.reasoning(ex, care, urgency, breathing, lg, labels=labels[lg] if labels else None,
+                              no_match=no_match)
 
     why_en = why("en") if understood_any else \
         "The problem was not clear; a doctor teleconsult today is the safe default."

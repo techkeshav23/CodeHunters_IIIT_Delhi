@@ -396,11 +396,17 @@ class _Tab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: body(11.5, weight: FontWeight.w700, color: color, height: 1.2),
+              // large text on a narrow phone: the label shrinks to fit, never cut off
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: body(11.5, weight: FontWeight.w700, color: color, height: 1.2),
+                  ),
+                ),
               ),
             ],
           ),

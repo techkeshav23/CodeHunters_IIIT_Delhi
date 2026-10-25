@@ -174,11 +174,11 @@ void main() {
     expect(again.chats.single.messages.map((m) => m['type']), ['user', 'question']);
   });
 
-  test('incognito chats are never saved', () async {
+  test('incognito chats are never saved, and never touch a saved chat', () async {
     final sent = <Map<String, dynamic>>[];
     final state = await boot(server(sent));
 
-    expect(state.goIncognito(), isFalse, reason: 'nothing saved to remove');
+    state.goIncognito();
     expect(state.incognito, isTrue);
     await state.send('Papa ko do din se bukhar hai aur khansi bhi');
     await state.send('Nahi');
@@ -194,31 +194,44 @@ void main() {
     expect(state.messages, isEmpty);
     expect(state.last, isNull);
 
-    // a normal chat is saved; switching it to incognito takes it out of History
+    // on an open saved chat: a new, empty incognito chat; the saved one stays
+    // in History exactly as it was
     await state.send('Dadi ko roz insulin ka injection ghar pe lagwana hai');
     expect(state.chats, hasLength(1));
-    expect(state.goIncognito(), isTrue);
-    expect(state.messages, isNotEmpty, reason: 'the thread stays on screen');
-    expect(state.chats, isEmpty);
-    expect(await storedChats(), isNull);
-    await state.send('Nahi');
-    expect(state.chats, isEmpty);
+    final stored = jsonEncode(await storedChats());
+    state.goIncognito();
+    expect(state.incognito, isTrue);
+    expect(state.messages, isEmpty, reason: 'a new chat, not the saved one under the banner');
+    expect(state.chatId, isNull);
+    expect(state.chats, hasLength(1));
+    expect(jsonEncode(await storedChats()), stored);
+    await state.send('Bukhar hai');
+    expect(state.messages.whereType<UserMsg>().map((m) => m.text), ['Bukhar hai']);
+    expect(jsonEncode(await storedChats()), stored, reason: 'nothing of the incognito chat is added to it');
+
+    // tapping it again while incognito: another new, empty incognito chat
+    state.goIncognito();
+    expect(state.incognito, isTrue);
+    expect(state.messages, isEmpty);
+    expect(state.last, isNull, reason: 'nothing of the incognito chat stays behind');
+    expect(jsonEncode(await storedChats()), stored);
 
     // opening a saved chat from History leaves incognito and drops its thread
     state.newChat();
     await state.send('Bukhar hai');
-    final saved = state.chats.single;
+    final saved = state.chats.first;
     state.newChat();
     state.goIncognito();
     await state.send('Mummy ko sir dard hai');
-    expect(state.chats, hasLength(1));
+    expect(state.chats, hasLength(2));
     state.openChat(saved);
     expect(state.incognito, isFalse);
     expect(state.messages.whereType<UserMsg>().map((m) => m.text), ['Bukhar hai']);
-    expect(state.chats.map((c) => c.title), ['Bukhar hai']);
+    const titles = ['Bukhar hai', 'Dadi ko roz insulin ka injection ghar pe lagwana hai'];
+    expect(state.chats.map((c) => c.title), titles);
 
     final again = await boot(server(sent));
-    expect(again.chats.map((c) => c.title), ['Bukhar hai']);
+    expect(again.chats.map((c) => c.title), titles);
   });
 
   test('deleting one chat and deleting all', () async {
@@ -345,13 +358,19 @@ void main() {
     expect(find.text(t(lang, K.whyThis)), findsOneWidget);
     expect(state.chats.single.outcome, 'decision');
 
-    // switching this saved chat to incognito takes it out of History
+    // on this open saved chat, "Bina save kiye chat" opens a new, empty
+    // incognito chat; the saved one stays in History as it was
+    final saved = state.chats.single;
     await openSidebar();
     await tester.tap(find.text(tm(lang, M.incognito)));
     await settle(tester);
-    expect(find.text(tm(lang, M.incognitoRemoved)), findsOneWidget);
     expect(find.text(tm(lang, M.incognitoBanner)), findsOneWidget);
-    expect(state.chats, isEmpty);
+    expect(state.messages, isEmpty);
+    expect(find.text('Batayein, kya taklif hai?'), findsOneWidget);
+    expect(find.text(t(lang, K.whyThis)), findsNothing, reason: 'the old chat is not left under the banner');
+    expect(state.chats.single, same(saved));
+    await say('Mummy ko sir dard hai');
+    expect(state.chats.single, same(saved), reason: 'nothing of the incognito chat is added to it');
 
     // the banner's cross leaves incognito and drops the thread
     await tester.tap(find.byTooltip(tm(lang, M.incognitoOff)));
@@ -362,14 +381,19 @@ void main() {
 
     // ⋮ -> Mitayein deletes a chat (here the open one, so the thread clears)
     await say('Bukhar hai');
-    expect(state.chats, hasLength(1));
+    expect(state.chats, hasLength(2));
     await openSidebar();
+    await tester.tap(find.byTooltip(tm(lang, M.chatMenu)).first); // newest first: the open one
+    await settle(tester);
+    await tester.tap(find.text(tm(lang, M.chatDelete)));
+    await settle(tester);
+    expect(state.chats.map((c) => c.title), ['Papa ko do din se bukhar hai aur khansi bhi']);
+    expect(state.messages, isEmpty);
     await tester.tap(find.byTooltip(tm(lang, M.chatMenu)));
     await settle(tester);
     await tester.tap(find.text(tm(lang, M.chatDelete)));
     await settle(tester);
     expect(state.chats, isEmpty);
-    expect(state.messages, isEmpty);
     expect(find.text(tm(lang, M.historyEmpty)), findsOneWidget, reason: 'the sidebar stays open');
   });
 

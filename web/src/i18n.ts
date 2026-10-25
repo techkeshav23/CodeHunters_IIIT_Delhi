@@ -246,9 +246,9 @@ const S = {
   // how it works
   howTitle: { hinglish: "Raahat kaise kaam karta hai", hi: "राहत कैसे काम करता है", en: "How Raahat works" },
   howSub: {
-    hinglish: "Har message lagbhag 20-60 millisecond mein in kadmon se guzarta hai; jab doosri jaanch (Claude) lagti hai, tab lagbhag 2 second. Har faisle ka kaaran dikhaya jata hai.",
-    hi: "हर संदेश लगभग 20-60 मिलीसेकंड में इन कदमों से गुज़रता है; जब दूसरी जाँच (Claude) लगती है, तब लगभग 2 सेकंड। हर फ़ैसले का कारण दिखाया जाता है।",
-    en: "Every message goes through these steps in about 20-60 milliseconds (about 2 seconds when the second check, Claude, is needed), and every decision shows its reason.",
+    hinglish: "Har message aam taur par 0.1 second se kam mein in kadmon se guzarta hai; jab doosri jaanch (Claude) lagti hai, tab kuch second. Har faisle ka kaaran dikhaya jata hai.",
+    hi: "हर संदेश आम तौर पर 0.1 सेकंड से कम में इन कदमों से गुज़रता है; जब दूसरी जाँच (Claude) लगती है, तब कुछ सेकंड। हर फ़ैसले का कारण दिखाया जाता है।",
+    en: "Every message usually goes through these steps in under 0.1 seconds (a few seconds when the second check, Claude, is needed), and every decision shows its reason.",
   },
   step1: { hinglish: "Samajhna", hi: "समझना", en: "Understand" },
   step1t: { hinglish: "Humara train kiya MuRIL model padhta hai: Hindi, Hinglish, English, galat spelling bhi.", hi: "हमारा ट्रेन किया MuRIL मॉडल पढ़ता है: हिंदी, हिंग्लिश, अंग्रेज़ी, ग़लत स्पेलिंग भी।", en: "Our fine-tuned MuRIL model reads it: Hindi, Hinglish, English, misspellings too." },
@@ -270,7 +270,8 @@ const S = {
   testedTitle: { hinglish: "Kitna parkha gaya", hi: "कितना परखा गया", en: "How it was tested" },
   stat1: { hinglish: "naye, anjaan messages par sahi care (pehle ke rules: 74%)", hi: "नए, अनजान संदेशों पर सही देखभाल (पहले के नियम: 74%)", en: "right care on new, unseen messages (our earlier rules: 74%)" },
   stat2: { hinglish: "organisers ke labelled caregiver match hu-ba-hu", hi: "आयोजकों के लेबल वाले केयरगिवर मैच हूबहू", en: "of the organisers' labelled caregiver matches reproduced" },
-  stat3: { hinglish: "MuRIL model ka faisla, server ke CPU par", hi: "MuRIL मॉडल का फ़ैसला, सर्वर के CPU पर", en: "for the MuRIL model to decide, on the server CPU" },
+  // the whole request (trace.timing_ms, as in "ms mein jawab" below), not the model alone
+  stat3: { hinglish: "aam taur par poora jawab, server ke CPU par: model, suraksha jaanch aur match", hi: "आम तौर पर पूरा जवाब, सर्वर के CPU पर: मॉडल, सुरक्षा जाँच और मैच", en: "usually, for a whole answer on the server CPU: model, safety checks and matching" },
   apiTitle: { hinglish: "Judges ke liye: API", hi: "जजों के लिए: API", en: "For judges: the API" },
   apiSub: {
     hinglish: "Aakhri request aur jawab, bilkul waise jaise API ne bheja.",
@@ -299,7 +300,6 @@ const S = {
   incognitoShort: { hinglish: "Incognito", hi: "इनकॉग्निटो", en: "Incognito" },
   incognitoBanner: { hinglish: "Yeh baatcheet save nahi hogi", hi: "यह बातचीत सेव नहीं होगी", en: "This chat won't be saved" },
   incognitoOff: { hinglish: "Save karna chalu karein", hi: "सेव करना चालू करें", en: "Save chats again" },
-  incognitoRemoved: { hinglish: "Yeh chat history se hata di gayi", hi: "यह चैट हिस्ट्री से हटा दी गई", en: "This chat was removed from history" },
   chatPending: { hinglish: "Sawaal baaki hai", hi: "सवाल बाकी है", en: "Question pending" },
   chatNoReply: { hinglish: "Jawab nahi aaya", hi: "जवाब नहीं आया", en: "No reply yet" },
   chatUnclear: { hinglish: "Samajh nahi aaya", hi: "समझ नहीं आया", en: "Not understood" },

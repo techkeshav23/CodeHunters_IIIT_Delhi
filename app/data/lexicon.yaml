@@ -77,6 +77,11 @@ aliases:
   dekh: [dekhna, dekhni, dekhne, dekho]
   dawai: [dawa, dava, davai, medicine, medicines, tablet, tablets, pills]
   sugar: [shakkar, shugar]
+  thyroid: [thayraid, thairaid, thairoid, thyroyd]   # थायराइड
+  # "chalao" (run it), "chalna" (walk) and the like are words of their own: never spelled into "chhala"
+  # (blister), which sounds like "chala" ("bukhar chala gaya"; 25 Oct live test)
+  chalao: [chalaao, chalaiye, chalaya, chalayi, chalaye, chalake]
+  chalna: [chalne, chalni, chalta, chalti, chalte, chalega, chalegi, chalenge, chaliye]
 
 # negation words: after a symptom ("dikkat nahi") or before it ("no chest pain")
 negation:
@@ -368,6 +373,8 @@ red_flags:
     label: Unconscious or not responding
     label_hinglish: Behosh ya jawab nahi de rahe
     label_hi: बेहोश या जवाब नहीं दे रहे
+    # "gusse mein kuch bol nahi rahi" (silent because angry) is not this
+    exclude_if_before: [gussa, gusse, naraz, naraaz, narazgi]
     patterns:
       # added after the fresh blind set (eval/fresh) showed these were missed
       - not waking up
@@ -401,6 +408,17 @@ red_flags:
       - बेहोश
       - होश नहीं
     conditional:
+      # not getting up or not talking (25 Oct live test: "Dadi ko ulti ho rahi hai aur woh kuch bol nahi rahi";
+      # the model was 98% sure, but a named everyday symptom kept it from 112). With someone at risk (older
+      # adult, baby, pregnancy, diabetes) or a sign of acute illness in the message (fever; bp_danger = a
+      # severe word, vomiting or blurred vision). Alone these are often harmless and stay quiet: "papa subah
+      # 9 baje tak uth nahi rahe, chhutti hai" (sleeping in), "mummy gusse mein kuch bol nahi rahi" (angry;
+      # see exclude_if_before). "sugar 450 ... uth nahi rahe" is low_sugar_signs (high sugar + drowsy).
+      - patterns: [uth nahi rahe, uth nahi rahi, uth nahi raha, nahi uth rahe, nahi uth rahi, nahi uth raha,
+                   uth hi nahi, kuch bol nahi rahe, kuch bol nahi rahi, kuch bol nahi raha,
+                   kuch nahi bol rahe, kuch nahi bol rahi, kuch nahi bol raha,
+                   उठ नहीं रहे, उठ नहीं रही, उठ नहीं रहा, कुछ बोल नहीं रहे, कुछ बोल नहीं रही, कुछ बोल नहीं रहा]
+        requires: [older_adult, infant, pregnant, diabetic, fever, bp_danger]
       # nearly fainting ("aankh ke aage andhera") in an older adult, in pregnancy, or with palpitations
       - patterns: [aankh andhera, aankh ke aage andhera, aankh ke saamne andhera, andhera chha, going to pass out,
                    about to pass out, gonna pass out, feel faint, feeling faint, feel like fainting, almost fainted,
@@ -458,9 +476,9 @@ red_flags:
       - दौरा पड़
       - मिर्गी
   - id: severe_bleeding
-    label: Heavy bleeding or blood in vomit or stool
-    label_hinglish: Bahut khoon behna, ulti ya potty mein khoon
-    label_hi: बहुत खून बहना, उल्टी या मल में खून
+    label: Heavy bleeding
+    label_hinglish: Bahut khoon behna
+    label_hi: बहुत ख़ून बहना
     patterns:
       - bahut khoon
       - khoon ruk nahi
@@ -999,8 +1017,20 @@ red_flags:
         requires: [pair]
         pair_with: [head]
         pair_within: 10
-      - patterns: [gardan akad, stiff neck, neck stiff]
-        requires: [fever]
+      # a stiff neck with fever, headache or vomiting (25 Oct live test: "bahut tez sar dard hai, ulti ho rahi
+      # hai aur gardan akad gayi hai" was a home visit). A stiff neck alone ("galat so gaya, gardan akad gayi")
+      # is a crick and stays quiet. (Like every conditional sign, a denied partner, "ulti nahi", lists this
+      # flag as checked and absent.)
+      - group: neck
+        patterns: [gardan akad, gardan akadna, gardan akadi, gardan akdi, gardan jakad, gardan jakdi, akdi gardan,
+                   akadi gardan, gardan jaam, stiff neck, neck stiff, neck is stiff, neck stiffness, stiffness neck,
+                   गर्दन अकड़, गर्दन जकड़]
+        requires: [fever, pair]
+        pair_with: [head, neck_vomit]
+      - group: neck_vomit
+        patterns: [ulti, ji machal, nausea]
+        requires: [pair]
+        pair_with: [neck]
   - id: severe_abdominal_pain
     label: Severe stomach pain
     label_hinglish: Pet mein bahut tez dard
@@ -1078,6 +1108,19 @@ red_flags:
                    aggressive, behaviour weird, weird behaviour, behaviour strange, strange behaviour, acting weird,
                    acting strange, behaving strangely, ajeeb harkat, ajeeb behave, ajeeb bartav]
         requires: [diabetic]
+      # very high sugar with drowsiness or not responding (25 Oct live test: "Papa ka sugar 450 hai aur woh uth
+      # nahi rahe"). A high reading alone ("sugar 450 aayi, doctor se baat karni hai") stays a same-day problem
+      - group: high_sugar
+        patterns: [sugar bahut zyada, sugar zyada, sugar bahut tez, sugar tez, tez sugar, sugar badh, sugar hi,
+                   glucometer hi, sugar 300, sugar 350, sugar 400, sugar 450, sugar 500, sugar 550, sugar 600]
+        requires: [pair]
+        pair_with: [drowsy]
+      - group: drowsy
+        patterns: [drowsy, very sleepy, bahut sust, ekdam sust, bilkul sust, behosh, uth nahi, kuch bol nahi,
+                   bol nahi rahe, bol nahi rahi, bol nahi raha, jawab nahi de, hosh nahi, unresponsive,
+                   not responding, jagana mushkil, neend se uth nahi, confused, behki baat]
+        requires: [pair]
+        pair_with: [high_sugar]
   - id: heat_stroke
     label: Possible heat stroke
     label_hinglish: Loo lagne ke lakshan
@@ -1397,7 +1440,10 @@ symptoms:
     label: Small burn
     label_hinglish: Thoda jal gaya
     label_hi: थोड़ा जल गया
-    patterns: [burn, jal gaya, jal gayi, jal gaye, jala, chhala]
+    # "chhala" (blister) sounds like "chala" (went: "bukhar chala gaya"), so only "chhala pad gaya" and the like
+    patterns: [burn, jal gaya, jal gayi, jal gaye, jala, "=chhala pad", "=chhale pad", "=chhala ho gaya",
+               "=chhale ho gaye", "=chhala hua", "=chhale hue", "=chhala nikal", "=chhale nikal", blister, blisters,
+               phaphola, phaphole, फफोला, फफोले]
     acute: [nurse, same_day]
     chronic: [nurse, routine]
   - id: animal_bite
@@ -1490,9 +1536,15 @@ services:
     label_hinglish: Ghar se sample / lab test
     label_hi: घर से सैंपल / लैब टेस्ट
     exclude_if_before: [unit, cricket, driving]
-    exclude_if_after: [match, series, cricket, paper, drive, case, cases, failed, pass]   # not a care request (25 Oct sweep)
+    # not a care request (25 Oct sweep); "pregnancy test positive aaya", "test ki report": a result to discuss
+    exclude_if_after: [match, series, cricket, paper, drive, case, cases, failed, pass, positive, negative, result,
+                       results, report, reports]
     patterns: [blood test, khoon ki jaanch, khoon jaanch, sample, lab test, test karwana, cbc, thyroid, full body,
-               sugar test, home collection, sample collection, test ghar, सैंपल, टेस्ट]
+               sugar test, home collection, sample collection, test ghar, सैंपल, टेस्ट,
+               # missed in the 25 Oct live test ("थायराइड की जांच करवानी है", "take blood for cbc")
+               सीबीसी, ब्लड टेस्ट, खून की जांच, खून की जाँच, शुगर टेस्ट, जांच करवानी, जाँच करवानी, जांच करवाना,
+               jaanch karwani, jaanch karwana, take blood, draw blood, blood sample, blood work, bloodwork, hba1c,
+               lipid profile, urine test]
     care: lab
     skill: sample collection
   - id: vitals_check
@@ -1507,21 +1559,28 @@ services:
     label: Check-up at home
     label_hinglish: Ghar pe checkup
     label_hi: घर पर जाँच
+    exclude_if_before: [thyroid, cbc, khoon, blood]   # "थायराइड की जांच", "खून की जांच": a lab test
     patterns: [checkup, check up, check-up, routine checkup, antenatal, chekap, जांच]
     care: paramedic
   - id: teleconsult
     label: Talk to a doctor
     label_hinglish: Doctor se baat
     label_hi: डॉक्टर से बात
+    exclude_if_after: [diya, diye, chuke, chuka, chuki]   # "doctor ko dikha diya": done already, not a request
     patterns: [doctor se baat, video call, online consult, phone pe doctor, teleconsult, salah chahiye,
                consult, second opinion, talk to a doctor, doctor se salah, doctor se consult, डॉक्टर से बात,
-               डॉक्टर से सलाह, सेकंड ओपिनियन, ओपिनियन]
+               डॉक्टर से सलाह, सेकंड ओपिनियन, ओपिनियन,
+               # missed in the 25 Oct live test ("doctor ko dikhana hai", "दवाई के बारे में डॉक्टर से पूछना है")
+               doctor se poochna, doctor se puchna, doctor se poochni, doctor se puchni,
+               dawai ke baare, dawai ke bare, ask a doctor, ask the doctor,
+               डॉक्टर से पूछना, डॉक्टर से पूछनी, दवाई के बारे, दवा के बारे]
     care: gp
   - id: report_review
     label: Show reports to a doctor
     label_hinglish: Report dikhana
     label_hi: रिपोर्ट दिखाना
-    patterns: [report dikha, report dekh, report review, reports, रिपोर्ट]
+    patterns: [report dikha, report dekh, report review, reports, रिपोर्ट, report aayi, report aai, report aaya,
+               report aa gayi, report aa gai]
     care: gp
 
 # Who the patient is.

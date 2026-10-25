@@ -228,7 +228,7 @@ export function HowView({ lang, last }: { lang: Lang; last: { req: TriageRequest
             <span>{t(lang, "stat2")}</span>
           </div>
           <div className="stat">
-            <strong>~20 ms</strong>
+            <strong>&lt; 0.1 s</strong>
             <span>{t(lang, "stat3")}</span>
           </div>
         </div>

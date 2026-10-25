@@ -226,12 +226,13 @@ QUESTIONS: dict[str, dict] = {
             ("none", {"en": "None of these", "hinglish": "Inme se kuch nahi", "hi": "इनमें से कुछ नहीं"}),
         ],
     },
+    # worded so it fits the writer and someone else alike ("my brother has panic attacks")
     "q_danger_mind": {
         "kind": "yes_no",
         "text": {
-            "en": "Do thoughts of hurting yourself or not wanting to live ever come?",
-            "hinglish": "Kya kabhi khud ko nuksan pahunchane ya jeene ka mann na hone ke khayal aate hain?",
-            "hi": "क्या कभी ख़ुद को नुकसान पहुँचाने या जीने का मन न होने के ख़याल आते हैं?",
+            "en": "Has there been any talk or thought of self-harm or of not wanting to live?",
+            "hinglish": "Kya khud ko nuksan pahunchane ya jeene ka mann na hone ki koi baat aayi hai?",
+            "hi": "क्या ख़ुद को नुकसान पहुँचाने या जीने का मन न होने की कोई बात आई है?",
         },
         "options": [
             ("yes", {"en": "Yes", "hinglish": "Haan", "hi": "हाँ"}),
@@ -306,6 +307,11 @@ DANGER_OPTION_FLAG = {
     "severe_pain": "pregnancy_emergency", "less_movement": "pregnancy_emergency", "water_broke": "pregnancy_emergency",
 }
 NONE_OF_THESE = re.compile(r"\b(kuch nahi|kuch nhi|koi nahi|none|nothing|nahi|nahin|nhi|no)\b|कुछ नहीं|नहीं")
+# the danger checks that offer a breathing button: a "none of these" there also means no breathing trouble
+BREATHING_ASKED = {"q_danger", "q_danger_breathing", "q_danger_chest"}
+# "none of these" said instead of tapped, as speech-to-text or a quick typist writes it:
+# "inmein se kuch nahin", "in mein se kuchh nahi", "koi bhi nahi"
+NONE_SPOKEN = re.compile(r"(in ?(me|mein|men|main|mai|mei|meh|mai?n) se )?(kuchh?|koi)( bhi)? (nahi|nahin|nhi|nai|nahee)")
 DANGER_FOR = [
     ("q_danger_mind", {"mental_health"}),
     ("q_danger_dehydration", {"vomiting", "diarrhoea"}),
@@ -411,6 +417,19 @@ def option_value(qid: str, answer: str) -> str | None:
     return _option_value(qid, answer) if qid in QUESTIONS else None
 
 
+def as_tapped(qid: str | None, answer: str) -> str | None:
+    """A "none of these" typed or spoken in other words ("inmein se kuch nahin") as the button's
+    own label, so the model reads it exactly as a tap; None for anything else (the parsed facts
+    are the same either way, but the model's guess of who the patient is can tip on the wording)."""
+    if qid not in DANGER_IDS or QUESTIONS[qid]["kind"] != "choice" or _option_value(qid, answer):
+        return None
+    norm = re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", to_roman(answer).lower())).strip()
+    if not NONE_SPOKEN.fullmatch(norm):
+        return None
+    lang = "hi" if re.search(r"[ऀ-ॿ]", answer or "") else "hinglish"
+    return dict(QUESTIONS[qid]["options"])["none"][lang]
+
+
 def yes_no(answer: str) -> str | None:
     norm = re.sub(r"[^a-z ]", " ", to_roman(answer).lower()).strip()
     if any(norm.startswith(u) for u in UNKNOWN):
@@ -460,8 +479,9 @@ def parse_answer(qid: str, answer: str) -> dict:
         v = "no" if value == "none" else (value or yes_no(answer))
         if v is None and NONE_OF_THESE.search(to_roman(answer).lower() + " " + (answer or "")):
             v = "no"
-        facts = {"danger": {"yes": "present", "no": "absent"}.get(v or "", "unknown"), "danger_flag": DANGER_FLAG[qid]}
-        if qid in ("q_danger", "q_danger_breathing") and v == "no":
+        facts = {"danger": {"yes": "present", "no": "absent"}.get(v or "", "unknown"), "danger_flag": DANGER_FLAG[qid],
+                 "danger_qid": qid}
+        if qid in BREATHING_ASKED and v == "no":  # only these checks show a breathing button
             facts["breathing"] = "absent"
         return facts
     if qid in ("q_who", "q_their_age"):

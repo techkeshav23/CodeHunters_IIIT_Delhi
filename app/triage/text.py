@@ -15,7 +15,9 @@ LANGS = ("en", "hinglish", "hi")
 
 CARE_LABELS = {
     "paramedic": {"en": "Paramedic home visit", "hinglish": "Paramedic ghar aakar check karenge", "hi": "पैरामेडिक घर आकर जाँच करेंगे"},
-    "nurse": {"en": "Home nursing", "hinglish": "Ghar pe nursing (nurse aayengi)", "hi": "घर पर नर्सिंग (नर्स आएँगी)"},
+    # the roster's medics do nursing work too, so the label names both
+    "nurse": {"en": "Home nursing (nurse or paramedic)", "hinglish": "Ghar pe nursing (nurse ya paramedic)",
+              "hi": "घर पर नर्सिंग (नर्स या पैरामेडिक)"},
     "lab": {"en": "Lab test at home", "hinglish": "Ghar se sample lekar lab test", "hi": "घर से सैंपल लेकर लैब टेस्ट"},
     "gp": {"en": "Talk to a doctor (teleconsultation)", "hinglish": "Doctor se phone / video par baat", "hi": "डॉक्टर से फ़ोन / वीडियो पर बात"},
     "specialist": {"en": "Specialist doctor (teleconsultation)", "hinglish": "Specialist doctor se baat", "hi": "विशेषज्ञ डॉक्टर से बात"},
@@ -99,6 +101,10 @@ BREATHING_NOTE = {
     "absent": {"en": "no breathing difficulty", "hinglish": "saans ki dikkat nahi hai", "hi": "सांस की दिक्कत नहीं है"},
 }
 NO_FLAGS_NOTE = {"en": "no danger signs reported", "hinglish": "koi khatre ka lakshan nahi bataya", "hi": "कोई ख़तरे का लक्षण नहीं बताया"}
+# a home visit fits but no caregiver with the skill is near: say so instead of promising a visit
+NO_MATCH_NOTE = {"en": "No one with this skill is near right now; a doctor can be called meanwhile.",
+                 "hinglish": "Abhi paas mein is kaam ke liye koi nahi hai; tab tak doctor se phone par baat kar sakte hain.",
+                 "hi": "अभी पास में इस काम के लिए कोई नहीं है; तब तक डॉक्टर से फ़ोन पर बात कर सकते हैं।"}
 AND = {"en": " and ", "hinglish": " aur ", "hi": " और "}
 
 
@@ -153,27 +159,30 @@ BASED_ON = {"en": "Based on your message", "hinglish": "Aapke sandesh ke hisaab 
 
 
 def reasoning(ex: Extraction, care: str, urgency: str, breathing: str, language: str,
-              labels: list[str] | None = None) -> str:
+              labels: list[str] | None = None, no_match: bool = False) -> str:
     """`labels` (in `language`) replace the extraction's symptoms and services, for a
-    decision the fine-tuned model made from words the lexicon does not know."""
+    decision the fine-tuned model made from words the lexicon does not know. `no_match`: a home
+    visit with nobody near who has the skill, so no visit is promised and a doctor call is offered."""
     lang = lang_of(language)
     what = _phrase(labels, lang) if labels is not None else _symptom_phrase(ex, lang)
+    phrase = CARE_PHRASE[lang].get((care, urgency), "")
+    tail = ""
+    if no_match:  # English says what fits, then that nobody is near; Hindi / Hinglish promised a visit
+        tail, phrase = (f" {NO_MATCH_NOTE[lang]}", phrase) if lang == "en" else ("", NO_MATCH_NOTE[lang])
     if not what:
-        phrase = CARE_PHRASE[lang].get((care, urgency), "")
         if lang == "en":
-            return f"{BASED_ON[lang]}; {NO_FLAGS_NOTE[lang]}, so {phrase}."
+            return f"{BASED_ON[lang]}; {NO_FLAGS_NOTE[lang]}, so {phrase}.{tail}"
         return f"{BASED_ON[lang]}, {NO_FLAGS_NOTE[lang]}{'।' if lang == 'hi' else '.'} {phrase}"
     dur = duration_label(ex.duration_days, lang)
     respiratory = any(h.entry.meta.get("respiratory") for h in ex.symptoms) or "fever" in ex.symptom_ids()
     note = (BREATHING_NOTE[breathing][lang] if respiratory and breathing in BREATHING_NOTE
             else NO_FLAGS_NOTE[lang])
-    phrase = CARE_PHRASE[lang].get((care, urgency), "")
     if lang == "en":
         if dur:
             what += " today" if dur == "today" else f" for {dur}"
         if ex.age_group in ("infant", "child", "older_adult"):
             what += {"infant": " in a baby", "child": " in a child", "older_adult": " in an older adult"}[ex.age_group]
-        return f"{what}; {note}, so {phrase}."
+        return f"{what}; {note}, so {phrase}.{tail}"
     lead = f"{dur} se {what.lower() if lang == 'hinglish' else what}" if dur and dur not in ("aaj se", "आज से") else what
     if lang == "hi" and dur and dur != "आज से":
         lead = f"{dur} से {what}"
@@ -391,25 +400,27 @@ def guardrails(fired: set[str], language: str) -> list[dict]:
 # ---- safety-netting advice for non-emergency decisions ---------------------
 
 def safety_net(language: str, fever: bool = False, child: bool = False, duration_days: float | None = None) -> str:
-    """When to come back or call 112. Plain words, no diagnosis. A fever already 3 days or
-    older does not get "if it lasts more than 3 days" (it already has)."""
+    """When to talk to a doctor and when to call 112. Plain words, no diagnosis. A problem that
+    lasts or gets worse is a doctor's call; trouble breathing, chest pain or fainting (and a child
+    who turns very drowsy or stops feeding) is 112. A fever already 3 days or older does not get
+    "if it lasts more than 3 days" (it already has)."""
     lang = lang_of(language)
     long_fever = fever and duration_days is not None and duration_days >= 3
     if lang == "en":
-        extra = ", or the child becomes very drowsy or stops feeding" if child else ""
-        tail = (", or the fever gets worse" if long_fever else ", or the fever lasts more than 3 days" if fever
-                else ", or things get worse")
-        return f"If there is trouble breathing, chest pain or fainting{extra}{tail}, call 112 right away or tell us."
+        worse = ("If the fever gets worse" if long_fever else "If the fever lasts more than 3 days" if fever
+                 else "If things get worse")
+        extra = ", or if the child becomes very drowsy or stops feeding" if child else ""
+        return f"{worse}, talk to a doctor. For trouble breathing, chest pain or fainting{extra}, call 112 now."
     if lang == "hi":
-        extra = ", बच्चा बहुत सुस्त हो जाए या दूध / खाना छोड़ दे" if child else ""
-        tail = (", या बुखार बढ़ जाए" if long_fever else ", या बुखार 3 दिन से ज़्यादा रहे" if fever
-                else ", या तकलीफ़ बढ़ जाए")
-        return f"अगर सांस लेने में दिक्कत, सीने में दर्द या बेहोशी हो{extra}{tail}, तो तुरंत 112 पर कॉल करें या हमें बताएँ।"
-    extra = ", bachcha bahut sust ho jaye ya doodh / khana chhod de" if child else ""
-    tail = (", ya bukhar badh jaye" if long_fever else ", ya bukhar 3 din se zyada rahe" if fever
-            else ", ya taklif badh jaye")
-    return (f"Agar saans lene mein dikkat, seene mein dard, behoshi{extra}{tail}, "
-            "to turant 112 par call karein ya hamein batayein.")
+        worse = ("अगर बुखार बढ़ जाए" if long_fever else "अगर बुखार 3 दिन से ज़्यादा रहे" if fever
+                 else "अगर तकलीफ़ बढ़ जाए")
+        extra = ", या बच्चा बहुत सुस्त हो जाए या दूध / खाना छोड़ दे" if child else ""
+        return f"{worse}, तो डॉक्टर से बात करें। सांस लेने में दिक्कत, सीने में दर्द या बेहोशी हो{extra}, तो अभी 112 पर कॉल करें।"
+    worse = ("Agar bukhar badh jaye" if long_fever else "Agar bukhar 3 din se zyada rahe" if fever
+             else "Agar taklif badh jaye")
+    extra = ", ya bachcha bahut sust ho jaye ya doodh / khana chhod de" if child else ""
+    return (f"{worse}, to doctor se baat karein. Saans lene mein dikkat, seene mein dard ya behoshi ho{extra}, "
+            "to abhi 112 par call karein.")
 
 
 def speech_lang(language: str) -> str:

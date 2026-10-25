@@ -540,9 +540,10 @@ p {
   color: var(--brand);
   font-weight: 600;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* a long example wraps onto a second line on phones rather than being cut off */
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
 }
 .example:hover {
   background: var(--brand-soft);
@@ -1888,7 +1889,7 @@ p {
   color: var(--ink);
 }
 /* on: inverted, like the banner */
-.chats-panel__incog[aria-pressed="true"] {
+.chats-panel__incog[aria-current="true"] {
   background: var(--ink);
   color: var(--bg);
 }
@@ -2325,6 +2326,8 @@ p {
     font-size: 0.72rem;
     font-weight: 700;
     min-width: 0;
+    /* not the browser's 6px button padding: "Bookings" fits at large text on a 360px phone */
+    padding: 0 2px;
   }
   .tab span {
     max-width: 100%;
@@ -2462,6 +2465,12 @@ p {
 @media (max-width: 389px) {
   html.text-large .topbar .brand__name {
     display: none;
+  }
+}
+/* the narrowest phones with large text: tab labels a touch smaller rather than cut off */
+@media (max-width: 359px) {
+  html.text-large .tab {
+    font-size: 0.64rem;
   }
 }
 

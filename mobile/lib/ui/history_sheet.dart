@@ -61,14 +61,6 @@ class ChatDrawer extends StatelessWidget {
       action();
     }
 
-    // Saying so when an open saved chat left History.
-    void incognito() {
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      closeThen(() {
-        if (state.goIncognito()) messenger?.showSnackBar(SnackBar(content: Text(tm(lang, M.incognitoRemoved))));
-      });
-    }
-
     // Chats are newest first, so each day group is one run of the list.
     const groups = [M.groupToday, M.groupYesterday, M.groupEarlier];
     final rows = <Widget>[];
@@ -113,7 +105,7 @@ class ChatDrawer extends StatelessWidget {
                 icon: LucideIcons.eyeOff,
                 label: tm(lang, M.incognito),
                 selected: state.incognito,
-                onTap: incognito,
+                onTap: () => closeThen(state.goIncognito),
               ),
             ),
             const SizedBox(height: 6),

@@ -52,7 +52,8 @@ export function ChatsPanel({ lang, chats, openId, incognito, onNewChat, onIncogn
           <Plus size={19} aria-hidden="true" />
           {t(lang, "newChat")}
         </button>
-        <button type="button" className="chats-panel__incog" aria-pressed={incognito} onClick={onIncognito}>
+        {/* always starts a new unsaved chat (not a toggle); marked while the open chat is one */}
+        <button type="button" className="chats-panel__incog" aria-current={incognito ? "true" : undefined} onClick={onIncognito}>
           <EyeOff size={18} aria-hidden="true" />
           {t(lang, "incognito")}
         </button>

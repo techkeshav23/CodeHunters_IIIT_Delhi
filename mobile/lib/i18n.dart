@@ -206,7 +206,6 @@ enum K {
   incognitoShort,
   incognitoBanner,
   incognitoOff,
-  incognitoRemoved,
   chatPending,
   chatNoReply,
   chatUnclear,
@@ -492,9 +491,9 @@ const Map<K, (String, String, String)> _strings = {
   K.tapToCall: ('Call karne ke liye dabayein', 'कॉल करने के लिए दबाएँ', 'Tap to call'),
   K.howTitle: ('Raahat kaise kaam karta hai', 'राहत कैसे काम करता है', 'How Raahat works'),
   K.howSub: (
-    'Har message lagbhag 20-60 millisecond mein in kadmon se guzarta hai; jab doosri jaanch (Claude) lagti hai, tab lagbhag 2 second. Har faisle ka kaaran dikhaya jata hai.',
-    'हर संदेश लगभग 20-60 मिलीसेकंड में इन कदमों से गुज़रता है; जब दूसरी जाँच (Claude) लगती है, तब लगभग 2 सेकंड। हर फ़ैसले का कारण दिखाया जाता है।',
-    'Every message goes through these steps in about 20-60 milliseconds (about 2 seconds when the second check, Claude, is needed), and every decision shows its reason.',
+    'Har message aam taur par 0.1 second se kam mein in kadmon se guzarta hai; jab doosri jaanch (Claude) lagti hai, tab kuch second. Har faisle ka kaaran dikhaya jata hai.',
+    'हर संदेश आम तौर पर 0.1 सेकंड से कम में इन कदमों से गुज़रता है; जब दूसरी जाँच (Claude) लगती है, तब कुछ सेकंड। हर फ़ैसले का कारण दिखाया जाता है।',
+    'Every message usually goes through these steps in under 0.1 seconds (a few seconds when the second check, Claude, is needed), and every decision shows its reason.',
   ),
   K.step1: ('Samajhna', 'समझना', 'Understand'),
   K.step1t: (
@@ -561,9 +560,9 @@ const Map<K, (String, String, String)> _strings = {
     'of the organisers\' labelled caregiver matches reproduced',
   ),
   K.stat3: (
-    'MuRIL model ka faisla, server ke CPU par',
-    'MuRIL मॉडल का फ़ैसला, सर्वर के CPU पर',
-    'for the MuRIL model to decide, on the server CPU',
+    'aam taur par poora jawab, server ke CPU par: model, suraksha jaanch aur match',
+    'आम तौर पर पूरा जवाब, सर्वर के CPU पर: मॉडल, सुरक्षा जाँच और मैच',
+    'usually, for a whole answer on the server CPU: model, safety checks and matching',
   ),
   K.apiTitle: ('Judges ke liye: API', 'जजों के लिए: API', 'For judges: the API'),
   K.apiSub: (
@@ -595,11 +594,6 @@ const Map<K, (String, String, String)> _strings = {
   K.incognitoShort: ('Incognito', 'इनकॉग्निटो', 'Incognito'),
   K.incognitoBanner: ('Yeh baatcheet save nahi hogi', 'यह बातचीत सेव नहीं होगी', 'This chat won\'t be saved'),
   K.incognitoOff: ('Save karna chalu karein', 'सेव करना चालू करें', 'Save chats again'),
-  K.incognitoRemoved: (
-    'Yeh chat history se hata di gayi',
-    'यह चैट हिस्ट्री से हटा दी गई',
-    'This chat was removed from history',
-  ),
   K.chatPending: ('Sawaal baaki hai', 'सवाल बाकी है', 'Question pending'),
   K.chatNoReply: ('Jawab nahi aaya', 'जवाब नहीं आया', 'No reply yet'),
   K.chatUnclear: ('Samajh nahi aaya', 'समझ नहीं आया', 'Not understood'),

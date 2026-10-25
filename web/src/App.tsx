@@ -289,16 +289,13 @@ export default function App() {
     window.setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  // "Incognito chat": nothing in this thread is saved from now on. From the start
-  // screen this is a new chat; on an open saved chat it also takes that chat out
-  // of History.
+  // "Bina save kiye chat": always a new, empty chat that is never saved. The open
+  // chat stays in History as it is (an open incognito one is dropped).
   const goIncognito = () => {
-    if (incognitoRef.current) return;
-    const id = chatIdRef.current;
+    clearThread();
     setIncognito(true);
-    setChatId(null);
     setView("check");
-    if (id && dropChat(id)) showToast(t(lang, "incognitoRemoved"));
+    window.setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const openDrawer = (opener: HTMLElement) => {
@@ -406,9 +403,7 @@ export default function App() {
       }}
       onIncognito={() => {
         closeDrawer();
-        // on: the same as the banner's cross
-        if (incognito) newChat();
-        else goIncognito();
+        goIncognito();
       }}
       onOpen={openChat}
       onDelete={deleteChat}

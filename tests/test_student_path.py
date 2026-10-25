@@ -428,8 +428,8 @@ def test_trace_fields_on_a_decision(client, student):
     assert s["symptoms"][0] == {"id": "fever", "label": "Fever", "label_local": "Bukhar"}
     assert s["symptoms"][1]["label"] == "Head injury" and s["duration_days"] == 3 and s["who"] == "adult"
     # already 3 days: not "if the fever lasts more than 3 days"
-    assert t["safety_net_local"] == ("Agar saans lene mein dikkat, seene mein dard, behoshi, ya bukhar badh jaye, "
-                                     "to turant 112 par call karein ya hamein batayein.")
+    assert t["safety_net_local"] == ("Agar bukhar badh jaye, to doctor se baat karein. Saans lene mein dikkat, "
+                                     "seene mein dard ya behoshi ho, to abhi 112 par call karein.")
     assert t["decision"]["confidence"] == 0.95
 
 
@@ -453,7 +453,7 @@ def test_trace_fields_without_the_model(client, no_student):
 
 
 def test_safety_net_text_in_three_languages():
-    assert text.safety_net("en", fever=True).startswith("If there is trouble breathing")
+    assert text.safety_net("en", fever=True).startswith("If the fever lasts more than 3 days, talk to a doctor.")
     assert "112" in text.safety_net("hi") and "बच्चा" in text.safety_net("hi", child=True)
     for lang in ("en", "hi", "hinglish"):
         assert not text.has_banned(text.safety_net(lang, fever=True, child=True))

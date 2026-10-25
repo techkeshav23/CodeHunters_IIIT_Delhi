@@ -421,18 +421,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// "Incognito chat": nothing in this thread is saved from now on. From the
-  /// start view this is a new chat; on an open saved chat it also takes that
-  /// chat out of History. Returns true when a saved chat was removed.
-  bool goIncognito() {
-    if (incognito) return false;
-    final id = chatId;
+  /// "Bina save kiye chat": always a new, empty chat that is never saved. The
+  /// open chat stays in History as it is (an open incognito one is dropped).
+  void goIncognito() {
+    _clearThread();
     incognito = true;
-    chatId = null;
-    final removed = id != null && _dropChat(id);
     tab = 0;
     notifyListeners();
-    return removed;
   }
 
   /// Opens a chat from History in the Jaanch thread. If it ends on a
