@@ -10,7 +10,7 @@ by the **case family** it was written for, using the rules below.
 - The organisers' dataset README (`data/sanocare_v1/README.md`): the enums, the nine
   red flags, "any red flag ⇒ `emergency_112`, `emergency`, no caregivers", follow-up when
   the intent is unclear.
-- The organisers' 340 labelled rows. They contain 22 situations (65 distinct messages),
+- The organisers' 340 labelled rows. They contain 22 situations (66 distinct messages),
   and their labels set the conventions:
   - **Home nursing** is always `same_day`. It covers procedures: injections (IM, insulin),
     wound and post-op dressing, bedsores.
@@ -60,7 +60,8 @@ by the **case family** it was written for, using the rules below.
   organisers' rows are not blind): `T_reports_talk`, `T_mild_self`, `P_fever_self`, `H_negated`,
   `H_minor_injury`, `H_worry`, `H_mood_low`.
 - Anything with character-n-gram cosine of 0.80 or more to any of the organisers' 340
-  messages is removed. Those rows are the test set and are never trained on.
+  messages is removed. The teacher saw those messages only as a do-not-copy list
+  (`scripts/gen_data.py`); the rows are the test set and are never training rows.
 - Non-emergency messages in which the red-flag rules find a danger sign are removed. The
   teacher may have slipped one in.
 - Roman-script copies are made of 35% of the Hindi messages, and light typos are added

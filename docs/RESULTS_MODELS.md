@@ -21,11 +21,17 @@ Emergency policy, same set (MuRIL + guardrails):
 | Never (only a named red flag) | 0.84 | 1.6% | 0% | 13.8% |
 | Care head ≥ 0.5 | 1.00 | 2.4% | 14.9% | 34.7% |
 | Care head ≥ 0.97 | 1.00 | 1.6% | 12.7% | 30.5% |
-| **≥ 0.97 and no denied danger sign (deployed)** | **1.00** | **1.6%** | **0–19% per set** | **24.4%** |
+| ≥ 0.97 and no denied danger sign | 1.00 | 1.6% | 0–19% per set | 24.4% |
+
+The 0.97 line was chosen on this set, so its 1.00 recall here is a tuned number. Deployed
+now: ≥ 0.97, no denied danger sign and no everyday symptom named (the model over-reads fever
+and vomiting; the app asks that complaint's danger check instead). With the current code and
+Claude off: every emergency caught on this set, false alarms 0–7.3% per hand-written set,
+18.9% on CARE-Bench.
 
 The four emergencies the lexicon missed (lip and throat swelling after food, "decided to end
 it tonight", a fit while not responding, phenyl drunk by a child) were then added to the
-lexicon; after that the served system scores care accuracy 96.0% on this set, which is no
+lexicon; after that the served system scores care accuracy 96.7% on this set, which is no
 longer blind for the rules.
 
 ## Organisers' 340 rows and our hand-written sets

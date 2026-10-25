@@ -27,12 +27,16 @@ When the fine-tuned model (MuRIL, `models/student/`) is loaded, the API is **mod
 
 1. The lexicon still reads the facts (duration, age, answers to our questions). Its red-flag
    rules are the **safety net**: they can only escalate.
-2. **Emergency** if the rules find a red flag, or the model's red-flag head fires, or its
-   emergency / "immediate" probability passes its threshold. `red_flags` is the union of both.
+2. **Emergency** if the rules find a red flag, or the model's red-flag head fires (it is weak
+   and not relied on), or the care head is at least 97% sure of an emergency while the words
+   name no everyday symptom and deny no danger sign. When that model-only emergency comes from
+   words that name nothing medical, Claude (if switched on) checks it first and may overrule
+   it. `red_flags` is the union of both.
 3. Otherwise the model's top care type. Its `followup` class asks what is needed;
    `out_of_scope` answers with a polite scope message (`q_scope`). When the model is unsure
-   (confidence band `low`): Claude gives a second opinion if switched on, else the
-   conversational policy asks a question, else the rules' choice, else the model's.
+   (confidence band `low`) or the words name nothing the lexicon knows: Claude gives a second
+   opinion if switched on, else the conversational policy asks a question, else the rules'
+   choice, else the model's.
 4. **Urgency** is the model's, never `emergency` outside the emergency path, never below
    the rules' urgency, at least `same_day` for a baby, an older adult or a pregnancy (an
    older adult's own lab test stays `scheduled`), and `scheduled` for a home lab test unless
@@ -162,8 +166,10 @@ or `low` (thresholds in the model's `meta.json`). With the older TF-IDF model on
 `trace.llm` (only when Claude's second opinion was used): `{model, care_type, urgency,
 red_flags, reasoning, latency_ms}`. It is off unless `CC_LLM_FALLBACK=on` and
 `ANTHROPIC_API_KEY` are set (`CC_LLM_MODEL`, default `claude-opus-5-5`; 8 s timeout, one
-retry; any error is ignored). It is asked only when the model is unsure and did not say
-emergency, and it can only pick a care type or add an emergency, never remove one.
+retry; any error is ignored). It is asked when the model is unsure (band `low`) or the words
+name nothing the lexicon knows, never when the rules found a red flag. It can pick a care
+type, say the intent is unclear, or add an emergency; on such words it can overrule the
+model's own emergency guess, never a red flag the rules found.
 
 `trace.speech`: what the apps read aloud, `{"locale": "hi-IN" | "en-IN", "text": ...}`. For
 Hindi and Hinglish it is the Hindi (Devanagari) wording, because a Hindi voice reads

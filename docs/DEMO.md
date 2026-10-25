@@ -42,7 +42,7 @@ from the organisers' roster: Sunita Chauhan first (Hindi, 1.3 km, free 08:00–1
 what we checked: breathing, Nahi hai), then **Match kaise hua** on the first medic (language, distance, skill, rating bars),
 and the "Model" line (the trained model's confidence in this decision).
 **Say:** "Every decision and every match shows its reason. Caregivers are ranked exactly
-as in the organisers' labels, and a model trained on their data agrees with this call."
+as in the organisers' labels, and a model never trained on their rows agrees with this call."
 **Do:** **Book karein**, then **Pakki karein**.
 **Show:** "Booking pakki ho gayi" with a booking number. Close it with **Band karein**.
 
@@ -51,17 +51,19 @@ as in the organisers' labels, and a model trained on their data agrees with this
 **Show:** the full-screen emergency: "Yeh emergency ho sakti hai", a large **112**
 button, 102 and 108, what to do until help comes, and "Humein kya dikha: Seene mein
 dard ya dabav" with the words it matched.
-**Say:** "A danger sign skips every question and every booking. Missing an emergency
-is the one mistake this app must not make."
+**Say:** "A danger sign skips every question and every booking. Our danger-sign lexicon,
+in three languages, catches it, and nothing can override it; the model routes everything
+else. Missing an emergency is the one mistake this app must not make."
 
-### 1:30 to 2:00. Hindi and a specialist
+### 1:30 to 2:00. Hindi and a doctor on video
 **Do:** **Wapas**, **Nayi jaanch**, switch the language to **हिंदी**, then speak or type
 `दो महीने से घुटने में दर्द है`. It asks "जोड़ों या घुटने में दर्द के साथ क्या इनमें से कुछ है?";
 tap **इनमें से कुछ नहीं**.
-**Show:** "डॉक्टर से फ़ोन / वीडियो पर बात", **विभाग: हड्डी और जोड़ (Orthopaedics)**, and
-three doctors who consult by video. Tap **सुनाइए** to hear it.
-**Say:** "The whole app switches to Hindi, names the department, and can read the answer
-aloud. Doctors in the roster consult by video, so distance does not count for them."
+**Show:** "डॉक्टर से फ़ोन / वीडियो पर बात", the dial on **आज ही**, and three doctors who
+consult by video (no department is shown). Tap **सुनाइए** to hear it.
+**Say:** "The whole app switches to Hindi and can read the answer aloud. A long-standing
+pain with no danger sign goes to a doctor on video today. Doctors in the roster consult by
+video, so distance does not count for them."
 
 ### 2:00 to 2:25. A question that can change everything
 **Do:** switch back to **Hinglish**, **Nayi jaanch**, type `Mere bete ko bukhar hai`.
@@ -73,10 +75,12 @@ three months is an emergency, so it asks the age."
 
 ### 2:25 to 2:50. For the judges
 **Do:** open **Kaise kaam karta hai** in the sidebar.
-**Show:** the steps, "583 mushkil test messages, har emergency pakdi", 209/209
-caregiver matches, and the last API request and response with the time in ms.
-**Say:** "This is the exact API call behind the screen: the problem statement's JSON
-schema, decided by our fine-tuned MuRIL model in about 20 milliseconds."
+**Show:** the steps, **93%** right care on new, unseen messages (earlier rules: 74%),
+**209/209** caregiver matches, **~20 ms** for the model, and the last API request and
+response with the time in ms.
+**Say:** "This is the exact API call behind the screen, in the problem statement's JSON
+schema. Our fine-tuned MuRIL model routes a request in about 20 milliseconds; an emergency
+like the last one is caught by the danger-sign rules, which nothing can override."
 
 ### Spare examples (all checked on the live server)
 - `dadi ko bedsore dressing chahiye` → home nursing, today, three medics with wound dressing.
@@ -108,17 +112,29 @@ emergency path you cannot miss."
 ## Likely questions
 
 - **"Where is the AI? Is this rules or RAG?"** Neither. A fine-tuned MuRIL model (Google's
-  BERT for Indian languages) decides every request: care type, urgency, red flags, the symptoms
-  it understood and who the patient is, with a calibrated confidence. There is no retrieval at
-  run time. The danger-sign lexicon is only a safety net that can escalate, never decide less
-  urgent care; every guardrail that fired is listed under "Suraksha jaanch".
-- **"The organisers gave 340 rows. How did you train on so little?"** Those rows hold only 65
+  BERT for Indian languages) routes every request: care type, urgency, the symptoms it
+  understood and who the patient is, with a confidence band. There is no retrieval at run
+  time. Emergencies are caught by the danger-sign lexicon, the safety net, plus the model's
+  own emergency sense when it is very sure; every guardrail that fired is listed under
+  "Suraksha jaanch".
+- **"What does the model actually decide vs the lexicon?"** The lexicon catches emergencies:
+  a named danger sign goes to 112 and nothing can remove it. The model routes everything else:
+  care type and urgency. It also calls 112 itself when it is at least 97% sure and the words
+  name no everyday symptom. Its red-flag head is weak and not relied on; in the hold-out run
+  the model alone caught 65% of emergencies, which is exactly why the lexicon is the detector.
+- **"The organisers gave 340 rows. How did you train on so little?"** Those rows hold only 66
   distinct messages. So we used teacher → student distillation: Claude Opus 5.5 wrote 2,743
   new messages for 62 case families whose labels we fixed in a labelling guide, and MuRIL was
-  fine-tuned on them. The organisers' 340 rows were never trained on; they are our test set.
+  fine-tuned on them. The organisers' 340 rows were never training rows; they are our test set.
+- **"Did your training data see the test set?"** Not as training rows. The teacher was given
+  the organisers' messages only as a do-not-copy list, and anything within cosine 0.8 of them
+  was removed. Close paraphrases can remain, which is why we call the 1.0 on their rows not
+  blind and quote the numbers below. (The older TF-IDF fallback, used only without the model
+  file, was trained on them.)
 - **"Isn't 100% suspicious? Overfitting?"** The organisers' messages are short and clear. Our
-  honest numbers: 83% on 12 whole case families the model never saw, and 0.966 care F1 on the
-  organisers' rows before any error analysis. Training accuracy is 99.6%, so there is a gap on
+  honest numbers: 83% on 12 whole case families the model never saw (the hold-out run, before
+  the final training), 0.966 care F1 on the organisers' rows before any error analysis, and
+  93.3% on 150 fresh messages on the first run. Training accuracy is 99.6%, so there is a gap on
   brand-new kinds of request; that is what the guardrails and the follow-up questions are for.
 - **"Type nonsense: why doesn't it say it did not understand?"** It does now. A classifier
   always picks one of its classes, and it is confident even on words it never saw. So when the
@@ -129,8 +145,19 @@ emergency path you cannot miss."
 - **"New chat, incognito, history?"** In the Android app's top row: History (saved on the phone
   only), Incognito (never saved, with a banner), and + Nayi chat.
 - **"Why not just call an LLM?"** Seconds per answer, health details sent outside, network
-  needed during scoring. MuRIL answers in ~20 ms on the server's CPU; Claude is asked only when
-  the model is unsure, and it can never remove an emergency.
+  needed during scoring. MuRIL answers in ~20 ms on the server's CPU. Claude (about 2 s) is
+  asked only when the model is unsure or the words name nothing our lists know. It can add an
+  emergency, and on such words overrule the model's own 112 guess, but it is never asked when
+  the lexicon names a danger sign.
+- **"What if Claude is down?"** Nothing breaks: an error or the 8 s timeout is ignored, and the
+  lexicon and the model answer alone. On words that name nothing medical the model's 112 then
+  stands (a false alarm costs less than a miss); an unsure case gets a question in the app,
+  and in the API the rules' choice, else the model's. The honest gap: a few emergencies in
+  words neither the lexicon nor the model knows are caught only by Claude. It is on for the
+  live server.
+- **"How did you make the predictions file?"** `python -m scripts.predict_csv` runs the API's
+  default path, so it now also writes a `follow_up_question` column: a row whose intent is
+  unclear gets a question and no care type, as in the organisers' labels.
 - **"What if the organisers' caregiver file looks different?"** Field names are mapped
   loosely (id or caregiver_id, location or lat/lng, lists or comma text); a file that
   cannot be read falls back to the sample profiles and `/health` says why.

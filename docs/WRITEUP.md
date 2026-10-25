@@ -12,36 +12,33 @@ diagnoses or prescribes. It is one stateless REST API (`POST /v1/triage`, the pr
 statement's schema), used by a web app and an Android app.
 
 **Module 1, intake: a fine-tuned model.** MuRIL (Google's BERT for Indian languages,
-Roman and Devanagari) is fine-tuned with five heads that share one encoder:
-- care type: medic visit, nursing, lab, teleconsult, emergency, follow-up, out of scope;
-- urgency;
-- red flags;
-- structured symptoms and services;
-- who the patient is.
+Roman and Devanagari) is fine-tuned with five heads that share one encoder: care type
+(medic visit, nursing, lab, teleconsult, emergency, follow-up, out of scope), urgency, red
+flags, structured symptoms and services, and who the patient is. It reads the whole
+conversation, newest turn last. Its probabilities are temperature-scaled; the temperature
+was fitted on the held-out-families run (ECE 0.045 there) and reused for the final model.
+It is served with ONNX Runtime on CPU in about 20 ms.
 
-It reads the whole conversation, newest turn last. Its probabilities are calibrated
-(temperature scaling, ECE 0.045 on held-out families). It is served with ONNX Runtime on
-CPU in about 20 ms.
-
-**Module 2, triage: the model decides, with guardrails around it.**
-- The danger-sign lexicon (25 types, 800+ phrases, negation-aware) is a safety net. It can
-  only escalate.
-- 112 is called when a red flag is named, or when the model is at least 97% sure of an
-  emergency and the words deny no danger sign. If the model is less sure, the app first
-  asks about danger signs, and a "Haan" goes to the emergency path.
+**Module 2, triage: the lexicon catches emergencies, the model routes the rest.**
+- Emergencies are caught by the danger-sign lexicon (25 types, 800+ phrases, negation-aware),
+  the safety net: a named danger sign goes to 112 and nothing can remove it. The model's own
+  emergency sense adds to it: 112 when it is at least 97% sure, the words name no everyday
+  symptom (it over-reads fever and vomiting) and deny no danger sign. If it is less sure, the
+  app first asks about danger signs, and a "Haan" goes to 112. The red-flag head is weak and
+  not relied on.
+- Everything else is the model's call: the care type and the urgency.
 - Urgency is never below the rules' urgency. It is at least same day for a baby, an older
   adult or a pregnancy.
 - Fever goes to an in-person check.
-- When the model is unsure, Claude gives a second opinion. It can choose the care type or
-  raise an emergency, never remove one.
-- A softmax model is confident even on words it never saw. Its emergency class gives 97% to "my
-  stomach is upset" and to "the cat sat on the mat". So when the words name nothing the danger and
-  symptom lists know, the model's pick goes to Claude for a second opinion. In the app, when nothing
-  is recognised at all (no symptom, service, danger sign, person, age, duration or request, as in
-  "अब्बा डब्बा जब्बा"), it says it did not understand, up to three times, then offers a doctor call.
-  Without Claude, the model's 112 still stands: a missed emergency costs more than a false one.
-- The model is shown the main-problem question in its training wording. The app's longer
-  text names nursing and lab tests, and in testing that pulled answers towards home nursing.
+- Claude gives a second opinion when the model is unsure, or when the words name nothing the
+  danger and symptom lists know: a softmax model is confident even on words it never saw (97%
+  emergency for "the cat sat on the mat"). Claude can choose the care type, ask, add an
+  emergency, or overrule the model's own 112 on such words. It is never asked when the lexicon
+  names a danger sign, so it never removes one. Without Claude, the model's 112 still stands:
+  a missed emergency costs more than a false one.
+- In the app, when nothing is recognised at all (no symptom, service, danger sign, person,
+  age, duration or request, as in "अब्बा डब्बा जब्बा"), it says it did not understand, up to
+  three times, then offers a doctor call.
 - Every response lists which guardrails fired (`trace.guardrails`).
 
 **Smart intake questions.** The app asks at most three questions, the danger-sign question
@@ -54,44 +51,45 @@ The API's default policy asks only when the intent is unclear, as in the organis
 - Advanced-tier medics are required for IV and catheter care.
 - Availability is shown in the reason ("free now till 9 pm").
 
-The user then books in one tap.
+The user then books in two taps.
 
 ## 2. Data, training and why not RAG
 
-The organisers' 340 rows contain only **65 distinct messages** (22 situations × 3
+The organisers' 340 rows contain only **66 distinct messages** (22 situations × 3
 languages), and every emergency is labelled `chest_pain, breathlessness`. A model trained
 on them memorises sentences. So we used **teacher → student distillation**:
 1. We wrote a labelling guide (`docs/LABELING_GUIDE.md`) from the organisers' conventions
    and public triage guidance (ESI handbook, WHO ETAT).
 2. Claude Opus 5.5 wrote 2,743 new messages for 62 case families. The label of each
-   family is fixed by us; Claude only writes text.
+   family is fixed by us; Claude only writes text. It saw the organisers' messages only as
+   a do-not-copy list.
 3. Cleaning: duplicates removed; anything within cosine 0.8 of a test message removed;
    non-emergency messages in which our rules saw a danger sign removed.
 4. Augmentation: Roman-script copies, typos and 840 multi-turn conversations, for 4,140
    examples in total.
 
-**The organisers' 340 rows are never used for training: they are the test set.** There is
+**The organisers' 340 rows are never training rows: they are the test set.** There is
 no retrieval at run time: the model is trained, not a lookup.
 
 ## 3. Results (none of these sets is used in training)
 
 | | Score |
 |---|---|
-| Held-out case families (12 unseen families, incl. chest pain, suicidal, IV drip) | care accuracy 83% |
-| **Fresh blind set**: 150 new messages written without seeing the rules or the training data | first run: care accuracy 93.3% (rules alone 74.0%), urgency F1 0.915, no under-triage |
+| Held-out case families (12 unseen families, incl. chest pain, suicidal, IV drip; hold-out run, before the final model) | care accuracy 83% |
+| **Fresh blind set**: 150 new messages written without seeing the rules or the training data | first run: care accuracy 93.3% (rules alone 74.0%), urgency F1 0.915, no under-triage; final system 96.7%, every emergency caught (no longer blind) |
 | Organisers' 340 rows, first model, before any error analysis | care macro-F1 0.966, urgency 0.968, emergency recall 1.0 |
-| Organisers' 340 rows, final model alone / served system | 1.0 / 1.0, no false emergencies |
-| Our 600 hand-written hard cases (negation, minimised symptoms, typos, run-together Devanagari) | emergency recall 1.0 in all 9 sets; false alarms 0–19% (look-alikes) |
-| CARE-Bench public (925 English prefixes, another domain) | urgent → at least same day 100%, false emergencies 24% |
+| Organisers' 340 rows, final model alone / served system | care F1 1.0 / 1.0, emergency recall 1.0, no false emergencies |
+| Our 592 hand-written hard cases (negation, minimised symptoms, typos, run-together Devanagari) | every emergency caught in all 9 sets; false alarms 0–7.3% (look-alikes) |
+| CARE-Bench public (925 English prefixes, another domain) | urgent → at least same day 100%, false emergencies 18.9% (Claude off) |
 | Caregiver matching vs the organisers' labels | 209/209 lists and scores, NDCG@3 1.0 |
-| Latency (model, CPU) | ~20 ms |
+| Latency (model, CPU) | ~20 ms; a Claude second opinion, when asked, about 2 s |
 
 **Read with care.** The organisers' messages are short and clear. After the first model,
 we added seven families from its error analysis (reports, mild issues, self-reported fever,
-denied danger signs), so the final 1.0 is not blind. The first model's 0.966 and the 83% on
-unseen families are the honest generalisation numbers. Training accuracy is 99.6% against
-83% on unseen families, so the model fits its families more tightly than new ones; the
-guardrails exist for that gap.
+denied danger signs), so the final 1.0 is not blind. The first model's 0.966 and the hold-out
+run's 83% on unseen families are the honest generalisation numbers. Training accuracy is
+99.6% against 83% on unseen families, so the model fits its families more tightly than new
+ones; the guardrails exist for that gap.
 
 **Model vs rules on the fresh blind set** (first run, API default policy):
 
@@ -101,13 +99,13 @@ guardrails exist for that gap.
 | Rules + TF-IDF/LR (our previous system) | 74.7% | 0.772 | 0.845 | 3 |
 | **MuRIL + guardrails** | **93.3%** | **0.929** | **0.915** | **0** |
 
-On our older hand-written sets the rules look better (92% vs 65% care agreement), but
-those sets were used to write the rules and follow their older convention for mild
-complaints, so the fresh set is the fair test. Emergency recall on the fresh set was 0.84
-for all three on its first run. That is why the model may now call 112 by itself: when it
-is at least 97% sure of an emergency and the words deny no danger sign. With that, recall
-on the fresh set is 1.0 with no added false alarms. The four phrasings the lexicon missed
-were then added to it, so the fresh set is no longer blind for the rules. Full tables:
+On our older hand-written sets the rules look better (92% vs 65% care agreement), but the
+rules were written against those sets, so the fresh set is the fair test. Emergency recall
+on the fresh set was 0.84 for all three on its first run. That is why the model may now call
+112 by itself: when it is at least 97% sure of an emergency and the words name no everyday
+symptom and deny no danger sign. The 0.97 line was chosen on this set; with it, recall on
+the set is 1.0 with no added false alarms. The four phrasings the lexicon missed were then
+added to it, so the fresh set is no longer blind for the rules. Full tables:
 `docs/RESULTS_MODELS.md`.
 
 ## 4. Models and APIs used
@@ -116,7 +114,7 @@ were then added to it, so the fresh set is no longer blind for the rules. Full t
 |---|---|
 | Triage model | MuRIL base (google/muril-base-cased, Apache-2.0), fine-tuned here (PyTorch, transformers; RTX 4050, 8 epochs, about 9 min), fp32 ONNX (int8 changed answers, so not used) |
 | Teacher | Claude Opus 5.5 (Anthropic API), offline: training text only, about 0.5M tokens (under US$10) |
-| Second opinion | Claude Opus 5.5, only when the model is unsure, 8 s timeout. Off without a key; the model alone then answers |
+| Second opinion | Claude Opus 5.5, when the model is unsure or the words name nothing our lists know; 8 s timeout. Off without a key; the lexicon and the model then answer alone |
 | Safety net, extraction | Team-written lexicon and rules, RapidFuzz |
 | Voice | Browser Web Speech API and speechSynthesis; Android speech services in the app |
 
@@ -130,16 +128,18 @@ The code was written during the event, with help from AI coding assistants.
   urgently than its label.
 - No medicine or disease names reach the user: a final filter removes them.
 - Every non-emergency answer carries safety-netting advice ("if breathing gets hard, call 112").
-- Request text is not logged. Claude sees a message only when the model is unsure.
-  Bookings stay in memory and on the device.
+- Request text is not logged. Claude, when switched on, sees a conversation only when the
+  model is unsure or the words name nothing our lists know. Bookings stay in memory and on
+  the device.
 
 ## 6. Known limitations
 
 - The training text is synthetic. Real families will phrase things we did not imagine, and
   the 83% on unseen families is the realistic expectation for brand-new kinds of request.
-- The red-flag heads learned little, so the named flags come from the lexicon. The care
-  head's emergency sense calls 112 only when it is very sure (otherwise it asks), which
-  over-fires on long English questions from another domain (CARE-Bench: 24% false emergencies).
+- The red-flag heads learned little, and in the hold-out run the model alone caught 65% of
+  emergencies, so the lexicon is the emergency detector. The model's very-sure 112 over-fires
+  on long English questions from another domain (CARE-Bench: 18.9% false emergencies). A few
+  emergencies in words neither the lexicon nor the model knows are caught only by Claude.
 - Where our old labels chose a teleconsult for mild complaints, the model follows the
   organisers' convention of a home visit.
 - English, Hindi and Hinglish only. Not a medical device.
