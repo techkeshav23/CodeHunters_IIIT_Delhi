@@ -1,9 +1,12 @@
 """Contract tests: the response must keep the indicative schema's six fields."""
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app import config
 from app.main import app
+from app.triage.text import safety_net
 
 FIELDS = {"follow_up_question", "care_type", "urgency", "red_flags", "reasoning", "matched_caregivers"}
 
@@ -129,3 +132,54 @@ def test_speech_reads_hinglish_in_devanagari(client):
     assert "1 1 2" in em["text"]  # numbers read digit by digit
     en = post(client, "I have had fever for 2 days, age 30", explain=True)["trace"]["speech"]
     assert en["locale"] == "en-IN" and en["text"].startswith("Fever")
+
+
+def test_organisers_multi_turn_shape(client):
+    # their assistant turns carry the question under "follow_up_question" (multi_turn_examples.jsonl)
+    asked = [{"role": "user", "text": "papa ko 2 din se bukhar aur khansi hai"},
+             {"role": "assistant", "follow_up_question": "Kya saans lene mein dikkat ho rahi hai?", "care_type": None}]
+    for answer in ("haan", "yes"):
+        r = post(client, answer, asked)
+        assert r["care_type"] == config.CARE_TYPES["emergency"]
+        assert r["red_flags"] == config.api_flags(["breathing_difficulty"])
+    r = post(client, "2 mahine", [{"role": "user", "text": "bachche ko bukhar hai"},
+                                  {"role": "assistant", "follow_up_question": "Bachche ki umar kitni hai?",
+                                   "care_type": None}])
+    assert r["follow_up_question"] is None and r["red_flags"] == config.api_flags(["infant_danger_sign"])
+    # their examples replayed turn by turn
+    for line in (config.ORG_DATA_DIR / "multi_turn_examples.jsonl").read_text(encoding="utf-8").splitlines():
+        turns = json.loads(line)["turns"]
+        for i, gold in enumerate(turns):
+            if gold["role"] == "assistant":
+                r = post(client, turns[i - 1]["text"], turns[:i - 1])
+                assert bool(r["follow_up_question"]) == bool(gold.get("follow_up_question"))
+                assert (r["care_type"], r["urgency"]) == (gold.get("care_type"), gold.get("urgency"))
+
+
+def test_self_harm_screen_speaks_to_the_writer(client):
+    r = post(client, "I don't want to live anymore, thinking of ending it all", explain=True)
+    em = r["trace"]["emergency"]
+    assert em["numbers"][0]["number"] == "14416"  # Tele-MANAS first
+    assert "14416" in em["steps_local"][0] and "not alone" in em["steps_local"][0]
+    assert not any("patient" in s for s in em["steps_local"])
+    assert "1 4 4 1 6" in r["trace"]["speech"]["text"]
+    hi = post(client, "मैं अब जीना नहीं चाहता, खुद को खत्म कर लूंगा", explain=True)["trace"]["emergency"]
+    assert hi["numbers"][0]["number"] == "14416" and "14416" in hi["steps_local"][0]
+    chest = post(client, "Mummy ke seene mein dard hai aur pasina aa raha hai", explain=True)["trace"]["emergency"]
+    assert chest["numbers"][0]["number"] == "112" and "Mareez ke saath rahein." in chest["steps_local"]
+
+
+def test_hindi_helpline_labels_are_in_devanagari(client):
+    em = post(client, "मेरे 2 महीने के बच्चे को कल रात से बुखार है", explain=True)["trace"]["emergency"]
+    assert em["numbers"] and all(any("ऀ" <= ch <= "ॿ" for ch in n["label_local"]) for n in em["numbers"])
+    hinglish = post(client, "papa ke seene mein dard hai", explain=True)["trace"]["emergency"]
+    assert hinglish["numbers"][0]["label_local"] == "Emergency (poore Bharat mein)"
+
+
+def test_safety_line_does_not_repeat_a_fever_duration_already_given(client):
+    assert "3 din" not in post(client, "Papa ko 5 din se bukhar hai", explain=True)["trace"]["safety_net_local"]
+    assert "3 din" in post(client, "papa ko 2 din se bukhar hai", explain=True)["trace"]["safety_net_local"]
+    for lang, words in (("en", "3 days"), ("hinglish", "3 din"), ("hi", "3 दिन")):
+        assert words not in safety_net(lang, fever=True, duration_days=5)
+        assert words in safety_net(lang, fever=True, duration_days=1)
+        assert words in safety_net(lang, fever=True)

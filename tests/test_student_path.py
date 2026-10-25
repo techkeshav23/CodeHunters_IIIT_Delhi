@@ -427,8 +427,9 @@ def test_trace_fields_on_a_decision(client, student):
     s = t["structured"]
     assert s["symptoms"][0] == {"id": "fever", "label": "Fever", "label_local": "Bukhar"}
     assert s["symptoms"][1]["label"] == "Head injury" and s["duration_days"] == 3 and s["who"] == "adult"
-    assert t["safety_net_local"] == ("Agar saans lene mein dikkat, seene mein dard, behoshi, ya bukhar 3 din se "
-                                     "zyada rahe, to turant 112 par call karein ya hamein batayein.")
+    # already 3 days: not "if the fever lasts more than 3 days"
+    assert t["safety_net_local"] == ("Agar saans lene mein dikkat, seene mein dard, behoshi, ya bukhar badh jaye, "
+                                     "to turant 112 par call karein ya hamein batayein.")
     assert t["decision"]["confidence"] == 0.95
 
 

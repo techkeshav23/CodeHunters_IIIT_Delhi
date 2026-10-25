@@ -75,6 +75,25 @@ EMERGENCY_STEPS = {
     "hinglish": ["Abhi 112 par call karein.", "Mareez ke saath rahein.", "Phone chalu rakhein aur location share karein."],
     "hi": ["अभी 112 पर कॉल करें।", "मरीज़ के साथ रहें।", "फ़ोन चालू रखें और लोकेशन शेयर करें।"],
 }
+# thoughts of self-harm: the person reading may be the one at risk, so the steps speak to them too
+SELF_HARM_FLAGS = ("self_harm_risk", "psychiatric_emergency")
+SELF_HARM_STEPS = {
+    "en": ["If you are thinking of hurting yourself, call Tele-MANAS 14416 or 112 now. You are not alone.",
+           "If it is someone else, stay with them and remove anything they could hurt themselves with.",
+           "Keep your phone on and share your location."],
+    "hinglish": ["Agar aap khud ko nuksan pahunchane ka soch rahe hain, abhi Tele-MANAS 14416 ya 112 par call "
+                 "karein. Aap akele nahi hain.",
+                 "Agar yeh kisi aur ke liye hai, unke saath rahein aur aisi cheezein hata dein jinse woh khud ko "
+                 "nuksan pahuncha sakein.",
+                 "Phone chalu rakhein aur location share karein."],
+    "hi": ["अगर आप ख़ुद को नुकसान पहुँचाने का सोच रहे हैं, तो अभी टेली-मानस 14416 या 112 पर कॉल करें। आप अकेले नहीं हैं।",
+           "अगर यह किसी और के लिए है, तो उनके साथ रहें और ऐसी चीज़ें हटा दें जिनसे वे ख़ुद को नुकसान पहुँचा सकें।",
+           "फ़ोन चालू रखें और लोकेशन शेयर करें।"],
+}
+# helpline labels in Devanagari for Hindi (config's label_hi is Hinglish)
+NUMBER_LABEL_HI = {"112": "इमरजेंसी (पूरे भारत में)", "102": "दिल्ली एम्बुलेंस (CATS, मुफ़्त)",
+                   "108": "कई राज्यों में एम्बुलेंस", "14416": "टेली-मानस हेल्पलाइन",
+                   "1800-116-117": "एम्स ज़हर हेल्पलाइन"}
 BREATHING_NOTE = {
     "not_reported": {"en": "no breathing difficulty reported", "hinglish": "saans ki dikkat nahi batayi", "hi": "सांस की दिक्कत नहीं बताई"},
     "absent": {"en": "no breathing difficulty", "hinglish": "saans ki dikkat nahi hai", "hi": "सांस की दिक्कत नहीं है"},
@@ -176,22 +195,34 @@ def emergency_reasoning(flag_labels_en: list[str], flag_labels_local: list[str],
     return en, local
 
 
+def emergency_steps(flag_ids: list[str], language: str) -> list[str]:
+    """What to do now; for thoughts of self-harm they speak to the writer as well."""
+    steps = SELF_HARM_STEPS if any(f in SELF_HARM_FLAGS for f in flag_ids) else EMERGENCY_STEPS
+    return steps[lang_of(language)]
+
+
 def emergency_block(flag_ids: list[str], language: str) -> dict:
     lang = lang_of(language)
+
+    def local(n: dict) -> str:  # Hindi in Devanagari, Hinglish in Roman script
+        if lang == "hi":
+            return NUMBER_LABEL_HI.get(n["number"], n["label_hi"])
+        return n["label"] if lang == "en" else n["label_hi"]
+
     numbers = []
     for fid in flag_ids:
-        if fid in FLAG_HELPLINES:
+        if fid in FLAG_HELPLINES and FLAG_HELPLINES[fid]["number"] not in {n["number"] for n in numbers}:
             h = FLAG_HELPLINES[fid]
-            numbers.append({"label": h["label"], "label_local": h["label_hi"] if lang != "en" else h["label"],
-                            "number": h["number"]})
-    numbers = [{"label": n["label"], "label_local": n["label_hi"] if lang != "en" else n["label"],
-                "number": n["number"]} for n in EMERGENCY_NUMBERS] + numbers
+            numbers.append({"label": h["label"], "label_local": local(h), "number": h["number"]})
+    general = [{"label": n["label"], "label_local": local(n), "number": n["number"]} for n in EMERGENCY_NUMBERS]
+    # thoughts of self-harm: Tele-MANAS first
+    numbers = numbers + general if any(f in SELF_HARM_FLAGS for f in flag_ids) else general + numbers
     return {
         "title": EMERGENCY_TITLE["en"],
         "title_local": EMERGENCY_TITLE[lang],
         "numbers": numbers,
-        "steps": EMERGENCY_STEPS["en"],
-        "steps_local": EMERGENCY_STEPS[lang],
+        "steps": emergency_steps(flag_ids, "en"),
+        "steps_local": emergency_steps(flag_ids, lang),
     }
 
 
@@ -359,19 +390,24 @@ def guardrails(fired: set[str], language: str) -> list[dict]:
 
 # ---- safety-netting advice for non-emergency decisions ---------------------
 
-def safety_net(language: str, fever: bool = False, child: bool = False) -> str:
-    """When to come back or call 112. Plain words, no diagnosis."""
+def safety_net(language: str, fever: bool = False, child: bool = False, duration_days: float | None = None) -> str:
+    """When to come back or call 112. Plain words, no diagnosis. A fever already 3 days or
+    older does not get "if it lasts more than 3 days" (it already has)."""
     lang = lang_of(language)
+    long_fever = fever and duration_days is not None and duration_days >= 3
     if lang == "en":
         extra = ", or the child becomes very drowsy or stops feeding" if child else ""
-        tail = ", or the fever lasts more than 3 days" if fever else ", or things get worse"
+        tail = (", or the fever gets worse" if long_fever else ", or the fever lasts more than 3 days" if fever
+                else ", or things get worse")
         return f"If there is trouble breathing, chest pain or fainting{extra}{tail}, call 112 right away or tell us."
     if lang == "hi":
         extra = ", बच्चा बहुत सुस्त हो जाए या दूध / खाना छोड़ दे" if child else ""
-        tail = ", या बुखार 3 दिन से ज़्यादा रहे" if fever else ", या तकलीफ़ बढ़ जाए"
+        tail = (", या बुखार बढ़ जाए" if long_fever else ", या बुखार 3 दिन से ज़्यादा रहे" if fever
+                else ", या तकलीफ़ बढ़ जाए")
         return f"अगर सांस लेने में दिक्कत, सीने में दर्द या बेहोशी हो{extra}{tail}, तो तुरंत 112 पर कॉल करें या हमें बताएँ।"
     extra = ", bachcha bahut sust ho jaye ya doodh / khana chhod de" if child else ""
-    tail = ", ya bukhar 3 din se zyada rahe" if fever else ", ya taklif badh jaye"
+    tail = (", ya bukhar badh jaye" if long_fever else ", ya bukhar 3 din se zyada rahe" if fever
+            else ", ya taklif badh jaye")
     return (f"Agar saans lene mein dikkat, seene mein dard, behoshi{extra}{tail}, "
             "to turant 112 par call karein ya hamein batayein.")
 

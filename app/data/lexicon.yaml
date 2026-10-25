@@ -592,6 +592,23 @@ red_flags:
       - "=rat poison kha li"
       - "=rat poison pi"
       - "=चूहे मारने की दवा खा"
+      # an overdose in plain words (mentor review, 25 Oct; "tablets" and "pills" read as dawai); exact (=)
+      # so "how many tablets can I take", "doctor ne 2 tablets di hain", "ek strip mangwani hai" stay quiet
+      - "=took too many tablets"
+      - "=taken too many tablets"
+      - "=had too many tablets"
+      - "=ate too many tablets"
+      - "=consumed too many tablets"
+      - took tablets at once
+      - taken tablets at once
+      - "=took a whole strip"
+      - "=ate a whole strip"
+      - "=tablets ek saath kha li"
+      - "=tablets ek saath kha liya"
+      - "=tablets ek saath le li"
+      - "=poori strip kha li"
+      - "=poori strip kha liya"
+      - "=poori strip ek saath"
       # added after the fresh blind set (eval/fresh) showed these were missed
       - phenyl pi
       - phenyl pee
@@ -948,6 +965,12 @@ red_flags:
       - refusing feed
     conditional:
       - patterns: [bukhar, sust, neela pad, ulti]
+        requires: [infant]
+      # a baby under 3 months who feels hot, said without the word fever; not a bare "temperature",
+      # "tapman" or "garam", so "temperature check karna hai", "garam paani", "garam kapde" stay quiet
+      - patterns: [badan garam, sharir garam, body garam, "=garam hai", "=garam lag", feels hot, feel hot, very hot,
+                   "=has a temperature", "=running a temperature", tez temperature, temperature zyada,
+                   zyada temperature, tez tapman, tapman zyada, zyada tapman]
         requires: [infant]
       - patterns: [sust, lethargic, thanda pad, floppy, limp, dheela pad, dheeli pad, hard to wake]
         requires: [child]

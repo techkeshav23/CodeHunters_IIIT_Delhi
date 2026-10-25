@@ -74,7 +74,8 @@ class Turn:
 
 
 def read_history(items: list[Any]) -> list[Turn]:
-    """Accepts strings, {"role", "content"}, {"question", "answer"} and similar."""
+    """Accepts strings, {"role", "content"}, {"question", "answer"}, the organisers' assistant turns
+    ({"role": "assistant", "follow_up_question": ...}) and similar."""
     turns: list[Turn] = []
     for item in items or []:
         if isinstance(item, str):
@@ -93,7 +94,8 @@ def read_history(items: list[Any]) -> list[Turn]:
                 turns.append(Turn("user", str(item["answer"])))
             continue
         role = str(item.get("role") or item.get("speaker") or item.get("sender") or item.get("from") or "user").lower()
-        content = item.get("content") or item.get("text") or item.get("message") or item.get("utterance") or ""
+        content = (item.get("content") or item.get("text") or item.get("message") or item.get("utterance")
+                   or item.get("follow_up_question") or "")
         if isinstance(content, list):  # [{"type": "text", "text": ...}]
             content = " ".join(str(c.get("text", "")) if isinstance(c, dict) else str(c) for c in content)
         content = str(content)
@@ -620,7 +622,7 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
             "decision": _decision_trace("emergency", "immediate", d_em, language, source),
             "reasoning_local": why_local, "follow_up": None,
             "emergency": text.emergency_block(flags, language), "caregivers": [],
-            "speech": text.speech([text.EMERGENCY_TITLE[sl], *text.EMERGENCY_STEPS[sl][:2]], language),
+            "speech": text.speech([text.EMERGENCY_TITLE[sl], *text.emergency_steps(flags, sl)[:2]], language),
             "guardrails": text.guardrails(fired, language),
         })
         return _finish(resp, trace, t0, explain)
@@ -718,7 +720,8 @@ def run(req: TriageRequest, mode: str = "interactive", policy: str | None = None
         "decision": _decision_trace(care, urgency, d, language, source),
         "reasoning_local": text.scrub(why_local), "follow_up": None, "emergency": None,
         "speech": text.speech([why_said], language),
-        "safety_net_local": text.safety_net(language, fever="fever" in item_ids, child=who in ("child", "infant")),
+        "safety_net_local": text.safety_net(language, fever="fever" in item_ids, child=who in ("child", "infant"),
+                                            duration_days=ex.duration_days),
         "guardrails": text.guardrails(fired, language),
         "caregivers": [{
             "caregiver_id": m.caregiver.id, "name": m.caregiver.name, "role": m.caregiver.role,

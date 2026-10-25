@@ -2,9 +2,10 @@
 
     python -m scripts.predict_csv data/provided/test.csv --out predictions.csv
 
-Runs the same pipeline as the API in batch mode (never asks a follow-up
-question, always returns a decision). Column names are flags until the
-organisers publish the CSV format.
+Runs the same pipeline as the scored API (interactive mode, default follow-up
+policy): an unclear message gets a follow_up_question and an empty care_type
+and urgency, as the API returns. Column names are flags until the organisers
+publish the CSV format.
 """
 from __future__ import annotations
 
@@ -29,7 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     rows = load_rows(args.path)
-    fields = ["id", "care_type", "urgency", "red_flags", "matched_caregivers", "scores", "reasoning"]
+    fields = ["id", "care_type", "urgency", "red_flags", "follow_up_question", "matched_caregivers", "scores",
+              "reasoning"]
     with args.out.open("w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()
@@ -37,16 +39,18 @@ def main(argv: list[str] | None = None) -> int:
             loc = _maybe_json(row.get("location")) or DEFAULT_LOCATION
             if row.get("lat") not in (None, "") and row.get("lng") not in (None, ""):
                 loc = {"lat": float(row["lat"]), "lng": float(row["lng"])}
-            history = _maybe_json(row.get(args.history_col) or [])
+            # "history" is what load_rows makes of the organisers' nested jsonl rows
+            history = _maybe_json(row.get(args.history_col) or row.get("history") or [])
             req = TriageRequest(user_input=row.get(args.text_col) or row.get("user_input") or "",
                                 language=row.get("language") or "auto", location=loc,
                                 conversation_history=history if isinstance(history, list) else [])
-            resp = run(req, mode="batch")
+            resp = run(req, mode="interactive", policy=None)  # as the API does by default
             w.writerow({
                 "id": row.get(args.id_col) or f"row_{i + 1}",
                 "care_type": resp.care_type,
                 "urgency": resp.urgency,
                 "red_flags": args.sep.join(resp.red_flags),
+                "follow_up_question": resp.follow_up_question,
                 "matched_caregivers": args.sep.join(m.caregiver_id for m in resp.matched_caregivers),
                 "scores": args.sep.join(f"{m.score:.2f}" for m in resp.matched_caregivers),
                 "reasoning": resp.reasoning,

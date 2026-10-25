@@ -206,3 +206,24 @@ def test_fine_now_settles_only_a_clean_later_sentence():
     assert "chest_pain" in flags("seene mein dard ho raha hai. abhi thik hu par pasina aa raha")
     assert "chest_pain" in flags("papa ko seene mein dard ho raha hai. abhi theek hain")
     assert "breathing_difficulty" in flags("ab theek se saans nahi le pa rahe")
+
+
+def test_overdose_in_plain_words():
+    for t in ("my mother took 20 of her BP tablets at once", "she took too many tablets", "he has taken too many pills",
+              "she took a whole strip of tablets", "papa ne poori strip kha li", "neend ki goliyan kha li",
+              "saari goliyan kha li", "mummy ne BP ki 20 tablets ek saath kha li"):
+        assert "poisoning" in flags(t), t
+    for t in ("doctor ne 2 tablets di hain", "how many tablets can I take", "ek strip mangwani hai",
+              "can I take 2 tablets at once", "I take too many tablets daily", "poori strip khani hai kya?"):
+        assert flags(t) == set(), t
+
+
+def test_baby_under_3_months_who_feels_hot():
+    for t in ("my 2 month old has a temperature of 101", "6 hafte ka baccha hai, badan bahut garam hai",
+              "2 महीने के बच्चे का बदन बहुत गरम है", "my 1 month old baby feels very hot",
+              "1 mahine ke bachche ka tapman bahut zyada hai", "2 mahine ka baby, high temperature"):
+        assert "infant_danger_sign" in flags(t), t
+    for t in ("2 mahine ke bachche ka temperature check karna hai", "my 2 month old needs a temperature check",
+              "2 महीने के बच्चे का तापमान चेक करना है", "2 mahine ke bachche ko garam paani se nehla sakte hain",
+              "newborn ko garam kapde pehnane hain", "my 6 month old feels very hot"):
+        assert flags(t) == set(), t
