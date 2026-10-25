@@ -223,10 +223,16 @@ def _health_words(ex: Extraction) -> bool:
                 or ex.negated_symptoms or ex.pregnant)
 
 
-# asking for help, a greeting or a booking: understood, though the problem is not named yet
+# asking for help, a greeting or a booking, a friend, or the name of an illness ("mere dost ko aids
+# hai", "mujhe dengue hai"): understood, though what is needed is not named yet. Only this check
+# reads these words; they route nothing and raise no emergency.
 ASKING_WORDS = ("help madad मदद doctor डॉक्टर nurse नर्स hospital book बुक appointment checkup dawai "
                 "दवाई ilaj इलाज tabiyat तबीयत beemar बीमार problem dikkat दिक्कत taklif तकलीफ़ sick unwell hello hi "
-                "hey namaste नमस्ते anyone feeling feel")
+                "hey namaste नमस्ते anyone feeling feel "
+                "dost dosto दोस्त friend saheli सहेली "
+                "aids एड्स hiv एचआईवी tb टीबी tuberculosis cancer कैंसर dengue डेंगू malaria मलेरिया typhoid "
+                "टाइफाइड covid कोविड corona asthma dama दमा kidney किडनी dialysis डायलिसिस piles bawasir "
+                "बवासीर arthritis gathiya गठिया pathri पथरी hepatitis हेपेटाइटिस")
 _asking: set[str] = set()
 
 # the main-problem question as the model saw it in training (scripts/train_student.py, ASK)

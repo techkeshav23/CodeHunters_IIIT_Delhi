@@ -298,3 +298,45 @@ def test_only_spoken_none_is_rewritten():
     assert followup.as_tapped("q_danger_breathing", "haan saans phool rahi hai") is None
     assert followup.as_tapped("q_danger_mind", "kuch nahi") is None                 # a yes / no question
     assert followup.as_tapped(None, "kuch nahi") is None
+
+
+# ---- 13. an illness or a friend named is understood -------------------------------
+
+FRIENDLY = ("Zaroor madad karenge", "Happy to help", "ज़रूर मदद करेंगे")
+
+
+@pytest.mark.parametrize("message", ["mere dost ko aids hai", "मेरे दोस्त को एड्स है", "mujhe hiv hai",
+                                     "my friend has HIV", "mujhe dengue hai", "मुझे टाइफाइड है"])
+def test_an_illness_named_is_not_called_not_understood(student, message):
+    # "mere dost ko aids hai" got "Maaf kijiye, main samajh nahi paaya" on the live app (25 Oct)
+    assert pipeline._said_anything(extract(message))
+    student(output("followup", 0.4))
+    r = run(message, policy="conversational")
+    assert r["care_type"] is None and r["trace"]["follow_up"]["id"] == "q_main_symptom"
+    assert r["follow_up_question"].startswith(FRIENDLY)
+
+
+def test_nonsense_is_still_not_understood(student):
+    student(output("followup", 0.4))
+    for message in ("चाय ले लो चाय", "अब्बा डब्बा जब्बा", "hjkl hjkl"):
+        assert not pipeline._said_anything(extract(message))
+        assert not run(message, policy="conversational")["follow_up_question"].startswith(FRIENDLY)
+
+
+def test_understood_words_hold_no_everyday_word():
+    # "कोरोना" splits into "ko" + "rona": one such word would make every "papa ko ..." understood
+    pipeline._said_anything(extract("x"))  # builds the set
+    assert not pipeline._asking & {"ko", "ka", "ki", "ke", "se", "hai", "mein", "me", "aur", "to", "ho", "na", "kya"}
+
+
+@pytest.mark.parametrize("message", ["mere dost ko aids hai", "मेरे दोस्त को एड्स है", "mujhe dengue hai"])
+def test_an_illness_named_with_claude_unsure_gets_the_friendly_question(student, monkeypatch, message):
+    # as on the live server: the words name nothing in our lists, so Claude is asked; it finds the
+    # need unclear, and the app asks what is needed without saying it did not understand
+    from app.triage import llm_fallback
+    unsure = llm_fallback.LLMOpinion(care=None, urgency=None, red_flags=[], reasoning="unclear",
+                                     model="claude-opus-5-5", latency_ms=5.0)
+    monkeypatch.setattr("app.pipeline.llm_fallback.ask", lambda t, h=None: unsure)
+    student(output("nurse", 0.95))
+    r = run(message, policy="conversational")
+    assert r["trace"]["follow_up"]["id"] == "q_main_symptom" and r["follow_up_question"].startswith(FRIENDLY)
